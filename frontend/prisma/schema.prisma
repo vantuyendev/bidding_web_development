@@ -1,0 +1,49 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  balance      Decimal   @default(10000000.00) @db.Decimal(12, 2)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  bids         Bid[]
+
+  @@map("users")
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  imageUrl     String?  @map("image_url")
+  startPrice   Decimal  @map("start_price") @db.Decimal(12, 2)
+  currentPrice Decimal  @map("current_price") @db.Decimal(12, 2)
+  buyNowPrice  Decimal? @map("buy_now_price") @db.Decimal(12, 2)
+  startTime    DateTime @default(now()) @map("start_time")
+  endTime      DateTime @map("end_time")
+  status       String   @default("active")
+  bids         Bid[]
+
+  @@map("products")
+}
+
+model Bid {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  userId    String   @map("user_id")
+  bidAmount Decimal  @map("bid_amount") @db.Decimal(12, 2)
+  bidTime   DateTime @default(now()) @map("bid_time")
+  status    String?  @default("success")
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bids")
+}
