@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { Decimal } from "@prisma/client/runtime/library";
+import { triggerProductUpdate } from "@/app/api/products/[id]/live/route";
 
 export async function POST(request: Request) {
   // 1. Giả lập Xác thực (Authentication Mock)
@@ -98,6 +99,13 @@ export async function POST(request: Request) {
         endTime: updatedProduct.endTime,
       };
     });
+
+    // Bắn sự kiện SSE cập nhật giá mới cho tất cả các client đang kết nối
+    triggerProductUpdate(
+      productId,
+      Number(result.currentPrice),
+      result.endTime.toISOString()
+    );
 
     return NextResponse.json({
       success: true,
