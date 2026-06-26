@@ -30,6 +30,10 @@ export default function ProductDetailPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const isEnded = product 
+    ? (product.status === 'ENDED' || product.status === 'ended' || new Date(product.endTime).getTime() <= Date.now())
+    : false;
+
   useEffect(() => {
     async function fetchProduct() {
       try {
@@ -246,9 +250,15 @@ export default function ProductDetailPage({
             {/* Title & Status Header */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider">
-                  Đang diễn ra
-                </span>
+                {isEnded ? (
+                  <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-wider">
+                    Đã kết thúc
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider">
+                    Đang diễn ra
+                  </span>
+                )}
                 <span className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                   Giao dịch an toàn
@@ -333,7 +343,7 @@ export default function ProductDetailPage({
                       id="bid-input"
                       required
                       min={product.currentPrice + 1}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isEnded}
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
                       placeholder="Ví dụ: 30000000"
@@ -350,14 +360,18 @@ export default function ProductDetailPage({
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className={`w-full py-4 px-6 rounded-2xl font-bold text-base md:text-lg text-white shadow-lg shadow-amber-500/10 active:scale-95 transition-all duration-150 flex justify-center items-center gap-2 ${
-                    isSubmitting
-                      ? 'bg-amber-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700'
+                  disabled={isSubmitting || isEnded}
+                  className={`w-full py-4 px-6 rounded-2xl font-bold text-base md:text-lg text-white shadow-lg active:scale-95 transition-all duration-150 flex justify-center items-center gap-2 ${
+                    isEnded
+                      ? 'bg-zinc-400 dark:bg-zinc-800 text-zinc-200 dark:text-zinc-500 cursor-not-allowed shadow-none'
+                      : isSubmitting
+                        ? 'bg-amber-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/10'
                   }`}
                 >
-                  {isSubmitting ? (
+                  {isEnded ? (
+                    'Đấu giá đã kết thúc'
+                  ) : isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Đang xử lý đặt giá...

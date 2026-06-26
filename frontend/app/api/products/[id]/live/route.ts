@@ -14,8 +14,8 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Helper to trigger events to all active SSE streams for a specific product
-export function triggerProductUpdate(productId: string, currentPrice: number, endTime: string) {
-  productEvents.emit(`update-${productId}`, { currentPrice, endTime });
+export function triggerProductUpdate(productId: string, currentPrice: number, endTime: string, status?: string) {
+  productEvents.emit(`update-${productId}`, { currentPrice, endTime, status });
 }
 
 export async function GET(
@@ -45,7 +45,7 @@ export async function GET(
       sendEvent("connected", { message: "SSE connection established successfully", productId: id });
 
       // Event listener for product updates (defaults to event 'message', triggering onmessage on client)
-      const onUpdate = (data: { currentPrice: number; endTime: string }) => {
+      const onUpdate = (data: { currentPrice: number; endTime: string; status?: string }) => {
         sendEvent(undefined, data);
       };
 
