@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Cấu hình cho Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+    restart: always
+
+  # Cấu hình cho Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://chatapp_user:secret_password@postgres_db:5432/auction_db
+      - NODE_ENV=production
+    depends_on:
+      - postgres_db
+    restart: always
+
+  # Database chạy thử nghiệm ở local (Tùy chọn)
+  postgres_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: chatapp_user
+      POSTGRES_PASSWORD: secret_password
+      POSTGRES_DB: auction_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:
