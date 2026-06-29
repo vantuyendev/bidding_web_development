@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import bidRoutes from './routes/bidRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import './workers/auctionWorker.js';
 
 // Load environment variables
 dotenv.config();

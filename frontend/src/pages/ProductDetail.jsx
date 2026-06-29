@@ -44,7 +44,7 @@ export default function ProductDetail() {
     if (!id) return;
     
     // Connect to SSE on backend
-    const eventSource = new EventSource(`/api/products/${id}/live`, {
+    const eventSource = new EventSource(`http://localhost:5000/api/products/${id}/live`, {
       withCredentials: true
     });
 
@@ -358,7 +358,7 @@ export default function ProductDetail() {
                   }`}
                 >
                   {isEnded ? (
-                    'Đấu giá đã kết thúc'
+                    'Đấu giá kết thúc'
                   ) : isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
