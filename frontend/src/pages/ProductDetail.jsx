@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CountdownTimer from '../components/CountdownTimer';
 import Header from '../components/Header';
+import { getApiUrl, getSseUrl } from '../api';
+
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -19,7 +21,7 @@ export default function ProductDetail() {
   useEffect(() => {
     async function fetchProduct() {
       try {
-        const res = await fetch(`/api/products/${id}`, {
+        const res = await fetch(getApiUrl(`/api/products/${id}`), {
           credentials: 'include'
         });
         const data = await res.json();
@@ -45,7 +47,7 @@ export default function ProductDetail() {
     if (!id) return;
     
     // Connect to SSE on backend
-    const eventSource = new EventSource(`http://localhost:5000/api/products/${id}/live`, {
+    const eventSource = new EventSource(getSseUrl(id), {
       withCredentials: true
     });
 
@@ -98,7 +100,7 @@ export default function ProductDetail() {
     setMessage(null);
 
     try {
-      const res = await fetch('/api/bids/place', {
+      const res = await fetch(getApiUrl('/api/bids/place'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

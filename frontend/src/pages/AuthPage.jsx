@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { getApiUrl } from '../api';
+
 
 export default function AuthPage({ defaultMode = 'login' }) {
   const [mode, setMode] = useState(defaultMode); // 'login' or 'register'
@@ -18,11 +20,12 @@ export default function AuthPage({ defaultMode = 'login' }) {
     const payload = mode === 'login' ? { email } : { email, password };
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(getApiUrl(url), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       const data = await res.json();

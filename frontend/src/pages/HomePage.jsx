@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import { getApiUrl } from '../api';
+
 
 export default function HomePage() {
   const [products, setProducts] = useState([]);
@@ -13,7 +15,7 @@ export default function HomePage() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        const res = await fetch('/api/products', {
+        const res = await fetch(getApiUrl('/api/products'), {
           credentials: 'include',
         });
         const data = await res.json();

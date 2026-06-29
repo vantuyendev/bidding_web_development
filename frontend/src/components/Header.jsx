@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../api';
+
 
 export default function Header() {
   const [user, setUser] = useState(null);
@@ -8,7 +10,7 @@ export default function Header() {
 
   const fetchUserStatus = async () => {
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(getApiUrl('/api/auth/me'), {
         credentials: 'include',
       });
       const data = await res.json();
@@ -39,7 +41,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      const res = await fetch('/api/auth/logout', {
+      const res = await fetch(getApiUrl('/api/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       });
