@@ -26,9 +26,30 @@ app.use(hpp());
 // 3. Khử trùng đầu vào chống tấn công XSS
 app.use(xss());
 
-// Enable CORS with support for credentials (cookies)
+// Enable CORS with support for credentials (cookies) and robust origin matching
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'https://bidding-web-development.vercel.app'
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Tên miền thật ở production hoặc localhost ở development
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches allowed list or ends with vercel.app
+    const isAllowed = allowedOrigins.includes(origin) || 
+                      allowedOrigins.includes(origin + '/') || // handle trailing slash safely
+                      origin.endsWith('.vercel.app');
+                      
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked request from origin: ${origin}`);
+      callback(null, false); // Block CORS but don't crash Node process
+    }
+  },
   credentials: true // BẮT BUỘC ĐỂ NHẬN COOKIE
 }));
 
