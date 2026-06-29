@@ -28,7 +28,7 @@ app.use(xss());
 
 // Enable CORS with support for credentials (cookies)
 app.use(cors({
-  origin: 'http://localhost:5173', // Port mặc định của Vite
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Tên miền thật ở production hoặc localhost ở development
   credentials: true // BẮT BUỘC ĐỂ NHẬN COOKIE
 }));
 
@@ -64,11 +64,14 @@ const strictLimiter = rateLimit({
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/bids/place', strictLimiter);
 
-// Configure Cookie Session middleware for authentication
+// Configure Cookie Session middleware for authentication with banking-grade security
 app.use(cookieSession({
-  name: 'auction-session',
+  name: 'auction_session',
   keys: [process.env.SESSION_SECRET || 'secret-key-123'],
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  maxAge: 24 * 60 * 60 * 1000,
+  httpOnly: true, // Chống XSS: JavaScript ở frontend không thể đọc được cookie này
+  secure: process.env.NODE_ENV === 'production', // Chỉ gửi cookie qua HTTPS
+  sameSite: 'strict' // Chống CSRF: Cookie không được gửi đi từ tên miền khác
 }));
 
 // Mount API routes
