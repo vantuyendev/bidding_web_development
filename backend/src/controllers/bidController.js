@@ -39,6 +39,10 @@ export const placeBid = async (req, res) => {
     // Convert bidAmount to Decimal object for precise database comparison
     const bidDecimal = new Prisma.Decimal(bidAmount);
 
+    // Trích xuất thông tin IP và User Agent để lưu nhật ký kiểm toán (Audit Logs)
+    const ipAddress = req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
+
 
     // 3. High-security Database Transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -78,13 +82,15 @@ export const placeBid = async (req, res) => {
         throw new Error("Giá đặt phải lớn hơn giá hiện tại");
       }
 
-      // Create new bid record
+      // Create new bid record với thông tin IP và User Agent phục vụ kiểm toán
       await tx.bid.create({
         data: {
           productId: product.id,
           userId: userId,
           bidAmount: bidDecimal,
           status: "success",
+          ipAddress: ipAddress,
+          userAgent: userAgent,
         },
       });
 

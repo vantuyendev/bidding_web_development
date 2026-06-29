@@ -41,6 +41,8 @@ model Bid {
   bidAmount Decimal  @map("bid_amount") @db.Decimal(12, 2)
   bidTime   DateTime @default(now()) @map("bid_time")
   status    String?  @default("success")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
 
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
