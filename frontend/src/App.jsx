@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ProductDetail from './pages/ProductDetail';
+import AuthPage from './pages/AuthPage';
 
 export default function App() {
   return (
@@ -9,6 +10,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/login" element={<AuthPage defaultMode="login" />} />
+        <Route path="/register" element={<AuthPage defaultMode="register" />} />
       </Routes>
     </BrowserRouter>
   );
