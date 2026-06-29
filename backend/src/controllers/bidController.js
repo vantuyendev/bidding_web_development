@@ -1,6 +1,15 @@
 import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
 import { triggerProductUpdate } from './streamController.js';
+import { z } from 'zod';
+
+// Định nghĩa Schema kiểm duyệt dữ liệu nghiêm ngặt cho Bid Placement
+const bidSchema = z.object({
+  productId: z.string().uuid({ message: "ID sản phẩm phải là định dạng UUID hợp lệ." }),
+  bidAmount: z.number({ invalid_type_error: "Số tiền đặt giá phải là một con số." })
+    .gt(0, { message: "Giá đặt phải lớn hơn 0." })
+    .max(100000000000, { message: "Giá đặt không được vượt quá 100 tỷ đồng để tránh tràn bộ nhớ." })
+});
 
 export const placeBid = async (req, res) => {
   // Get userId from session
@@ -14,33 +23,22 @@ export const placeBid = async (req, res) => {
   }
 
   try {
-    // 2. Read Request Body
-    const { productId, bidAmount } = req.body;
-
-    if (!productId || bidAmount === undefined || bidAmount === null) {
+    // 2. Validate request body using Zod
+    const validation = bidSchema.safeParse(req.body);
+    if (!validation.success) {
+      // Trích xuất các thông báo lỗi kiểm duyệt
+      const errors = validation.error.errors.map(err => err.message).join(' ');
       return res.status(400).json({
         success: false,
-        error: "Thiếu productId hoặc bidAmount trong request body."
+        error: errors
       });
     }
 
-    // Convert bidAmount to Decimal object for precise comparison
-    let bidDecimal;
-    try {
-      bidDecimal = new Prisma.Decimal(bidAmount);
-    } catch (e) {
-      return res.status(400).json({
-        success: false,
-        error: "Giá trị đặt giá không hợp lệ."
-      });
-    }
+    const { productId, bidAmount } = validation.data;
 
-    if (bidDecimal.isNaN() || bidDecimal.isNegative()) {
-      return res.status(400).json({
-        success: false,
-        error: "Giá trị đặt giá không hợp lệ."
-      });
-    }
+    // Convert bidAmount to Decimal object for precise database comparison
+    const bidDecimal = new Prisma.Decimal(bidAmount);
+
 
     // 3. High-security Database Transaction
     const result = await prisma.$transaction(async (tx) => {
