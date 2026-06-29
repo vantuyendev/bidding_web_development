@@ -14,10 +14,8 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS with support for credentials (cookies)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: 'http://localhost:5173', // Port mặc định của Vite
+  credentials: true // BẮT BUỘC ĐỂ NHẬN COOKIE
 }));
 
 // Parse JSON bodies

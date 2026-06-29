@@ -18,7 +18,9 @@ export default function ProductDetail() {
   useEffect(() => {
     async function fetchProduct() {
       try {
-        const res = await fetch(`http://localhost:5000/api/products/${id}`);
+        const res = await fetch(`/api/products/${id}`, {
+          credentials: 'include'
+        });
         const data = await res.json();
         if (data.success) {
           setProduct(data.data);
@@ -42,7 +44,9 @@ export default function ProductDetail() {
     if (!id) return;
     
     // Connect to SSE on backend
-    const eventSource = new EventSource(`http://localhost:5000/api/products/${id}/live`);
+    const eventSource = new EventSource(`/api/products/${id}/live`, {
+      withCredentials: true
+    });
 
     eventSource.onmessage = (event) => {
       try {
@@ -93,11 +97,12 @@ export default function ProductDetail() {
     setMessage(null);
 
     try {
-      const res = await fetch('http://localhost:5000/api/bids/place', {
+      const res = await fetch('/api/bids/place', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           productId: id,
           bidAmount: amount,
