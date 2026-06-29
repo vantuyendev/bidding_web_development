@@ -2,12 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import cookieSession from 'cookie-session';
 import dotenv from 'dotenv';
+import bidRoutes from './routes/bidRoutes.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Mount routes
+app.use('/api/bids', bidRoutes);
 
 // Enable CORS with support for credentials (cookies)
 app.use(cors({
