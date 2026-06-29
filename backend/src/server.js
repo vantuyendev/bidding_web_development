@@ -3,15 +3,14 @@ import cors from 'cors';
 import cookieSession from 'cookie-session';
 import dotenv from 'dotenv';
 import bidRoutes from './routes/bidRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Mount routes
-app.use('/api/bids', bidRoutes);
 
 // Enable CORS with support for credentials (cookies)
 app.use(cors({
@@ -26,12 +25,15 @@ app.use(express.json());
 
 // Configure Cookie Session middleware for authentication
 app.use(cookieSession({
-  name: 'session',
-  keys: [process.env.SESSION_SECRET || 'bidding_app_secret_key'],
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  secure: process.env.NODE_ENV === 'production', // only send over HTTPS in production
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  name: 'auction-session',
+  keys: [process.env.SESSION_SECRET || 'secret-key-123'],
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
+
+// Mount API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/bids', bidRoutes);
+app.use('/api/products', productRoutes);
 
 // Basic route to check if server is healthy
 app.get('/', (req, res) => {

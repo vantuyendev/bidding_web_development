@@ -1,11 +1,17 @@
 import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
-import { triggerProductUpdate } from '../utils/eventEmitter.js';
+import { triggerProductUpdate } from './streamController.js';
 
 export const placeBid = async (req, res) => {
-  // 1. Mock Authentication
-  // In real apps, this would be retrieved from req.session.userId or JWT
-  const userId = req.session?.userId || "4a4b27c6-7de1-460d-bc78-8314ffba99c0";
+  // Get userId from session
+  const userId = req.session?.userId;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Bạn cần đăng nhập để đặt giá'
+    });
+  }
 
   try {
     // 2. Read Request Body
