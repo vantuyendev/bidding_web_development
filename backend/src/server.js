@@ -4,7 +4,7 @@ import cookieSession from 'cookie-session';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import xss from 'xss-clean';
+import xssClean from './middlewares/xssClean.js';
 import hpp from 'hpp';
 import bidRoutes from './routes/bidRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -24,7 +24,7 @@ app.use(helmet());
 app.use(hpp());
 
 // 3. Khử trùng đầu vào chống tấn công XSS
-app.use(xss());
+app.use(xssClean());
 
 // Enable CORS with support for credentials (cookies) and robust origin matching
 const allowedOrigins = [
