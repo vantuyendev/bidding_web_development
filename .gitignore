@@ -28,3 +28,7 @@ Thumbs.db
 
 # Backup folders
 frontend_backup/
+
+# Agent skills
+.agents/
+skills-lock.json
