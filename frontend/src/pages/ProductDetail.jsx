@@ -13,10 +13,44 @@ export default function ProductDetail() {
   const [bidAmount, setBidAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isProxyBid, setIsProxyBid] = useState(false);
+
+  const getStepPrice = (currentPrice) => {
+    const price = Number(currentPrice);
+    if (price < 1000000) return 10000;
+    if (price < 5000000) return 50000;
+    return 100000;
+  };
 
   const isEnded = product 
-    ? (product.status === 'ENDED' || product.status === 'ended' || new Date(product.endTime).getTime() <= Date.now())
+    ? (product.status === 'ENDED' || product.status === 'ended' || product.status === 'RESOLVED' || new Date(product.endTime).getTime() <= Date.now())
     : false;
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/auth/me'), {
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.data);
+      }
+    } catch (err) {
+      console.error('Lỗi lấy thông tin ví:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+    const handleAuthChange = () => {
+      fetchUser();
+    };
+    window.addEventListener('auth-change', handleAuthChange);
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -27,8 +61,9 @@ export default function ProductDetail() {
         const data = await res.json();
         if (data.success) {
           setProduct(data.data);
-          // Pre-fill next bid with current price + 50,000 VND as a smart UX choice
-          setBidAmount(String(data.data.currentPrice + 50000));
+          // Pre-fill next bid with current price + dynamic step price
+          const nextBid = data.data.currentPrice + getStepPrice(data.data.currentPrice);
+          setBidAmount(String(nextBid));
         } else {
           setError(data.error || 'Không thể tải thông tin sản phẩm.');
         }
@@ -56,14 +91,25 @@ export default function ProductDetail() {
         const data = JSON.parse(event.data);
         setProduct((prev) => {
           if (!prev) return null;
-          // Update current price and end time from SSE message
+          const newPrice = Number(data.currentPrice);
+          const step = getStepPrice(newPrice);
+          const nextBid = newPrice + step;
+          setBidAmount((curr) => {
+            const val = parseFloat(curr);
+            if (isNaN(val) || val <= newPrice) {
+              return String(nextBid);
+            }
+            return curr;
+          });
           return {
             ...prev,
-            currentPrice: Number(data.currentPrice),
+            currentPrice: newPrice,
             endTime: data.endTime,
             ...(data.status ? { status: data.status } : {})
           };
         });
+        // Trigger balance and profile updates when bid events occur
+        window.dispatchEvent(new Event('auth-change'));
       } catch (err) {
         console.error('Lỗi phân tích dữ liệu SSE:', err);
       }
@@ -88,10 +134,11 @@ export default function ProductDetail() {
       return;
     }
 
-    if (amount <= product.currentPrice) {
+    const minAmount = product.currentPrice + getStepPrice(product.currentPrice);
+    if (amount < minAmount) {
       setMessage({
         type: 'error',
-        text: `Giá đặt phải lớn hơn giá hiện tại (${product.currentPrice.toLocaleString('vi-VN')} đ).`,
+        text: `Giá đặt phải lớn hơn hoặc bằng mức giá tối thiểu (${minAmount.toLocaleString('vi-VN')} đ).`,
       });
       return;
     }
@@ -108,7 +155,7 @@ export default function ProductDetail() {
         credentials: 'include',
         body: JSON.stringify({
           productId: id,
-          bidAmount: amount,
+          ...(isProxyBid ? { maxAutoBidAmount: amount } : { bidAmount: amount })
         }),
       });
 
@@ -117,10 +164,13 @@ export default function ProductDetail() {
       if (data.success) {
         setMessage({
           type: 'success',
-          text: `Đặt giá thành công! Bạn đã đặt giá ${amount.toLocaleString('vi-VN')} đ`,
+          text: isProxyBid 
+            ? `Thiết lập Đấu giá Tự động thành công! Mức giá tối đa sẵn sàng trả: ${amount.toLocaleString('vi-VN')} đ.`
+            : `Đặt giá thành công! Bạn đã đặt giá ${amount.toLocaleString('vi-VN')} đ.`,
         });
 
-        // Instantly update product price and end time from API response
+        window.dispatchEvent(new Event('auth-change'));
+
         setProduct((prev) => {
           if (!prev) return null;
           return {
@@ -130,12 +180,66 @@ export default function ProductDetail() {
           };
         });
 
-        // Set next recommended bid
-        setBidAmount(String(Number(data.data.currentPrice) + 50000));
+        const nextBid = Number(data.data.currentPrice) + getStepPrice(data.data.currentPrice);
+        setBidAmount(String(nextBid));
       } else {
         setMessage({
           type: 'error',
           text: data.error || 'Đặt giá thất bại. Vui lòng thử lại.',
+        });
+      }
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: 'Có lỗi xảy ra khi gửi yêu cầu. Vui lòng kiểm tra kết nối mạng.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!product || !product.buyNowPrice) return;
+
+    const confirmBuy = window.confirm(`Bạn có chắc chắn muốn mua đứt sản phẩm này với giá ${product.buyNowPrice.toLocaleString('vi-VN')} đ? Phiên đấu giá sẽ kết thúc lập tức.`);
+    if (!confirmBuy) return;
+
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch(getApiUrl('/api/bids/buy-now'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ productId: id }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMessage({
+          type: 'success',
+          text: `Chúc mừng bạn! Đã mua đứt thành công sản phẩm với giá ${Number(data.data.currentPrice).toLocaleString('vi-VN')} đ.`,
+        });
+
+        window.dispatchEvent(new Event('auth-change'));
+
+        setProduct((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            currentPrice: Number(data.data.currentPrice),
+            endTime: data.data.endTime,
+            status: data.data.status
+          };
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          text: data.error || 'Mua đứt thất bại. Vui lòng thử lại.',
         });
       }
     } catch (err) {
@@ -323,55 +427,114 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {/* Wallet State Box */}
+              {user && (
+                <div className="bg-zinc-100/70 dark:bg-zinc-950/70 px-4 py-3 rounded-2xl border border-zinc-200/55 dark:border-zinc-800/80 flex items-center justify-between text-xs font-semibold">
+                  <span className="text-zinc-500 dark:text-zinc-400">💰 Số dư ví khả dụng:</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-black">{Number(user.balance).toLocaleString('vi-VN')} đ</span>
+                </div>
+              )}
+
+              {/* Proxy Bid Toggle Widget */}
+              {!isEnded && (
+                <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/50 dark:border-zinc-800/80 select-none">
+                  <input
+                    type="checkbox"
+                    id="proxy-bid-toggle"
+                    checked={isProxyBid}
+                    onChange={(e) => {
+                      setIsProxyBid(e.target.checked);
+                      const step = getStepPrice(product.currentPrice);
+                      setBidAmount(String(product.currentPrice + step));
+                    }}
+                    className="h-4.5 w-4.5 rounded border-zinc-300 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-400"
+                  />
+                  <label htmlFor="proxy-bid-toggle" className="text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer flex flex-col">
+                    <span>🤖 Kích hoạt Robot Đấu giá Tự động (Proxy Bid)</span>
+                    <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-500 mt-0.5">Tự động nâng giá trị đấu giá khi bị đối thủ vượt mặt.</span>
+                  </label>
+                </div>
+              )}
+
               <form onSubmit={handlePlaceBid} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="bid-input" className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                    Nhập số tiền đấu giá (VND)
+                  <label htmlFor="bid-input" className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                    {isProxyBid 
+                      ? 'Nhập giá tối đa bạn sẵn sàng trả cho sản phẩm này (VND)' 
+                      : 'Nhập số tiền đấu giá (VND)'}
                   </label>
+                  
                   <div className="relative rounded-2xl shadow-sm">
                     <input
                       type="number"
                       name="bidAmount"
                       id="bid-input"
                       required
-                      min={product.currentPrice + 1}
+                      min={product.currentPrice + getStepPrice(product.currentPrice)}
                       disabled={isSubmitting || isEnded}
                       value={bidAmount}
                       onChange={(e) => setBidAmount(e.target.value)}
-                      placeholder="Ví dụ: 30000000"
+                      placeholder={isProxyBid ? "Ví dụ: 35000000" : "Ví dụ: 30000000"}
                       className="w-full pl-5 pr-12 py-4 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 text-lg md:text-xl font-bold rounded-2xl border border-zinc-200 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 dark:border-zinc-800 dark:focus:border-amber-500 outline-none transition-all"
                     />
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-zinc-400 font-bold">
                       VND
                     </div>
                   </div>
+
+                  {/* Escrow warning message */}
+                  {bidAmount && !isNaN(Number(bidAmount)) && Number(bidAmount) > 0 && (
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 italic mt-0.5">
+                      ⚠️ Hệ thống sẽ tạm đóng băng 10% ({Math.floor(Number(bidAmount) * 0.1).toLocaleString('vi-VN')} đ) trong ví của bạn để làm tiền đặt cọc.
+                    </span>
+                  )}
+
                   <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                    Bước giá đề xuất: +50.000đ (nhập tối thiểu {(product.currentPrice + 1).toLocaleString('vi-VN')}đ)
+                    Bước giá tối thiểu: +{getStepPrice(product.currentPrice).toLocaleString('vi-VN')}đ (nhập tối thiểu {(product.currentPrice + getStepPrice(product.currentPrice)).toLocaleString('vi-VN')}đ)
                   </span>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting || isEnded}
-                  className={`w-full py-4 px-6 rounded-2xl font-bold text-base md:text-lg text-white shadow-lg active:scale-95 transition-all duration-150 flex justify-center items-center gap-2 ${
-                    isEnded
-                      ? 'bg-zinc-400 dark:bg-zinc-800 text-zinc-200 dark:text-zinc-500 cursor-not-allowed shadow-none'
-                      : isSubmitting
-                        ? 'bg-amber-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/10'
-                  }`}
-                >
-                  {isEnded ? (
-                    'Đấu giá kết thúc'
-                  ) : isSubmitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Đang xử lý đặt giá...
-                    </>
-                  ) : (
-                    'Đặt giá ngay'
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || isEnded}
+                    className={`flex-1 py-4 px-6 rounded-2xl font-bold text-xs text-white shadow-md transition-all active:scale-98 flex justify-center items-center gap-2 cursor-pointer ${
+                      isEnded
+                        ? 'bg-zinc-300 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed shadow-none'
+                        : isSubmitting
+                          ? 'bg-amber-400 cursor-not-allowed'
+                          : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/10'
+                    }`}
+                  >
+                    {isEnded ? (
+                      'Đấu giá kết thúc'
+                    ) : isSubmitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Đang xử lý đặt giá...
+                      </>
+                    ) : (
+                      'Đặt giá ngay'
+                    )}
+                  </button>
+
+                  {product.buyNowPrice && (
+                    <button
+                      type="button"
+                      onClick={handleBuyNow}
+                      disabled={isSubmitting || isEnded}
+                      className={`flex-1 py-4 px-6 rounded-2xl font-bold text-xs text-white shadow-md transition-all active:scale-98 flex justify-center items-center gap-2 cursor-pointer ${
+                        isEnded
+                          ? 'bg-zinc-300 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed shadow-none'
+                        : isSubmitting
+                          ? 'bg-rose-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 shadow-rose-500/10'
+                      }`}
+                    >
+                      ⚡ Mua đứt ngay: {Number(product.buyNowPrice).toLocaleString('vi-VN')} đ
+                    </button>
                   )}
-                </button>
+                </div>
               </form>
 
               {/* Guarantees & Rules */}

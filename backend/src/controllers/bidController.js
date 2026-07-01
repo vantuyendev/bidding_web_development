@@ -326,3 +326,148 @@ export const placeBid = async (req, res) => {
   }
 };
 
+/**
+ * Controller to handle buy-it-now requests, instantly ending the auction.
+ * 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const buyNow = async (req, res) => {
+  const userId = req.session?.userId;
+
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      error: 'Bạn cần đăng nhập để mua đứt sản phẩm'
+    });
+  }
+
+  const { productId } = req.body;
+
+  if (!productId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Thiếu thông tin productId.'
+    });
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Ensure user exists
+      await tx.user.upsert({
+        where: { id: userId },
+        update: {},
+        create: {
+          id: userId,
+          email: `mock_user_${userId.slice(0, 8)}@example.com`,
+          passwordHash: "$2b$10$mockpasswordhashplaceholder",
+          balance: new Prisma.Decimal(10000000.00),
+          walletBalance: new Prisma.Decimal(10000000.00),
+        },
+      });
+
+      // Row-level lock product to prevent double buy or concurrent bid updates
+      const products = await tx.$queryRaw`
+        SELECT * FROM "products" WHERE id = ${productId} FOR UPDATE
+      `;
+
+      if (!products || products.length === 0) {
+        throw new Error("Sản phẩm không tồn tại");
+      }
+
+      const product = products[0];
+      const now = new Date();
+      const endTime = new Date(product.end_time);
+
+      if (now > endTime || product.status === 'ENDED' || product.status === 'ended') {
+        throw new Error("Buổi đấu giá đã kết thúc");
+      }
+
+      if (!product.buy_now_price) {
+        throw new Error("Sản phẩm này không hỗ trợ tính năng Mua đứt");
+      }
+
+      const buyNowPriceDecimal = new Prisma.Decimal(product.buy_now_price);
+      const depositAmount = buyNowPriceDecimal.mul(0.1);
+
+      // Verify wallet balance
+      const buyer = await tx.user.findUnique({
+        where: { id: userId },
+        select: { walletBalance: true }
+      });
+      if (new Prisma.Decimal(buyer.walletBalance).lt(depositAmount)) {
+        throw new Error("Số dư ví không đủ để đặt cọc mua đứt (cần cọc 10% giá trị mua đứt).");
+      }
+
+      // 1. Hold deposit (10% of buyNowPrice)
+      await holdEscrow(tx, userId, depositAmount);
+
+      // 2. Release previous highest bidder deposit if any
+      const oldHighestBid = await tx.bid.findFirst({
+        where: { productId: product.id },
+        orderBy: { bidAmount: 'desc' }
+      });
+
+      if (oldHighestBid && oldHighestBid.userId) {
+        const oldDeposit = oldHighestBid.isAutoBid && oldHighestBid.maxAutoBidAmount
+          ? new Prisma.Decimal(oldHighestBid.maxAutoBidAmount).mul(0.1)
+          : new Prisma.Decimal(oldHighestBid.bidAmount).mul(0.1);
+        await releaseEscrow(tx, oldHighestBid.userId, oldDeposit);
+      }
+
+      // 3. Create winning bid record
+      const bid = await tx.bid.create({
+        data: {
+          productId: product.id,
+          userId: userId,
+          bidAmount: buyNowPriceDecimal,
+          status: "success",
+          ipAddress: req.ip || "system-buy-now",
+          userAgent: req.headers['user-agent'] || "system-buy-now-agent"
+        }
+      });
+
+      // 4. End the auction: set currentPrice = buyNowPrice, status = ENDED
+      const updatedProduct = await tx.product.update({
+        where: { id: product.id },
+        data: {
+          currentPrice: buyNowPriceDecimal,
+          status: "ENDED",
+          endTime: now
+        }
+      });
+
+      return {
+        currentPrice: updatedProduct.currentPrice,
+        endTime: updatedProduct.endTime,
+        status: updatedProduct.status,
+        bid
+      };
+    });
+
+    // Broadcast SSE update event
+    triggerProductUpdate(
+      productId,
+      Number(result.currentPrice),
+      result.endTime.toISOString(),
+      result.status
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Mua đứt sản phẩm thành công",
+      data: {
+        currentPrice: result.currentPrice,
+        endTime: result.endTime,
+        status: result.status
+      }
+    });
+
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message || "Đã xảy ra lỗi khi thực hiện mua đứt."
+    });
+  }
+};
+
