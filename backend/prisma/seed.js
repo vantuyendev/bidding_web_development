@@ -29,6 +29,45 @@ async function main() {
     console.log(`[SEED] Created/Verified mock user: ${user.email} (ID: ${user.id})`);
   }
 
+  // Create Mock Categories
+  const categoriesData = [
+    { id: 'cat-dien-thoai', name: 'Điện thoại', slug: 'dien-thoai' },
+    { id: 'cat-dong-ho', name: 'Đồng hồ', slug: 'dong-ho' },
+    { id: 'cat-mo-hinh-anime', name: 'Mô hình Anime', slug: 'mo-hinh-anime' }
+  ];
+
+  for (const cat of categoriesData) {
+    await prisma.category.upsert({
+      where: { slug: cat.slug },
+      update: { name: cat.name },
+      create: cat,
+    });
+    console.log(`[SEED] Created/Verified category: ${cat.name} (${cat.slug})`);
+  }
+
+  // Create Mock Attribute Keys
+  const attributeKeysData = [
+    // Điện thoại
+    { id: 'key-dt-brand', categoryId: 'cat-dien-thoai', name: 'Hãng sản xuất', type: 'SELECT' },
+    { id: 'key-dt-ram', categoryId: 'cat-dien-thoai', name: 'Dung lượng RAM', type: 'SELECT' },
+    // Đồng hồ
+    { id: 'key-dh-brand', categoryId: 'cat-dong-ho', name: 'Hãng sản xuất', type: 'SELECT' },
+    { id: 'key-dh-origin', categoryId: 'cat-dong-ho', name: 'Xuất xứ', type: 'TEXT' },
+    // Mô hình Anime
+    { id: 'key-an-scale', categoryId: 'cat-mo-hinh-anime', name: 'Tỷ lệ', type: 'TEXT' },
+    { id: 'key-an-brand', categoryId: 'cat-mo-hinh-anime', name: 'Hãng sản xuất', type: 'SELECT' },
+    { id: 'key-an-box', categoryId: 'cat-mo-hinh-anime', name: 'Tình trạng Box', type: 'TEXT' }
+  ];
+
+  for (const key of attributeKeysData) {
+    await prisma.attributeKey.upsert({
+      where: { id: key.id },
+      update: { name: key.name, type: key.type, categoryId: key.categoryId },
+      create: key,
+    });
+    console.log(`[SEED] Created/Verified attribute key: ${key.name} (ID: ${key.id})`);
+  }
+
   // Create Mock Products (Art & Tech)
   const now = new Date();
   const products = [
@@ -43,6 +82,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 60 * 60 * 1000), // active for 1 hour
       status: 'ACTIVE',
+      categoryId: 'cat-dien-thoai',
+      attributes: [
+        { attributeKeyId: 'key-dt-brand', value: 'Apple' },
+        { attributeKeyId: 'key-dt-ram', value: '8GB' }
+      ]
     },
     {
       id: 'macbook-pro-m3',
@@ -53,8 +97,13 @@ async function main() {
       currentPrice: 45000000.00,
       buyNowPrice: 52000000.00,
       startTime: now,
-      endTime: new Date(now.getTime() + 10 * 60 * 1000), // active for 10 minutes (great for testing worker closing!)
+      endTime: new Date(now.getTime() + 10 * 60 * 1000), // active for 10 minutes
       status: 'ACTIVE',
+      categoryId: 'cat-dien-thoai',
+      attributes: [
+        { attributeKeyId: 'key-dt-brand', value: 'Apple' },
+        { attributeKeyId: 'key-dt-ram', value: '18GB' }
+      ]
     },
     {
       id: 'playstation-5',
@@ -67,6 +116,10 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() - 5 * 60 * 1000), // already ended
       status: 'ENDED',
+      categoryId: 'cat-dien-thoai',
+      attributes: [
+        { attributeKeyId: 'key-dt-brand', value: 'Sony' }
+      ]
     },
     {
       id: 'ipad-pro-m4',
@@ -79,6 +132,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 2 * 60 * 60 * 1000), // active for 2 hours
       status: 'ACTIVE',
+      categoryId: 'cat-dien-thoai',
+      attributes: [
+        { attributeKeyId: 'key-dt-brand', value: 'Apple' },
+        { attributeKeyId: 'key-dt-ram', value: '8GB' }
+      ]
     },
     {
       id: 'sony-headphones',
@@ -91,6 +149,10 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 4 * 60 * 60 * 1000), // active for 4 hours
       status: 'ACTIVE',
+      categoryId: 'cat-dien-thoai',
+      attributes: [
+        { attributeKeyId: 'key-dt-brand', value: 'Sony' }
+      ]
     },
     {
       id: 'painting-golden-autumn',
@@ -103,6 +165,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 3 * 60 * 60 * 1000), // active for 3 hours
       status: 'ACTIVE',
+      categoryId: 'cat-mo-hinh-anime',
+      attributes: [
+        { attributeKeyId: 'key-an-scale', value: '1/1' },
+        { attributeKeyId: 'key-an-box', value: 'No Box' }
+      ]
     },
     {
       id: 'statue-buddha',
@@ -115,6 +182,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 5 * 60 * 60 * 1000), // active for 5 hours
       status: 'ACTIVE',
+      categoryId: 'cat-mo-hinh-anime',
+      attributes: [
+        { attributeKeyId: 'key-an-scale', value: '1/1' },
+        { attributeKeyId: 'key-an-box', value: 'No Box' }
+      ]
     },
     {
       id: 'ceramic-plate',
@@ -127,6 +199,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 30 * 60 * 1000), // active for 30 mins
       status: 'ACTIVE',
+      categoryId: 'cat-dong-ho',
+      attributes: [
+        { attributeKeyId: 'key-dh-brand', value: 'Bát Tràng' },
+        { attributeKeyId: 'key-dh-origin', value: 'Việt Nam' }
+      ]
     },
     {
       id: 'odo-clock',
@@ -139,6 +216,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() - 2 * 60 * 60 * 1000), // ended 2 hours ago
       status: 'ENDED',
+      categoryId: 'cat-dong-ho',
+      attributes: [
+        { attributeKeyId: 'key-dh-brand', value: 'Odo' },
+        { attributeKeyId: 'key-dh-origin', value: 'Pháp' }
+      ]
     },
     {
       id: 'mechanical-keyboard',
@@ -151,26 +233,54 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 24 * 60 * 60 * 1000), // active for 24 hours
       status: 'ACTIVE',
+      categoryId: 'cat-dien-thoai',
+      attributes: [
+        { attributeKeyId: 'key-dt-brand', value: 'Angry Miao' }
+      ]
     }
   ];
 
   for (const prod of products) {
+    const { attributes, ...productData } = prod;
     await prisma.product.upsert({
       where: { id: prod.id },
       update: {
-        title: prod.title,
-        description: prod.description,
-        imageUrl: prod.imageUrl,
-        startPrice: prod.startPrice,
-        currentPrice: prod.currentPrice,
-        buyNowPrice: prod.buyNowPrice,
-        startTime: prod.startTime,
-        endTime: prod.endTime,
-        status: prod.status,
+        title: productData.title,
+        description: productData.description,
+        imageUrl: productData.imageUrl,
+        startPrice: productData.startPrice,
+        currentPrice: productData.currentPrice,
+        buyNowPrice: productData.buyNowPrice,
+        startTime: productData.startTime,
+        endTime: productData.endTime,
+        status: productData.status,
+        categoryId: productData.categoryId,
       },
-      create: prod,
+      create: productData,
     });
-    console.log(`[SEED] Created/Verified product: ${prod.title} (ID: ${prod.id})`);
+    console.log(`[SEED] Created/Verified product: ${productData.title} (ID: ${productData.id})`);
+
+    if (attributes && attributes.length > 0) {
+      for (const attr of attributes) {
+        await prisma.productAttribute.upsert({
+          where: {
+            productId_attributeKeyId: {
+              productId: prod.id,
+              attributeKeyId: attr.attributeKeyId
+            }
+          },
+          update: {
+            value: attr.value
+          },
+          create: {
+            productId: prod.id,
+            attributeKeyId: attr.attributeKeyId,
+            value: attr.value
+          }
+        });
+      }
+      console.log(`[SEED] Seeded ${attributes.length} attributes for product: ${prod.id}`);
+    }
   }
 
   console.log('[SEED] Seeding completed successfully!');

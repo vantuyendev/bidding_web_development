@@ -23,22 +23,61 @@ model User {
 }
 
 model Product {
-  id            String   @id @default(uuid())
+  id            String             @id @default(uuid())
   title         String
   description   String?
-  imageUrl      String?  @map("image_url")
-  startPrice    Decimal  @map("start_price") @db.Decimal(12, 2)
-  currentPrice  Decimal  @map("current_price") @db.Decimal(12, 2)
-  buyNowPrice   Decimal? @map("buy_now_price") @db.Decimal(12, 2)
-  reservePrice  Decimal? @map("reserve_price") @db.Decimal(12, 2)
-  stepPrice     Decimal  @default(10000) @map("step_price") @db.Decimal(12, 2)
-  autoExtension Boolean  @default(true) @map("auto_extension")
-  startTime     DateTime @default(now()) @map("start_time")
-  endTime       DateTime @map("end_time")
-  status        String   @default("active")
+  imageUrl      String?            @map("image_url")
+  startPrice    Decimal            @map("start_price") @db.Decimal(12, 2)
+  currentPrice  Decimal            @map("current_price") @db.Decimal(12, 2)
+  buyNowPrice   Decimal?           @map("buy_now_price") @db.Decimal(12, 2)
+  reservePrice  Decimal?           @map("reserve_price") @db.Decimal(12, 2)
+  stepPrice     Decimal            @default(10000) @map("step_price") @db.Decimal(12, 2)
+  autoExtension Boolean            @default(true) @map("auto_extension")
+  startTime     DateTime           @default(now()) @map("start_time")
+  endTime       DateTime           @map("end_time")
+  status        String             @default("active")
+  categoryId    String             @map("category_id")
+  
+  category      Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   bids          Bid[]
+  attributes    ProductAttribute[]
 
   @@map("products")
+}
+
+model Category {
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique
+  products      Product[]
+  attributeKeys AttributeKey[]
+
+  @@map("categories")
+}
+
+model AttributeKey {
+  id                String             @id @default(uuid())
+  categoryId        String             @map("category_id")
+  name              String
+  type              String             // "TEXT", "NUMBER", "SELECT"
+  
+  category          Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  productAttributes ProductAttribute[]
+
+  @@map("attribute_keys")
+}
+
+model ProductAttribute {
+  id             String       @id @default(uuid())
+  productId      String       @map("product_id")
+  attributeKeyId String       @map("attribute_key_id")
+  value          String
+
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attributeKey   AttributeKey @relation(fields: [attributeKeyId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, attributeKeyId])
+  @@map("product_attributes")
 }
 
 model Bid {
