@@ -93,9 +93,8 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000,
   httpOnly: true, // Chống XSS: JavaScript ở frontend không thể đọc được cookie này
   secure: isProduction, // Chỉ gửi cookie qua HTTPS
-  // Cross-origin deployment (vercel.app → onrender.com) requires 'none' + secure
-  // 'strict' blocks all cross-site cookie delivery entirely
-  sameSite: isProduction ? 'none' : 'lax'
+  // 'lax' is safe here because Vercel proxies /api/* to the backend (same-origin)
+  sameSite: 'lax'
 }));
 
 // Mount API routes
