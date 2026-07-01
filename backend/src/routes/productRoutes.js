@@ -10,6 +10,19 @@ router.get('/', getProducts);
 // GET /api/products/categories/:categorySlug/filters - Get dynamic filters for a category
 router.get('/categories/:categorySlug/filters', getCategoryFilters);
 
+// GET /api/products/filters - Get dynamic filters via query parameter ?categorySlug=...
+router.get('/filters', async (req, res) => {
+  const { categorySlug } = req.query;
+  if (!categorySlug) {
+    return res.status(400).json({
+      success: false,
+      error: "Thiếu tham số categorySlug."
+    });
+  }
+  req.params.categorySlug = categorySlug;
+  return getCategoryFilters(req, res);
+});
+
 // GET /api/products/search - Search products and apply dynamic EAV filters
 router.get('/search', searchProducts);
 
