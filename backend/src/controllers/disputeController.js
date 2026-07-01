@@ -255,3 +255,234 @@ export const adminResolveTicket = async (req, res) => {
     });
   }
 };
+
+/**
+ * Controller to fetch details of a dispute ticket.
+ * 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getDisputeDetail = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      error: "Yêu cầu đăng nhập."
+    });
+  }
+
+  const { ticketId } = req.params;
+
+  try {
+    const ticket = await prisma.disputeTicket.findUnique({
+      where: { id: ticketId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            title: true,
+            sellerId: true,
+            status: true
+          }
+        },
+        openedBy: {
+          select: {
+            id: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: "Không tìm thấy đơn khiếu nại."
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    const isAdmin = user && user.email.toLowerCase().includes("admin");
+    const isBuyer = ticket.openedById === userId;
+    const isSeller = ticket.product.sellerId === userId;
+
+    if (!isAdmin && !isBuyer && !isSeller) {
+      return res.status(403).json({
+        success: false,
+        error: "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: ticket
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Đã xảy ra lỗi khi lấy thông tin khiếu nại."
+    });
+  }
+};
+
+/**
+ * Controller to fetch messages of a dispute ticket.
+ * 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getDisputeMessages = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      error: "Yêu cầu đăng nhập."
+    });
+  }
+
+  const { ticketId } = req.params;
+
+  try {
+    const ticket = await prisma.disputeTicket.findUnique({
+      where: { id: ticketId },
+      include: { product: true }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: "Không tìm thấy đơn khiếu nại."
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    const isAdmin = user && user.email.toLowerCase().includes("admin");
+    const isBuyer = ticket.openedById === userId;
+    const isSeller = ticket.product.sellerId === userId;
+
+    if (!isAdmin && !isBuyer && !isSeller) {
+      return res.status(403).json({
+        success: false,
+        error: "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này."
+      });
+    }
+
+    const messages = await prisma.disputeMessage.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: messages
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Đã xảy ra lỗi khi lấy danh sách tin nhắn."
+    });
+  }
+};
+
+/**
+ * Controller to post a message to a dispute ticket.
+ * 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const createDisputeMessage = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      error: "Yêu cầu đăng nhập."
+    });
+  }
+
+  const { ticketId } = req.params;
+  const { message } = req.body;
+
+  if (!message || message.trim() === "") {
+    return res.status(400).json({
+      success: false,
+      error: "Nội dung tin nhắn không được để trống."
+    });
+  }
+
+  try {
+    const ticket = await prisma.disputeTicket.findUnique({
+      where: { id: ticketId },
+      include: { product: true }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({
+        success: false,
+        error: "Không tìm thấy đơn khiếu nại."
+      });
+    }
+
+    if (ticket.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        error: "Khiếu nại đã được đóng. Bạn không thể gửi tin nhắn."
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    const isAdmin = user && user.email.toLowerCase().includes("admin");
+    const isBuyer = ticket.openedById === userId;
+    const isSeller = ticket.product.sellerId === userId;
+
+    if (!isAdmin && !isBuyer && !isSeller) {
+      return res.status(403).json({
+        success: false,
+        error: "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này."
+      });
+    }
+
+    const newMessage = await prisma.disputeMessage.create({
+      data: {
+        ticketId,
+        senderId: userId,
+        message
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: newMessage
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Đã xảy ra lỗi khi gửi tin nhắn."
+    });
+  }
+};
+
