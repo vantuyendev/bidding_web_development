@@ -2,6 +2,7 @@ import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
 import { triggerProductUpdate } from './streamController.js';
 import { z } from 'zod';
+import { holdEscrow, releaseEscrow } from '../services/walletService.js';
 
 // Định nghĩa Schema kiểm duyệt dữ liệu nghiêm ngặt cho Bid Placement
 const bidSchema = z.object({
@@ -55,6 +56,7 @@ export const placeBid = async (req, res) => {
           email: `mock_user_${userId.slice(0, 8)}@example.com`,
           passwordHash: "$2b$10$mockpasswordhashplaceholder",
           balance: new Prisma.Decimal(10000000.00),
+          walletBalance: new Prisma.Decimal(10000000.00),
         },
       });
 
@@ -80,6 +82,25 @@ export const placeBid = async (req, res) => {
       const currentPriceDecimal = new Prisma.Decimal(product.current_price);
       if (bidDecimal.lte(currentPriceDecimal)) {
         throw new Error("Giá đặt phải lớn hơn giá hiện tại");
+      }
+
+      // 1. Tính toán số tiền cọc bắt buộc: depositAmount = bidAmount * 0.1
+      const depositAmount = bidDecimal.mul(0.1);
+
+      // 2. Gọi hàm holdEscrow để đóng băng depositAmount của User A
+      await holdEscrow(tx, userId, depositAmount);
+
+      // 3. Xử lý hoàn cọc cho người bị vượt giá cũ:
+      // Truy vấn bảng Bid để tìm lượt đặt giá cao nhất hiện tại của sản phẩm đó trước khi bị User A đè giá
+      const oldHighestBid = await tx.bid.findFirst({
+        where: { productId: product.id },
+        orderBy: { bidAmount: 'desc' }
+      });
+
+      // Nếu tìm thấy User B, tính toán số tiền cọc cũ và gọi hàm releaseEscrow
+      if (oldHighestBid && oldHighestBid.userId && oldHighestBid.bidAmount) {
+        const oldDepositAmount = new Prisma.Decimal(oldHighestBid.bidAmount).mul(0.1);
+        await releaseEscrow(tx, oldHighestBid.userId, oldDepositAmount);
       }
 
       // Create new bid record với thông tin IP và User Agent phục vụ kiểm toán

@@ -66,7 +66,8 @@ export const register = async (req, res) => {
       data: {
         email,
         passwordHash: '$2b$10$mockpasswordhashplaceholder', // Password hash authenticity is ignored
-        balance: 10000000.00 // Default 10M balance
+        balance: 10000000.00, // Default 10M balance
+        walletBalance: 10000000.00
       }
     });
 
