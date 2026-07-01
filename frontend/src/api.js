@@ -5,9 +5,11 @@
 export const getApiUrl = (path) => {
   const baseUrl = import.meta.env.VITE_API_URL || '';
   if (baseUrl) {
-    // If the path starts with '/api', we strip it since VITE_API_URL usually includes '/api'
-    const cleanPath = path.startsWith('/api') ? path.substring(4) : path;
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const hasApiInBase = cleanBaseUrl.endsWith('/api');
+    
+    // Only strip '/api' if base URL already ends with '/api'
+    const cleanPath = (hasApiInBase && path.startsWith('/api')) ? path.substring(4) : path;
     const cleanPathWithSlash = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
     return `${cleanBaseUrl}${cleanPathWithSlash}`;
   }
@@ -21,7 +23,11 @@ export const getSseUrl = (productId) => {
   const baseUrl = import.meta.env.VITE_API_URL || '';
   if (baseUrl) {
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    return `${cleanBaseUrl}/products/${productId}/live`;
+    const hasApiInBase = cleanBaseUrl.endsWith('/api');
+    
+    // Only add '/api' prefix if the base URL does not already include it
+    const pathPrefix = hasApiInBase ? '' : '/api';
+    return `${cleanBaseUrl}${pathPrefix}/products/${productId}/live`;
   }
   return `http://localhost:5000/api/products/${productId}/live`;
 };
