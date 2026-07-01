@@ -10,6 +10,7 @@ import bidRoutes from './routes/bidRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import shippingRoutes from './routes/shippingRoutes.js';
+import disputeRoutes from './routes/disputeRoutes.js';
 import './workers/auctionWorker.js';
 
 // Load environment variables
@@ -103,6 +104,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bids', bidRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/shipping', shippingRoutes);
+app.use('/api/disputes', disputeRoutes);
 
 // Basic route to check if server is healthy
 app.get('/', (req, res) => {

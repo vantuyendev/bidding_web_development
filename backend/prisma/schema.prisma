@@ -15,9 +15,11 @@ model User {
   walletBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("wallet_balance")
   frozenBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("frozen_balance")
   reputationScore Float         @default(5.0) @map("reputation_score")
-  createdAt       DateTime      @default(now()) @map("created_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
   bids            Bid[]
   transactions    Transaction[]
+  disputeTickets  DisputeTicket[]  @relation("UserDisputeTickets")
+  disputeMessages DisputeMessage[] @relation("UserDisputeMessages")
 
   @@map("users")
 }
@@ -44,9 +46,11 @@ model Product {
   provinceId    String             @default("") @map("province_id")
   districtId    String             @default("") @map("district_id")
   
+  sellerId      String             @default("seller-id-placeholder") @map("seller_id")
   category      Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   bids          Bid[]
   attributes    ProductAttribute[]
+  disputeTicket DisputeTicket?
 
   @@map("products")
 }
@@ -115,4 +119,34 @@ model Transaction {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
+}
+
+model DisputeTicket {
+  id               String           @id @default(uuid())
+  productId        String           @unique @map("product_id")
+  openedById       String           @map("opened_by_id")
+  reason           String
+  description      String
+  unboxingVideoUrl String?          @map("unboxing_video_url")
+  status           String           @default("PENDING")
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  openedBy         User             @relation("UserDisputeTickets", fields: [openedById], references: [id], onDelete: Cascade)
+  messages         DisputeMessage[]
+
+  @@map("dispute_tickets")
+}
+
+model DisputeMessage {
+  id        String        @id @default(uuid())
+  ticketId  String        @map("ticket_id")
+  senderId  String        @map("sender_id")
+  message   String
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  ticket    DisputeTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender    User          @relation("UserDisputeMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("dispute_messages")
 }
