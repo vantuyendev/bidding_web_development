@@ -37,6 +37,12 @@ model Product {
   endTime       DateTime           @map("end_time")
   status        String             @default("active")
   categoryId    String             @map("category_id")
+  weight        Float              @default(0.5)
+  length        Int                @default(10)
+  width         Int                @default(10)
+  height        Int                @default(10)
+  provinceId    String             @default("") @map("province_id")
+  districtId    String             @default("") @map("district_id")
   
   category      Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   bids          Bid[]
