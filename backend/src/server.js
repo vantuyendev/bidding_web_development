@@ -86,13 +86,16 @@ app.use('/api/auth/login', strictLimiter);
 app.use('/api/bids/place', strictLimiter);
 
 // Configure Cookie Session middleware for authentication with banking-grade security
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(cookieSession({
   name: 'auction_session',
   keys: [process.env.SESSION_SECRET || 'secret-key-123'],
   maxAge: 24 * 60 * 60 * 1000,
   httpOnly: true, // Chống XSS: JavaScript ở frontend không thể đọc được cookie này
-  secure: process.env.NODE_ENV === 'production', // Chỉ gửi cookie qua HTTPS
-  sameSite: 'strict' // Chống CSRF: Cookie không được gửi đi từ tên miền khác
+  secure: isProduction, // Chỉ gửi cookie qua HTTPS
+  // Cross-origin deployment (vercel.app → onrender.com) requires 'none' + secure
+  // 'strict' blocks all cross-site cookie delivery entirely
+  sameSite: isProduction ? 'none' : 'lax'
 }));
 
 // Mount API routes
