@@ -17,6 +17,13 @@ async function main() {
       email: 'buyer2@example.com',
       passwordHash: '$2b$10$mockpasswordhashplaceholder',
       balance: 20000000.00,
+    },
+    {
+      id: 'seller-id-placeholder',
+      email: 'seller@example.com',
+      passwordHash: '$2b$10$mockpasswordhashplaceholder',
+      balance: 10000000.00,
+      isVerifiedSeller: true,
     }
   ];
 
