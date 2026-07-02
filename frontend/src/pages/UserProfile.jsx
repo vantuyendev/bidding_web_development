@@ -64,6 +64,15 @@ export default function UserProfile() {
     fetchProducts();
   }, [user]);
 
+  useEffect(() => {
+    const handleProductCreated = () => {
+      fetchFullProfile();
+      fetchProducts();
+    };
+    window.addEventListener('product-created', handleProductCreated);
+    return () => window.removeEventListener('product-created', handleProductCreated);
+  }, []);
+
   if (loading || !profileData) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-pulse select-none">

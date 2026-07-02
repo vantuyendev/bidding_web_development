@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../api';
+import CreateAuctionModal from './CreateAuctionModal';
 
 export default function Navbar() {
   const { user, logout, refreshUser } = useAuth();
@@ -11,50 +12,10 @@ export default function Navbar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   
-  // Post Product Form State
-  const [categories, setCategories] = useState([]);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [startPrice, setStartPrice] = useState('');
-  const [buyNowPrice, setBuyNowPrice] = useState('');
-  const [stepPrice, setStepPrice] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [weight, setWeight] = useState('');
-  
-  const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
 
   const dropdownRef = useRef(null);
   const notifyRef = useRef(null);
-
-  // Fetch categories when opening modal
-  useEffect(() => {
-    if (isPostModalOpen) {
-      const fetchCats = async () => {
-        try {
-          const res = await fetch(getApiUrl('/api/categories'));
-          const data = await res.json();
-          if (data.success) {
-            setCategories(data.data);
-            if (data.data.length > 0) {
-              setCategoryId(data.data[0].id);
-            }
-          }
-        } catch (err) {
-          console.error('Lỗi khi lấy danh mục:', err);
-        }
-      };
-      fetchCats();
-      
-      // Default end time is 24h from now
-      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-      const tzoffset = tomorrow.getTimezoneOffset() * 60000; //offset in milliseconds
-      const localISOTime = (new Date(tomorrow.getTime() - tzoffset)).toISOString().slice(0, 16);
-      setEndTime(localISOTime);
-    }
-  }, [isPostModalOpen]);
 
   // Handle outside clicks to close dropdowns
   useEffect(() => {
@@ -76,53 +37,6 @@ export default function Navbar() {
     window.addEventListener('open-post-modal', handleOpenModal);
     return () => window.removeEventListener('open-post-modal', handleOpenModal);
   }, []);
-
-  const handlePostSubmit = async (e) => {
-    e.preventDefault();
-    setFormLoading(true);
-    setFormError(null);
-
-    const payload = {
-      title,
-      description,
-      startPrice: Number(startPrice),
-      buyNowPrice: buyNowPrice ? Number(buyNowPrice) : null,
-      stepPrice: stepPrice ? Number(stepPrice) : null,
-      categoryId,
-      endTime: new Date(endTime).toISOString(),
-      weight: weight ? Number(weight) : null,
-    };
-
-    try {
-      const res = await fetch(getApiUrl('/api/products'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success && data.data) {
-        setIsPostModalOpen(false);
-        // Reset form
-        setTitle('');
-        setDescription('');
-        setStartPrice('');
-        setBuyNowPrice('');
-        setStepPrice('');
-        setWeight('');
-        // Navigate to new product
-        navigate(`/products/${data.data.id}`);
-      } else {
-        setFormError(data.error || 'Có lỗi xảy ra khi đăng sản phẩm.');
-      }
-    } catch (err) {
-      setFormError('Lỗi kết nối máy chủ.');
-    } finally {
-      setFormLoading(false);
-    }
-  };
 
   const handleVerifySeller = async () => {
     setVerifyLoading(true);
@@ -326,188 +240,10 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ĐĂNG TIN MODAL */}
-      {isPostModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Overlay */}
-          <div
-            className="absolute inset-0 bg-neutral-950/40 dark:bg-neutral-950/70 backdrop-blur-sm"
-            onClick={() => setIsPostModalOpen(false)}
-          ></div>
-
-          {/* Dialog Container */}
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200/50 dark:border-neutral-800/50 shadow-2xl w-full max-w-xl relative z-10 max-h-[90vh] overflow-y-auto p-6 md:p-8 animate-fadeIn">
-            
-            {/* Close Button */}
-            <button
-              onClick={() => setIsPostModalOpen(false)}
-              className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-full transition-colors cursor-pointer"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            <h2 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight mb-6">
-              Đăng sản phẩm đấu giá mới
-            </h2>
-
-            {/* Check if user is seller */}
-            {!user.isVerifiedSeller ? (
-              <div className="text-center py-6">
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-amber-700 dark:text-amber-400 text-xs mb-6 text-left leading-relaxed">
-                  Bạn cần nâng cấp tài khoản của mình thành <strong>Người bán xác thực</strong> trước khi đăng tin bán hàng. Quá trình KYC tự động sẽ kích hoạt ngay lập tức.
-                </div>
-                <button
-                  onClick={handleVerifySeller}
-                  disabled={verifyLoading}
-                  className="bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 rounded-full text-xs font-bold px-6 py-3 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer disabled:opacity-50"
-                >
-                  {verifyLoading ? 'Đang thực hiện KYC...' : '⚡ Bắt đầu KYC và Kích hoạt Người bán'}
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handlePostSubmit} className="space-y-4">
-                {formError && (
-                  <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl text-xs font-semibold">
-                    {formError}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Category Selection */}
-                  <div className="flex flex-col gap-1.5 md:col-span-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Danh mục sản phẩm</label>
-                    <select
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                      required
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Title */}
-                  <div className="flex flex-col gap-1.5 md:col-span-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Tiêu đề sản phẩm</label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Ví dụ: iPhone 15 Pro Max 256GB Gold VN/A"
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                      required
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div className="flex flex-col gap-1.5 md:col-span-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Mô tả chi tiết</label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Mô tả cụ thể về tình trạng, xuất xứ và phụ kiện kèm theo..."
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs min-h-[80px] focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                      required
-                    />
-                  </div>
-
-                  {/* Start Price */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Giá khởi điểm (đ)</label>
-                    <input
-                      type="number"
-                      value={startPrice}
-                      onChange={(e) => setStartPrice(e.target.value)}
-                      placeholder="1,000,000"
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                      required
-                    />
-                  </div>
-
-                  {/* Step Price */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Bước giá tối thiểu (đ)</label>
-                    <input
-                      type="number"
-                      value={stepPrice}
-                      onChange={(e) => setStepPrice(e.target.value)}
-                      placeholder="50,000"
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                    />
-                  </div>
-
-                  {/* Buy Now Price */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Giá mua đứt (đ) (Tùy chọn)</label>
-                    <input
-                      type="number"
-                      value={buyNowPrice}
-                      onChange={(e) => setBuyNowPrice(e.target.value)}
-                      placeholder="Ví dụ: 15,000,000"
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                    />
-                  </div>
-
-                  {/* Weight */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Trọng lượng (gram)</label>
-                    <input
-                      type="number"
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                      placeholder="Ví dụ: 200"
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                    />
-                  </div>
-
-                  {/* End Time */}
-                  <div className="flex flex-col gap-1.5 md:col-span-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Thời gian kết thúc</label>
-                    <input
-                      type="datetime-local"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-800 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setIsPostModalOpen(false)}
-                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 rounded-full text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-all cursor-pointer"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="px-6 py-2 bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-950 rounded-full text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {formLoading ? 'Đang xử lý...' : 'Xác nhận Đăng tin'}
-                  </button>
-                </div>
-              </form>
-            )}
-
-          </div>
-        </div>
-      )}
+      <CreateAuctionModal
+        isOpen={isPostModalOpen}
+        onClose={() => setIsPostModalOpen(false)}
+      />
     </>
   );
 }
