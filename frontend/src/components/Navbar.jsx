@@ -11,11 +11,86 @@ export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  
   const [verifyLoading, setVerifyLoading] = useState(false);
+  
+  const [notifications, setNotifications] = useState([]);
 
   const dropdownRef = useRef(null);
   const notifyRef = useRef(null);
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(getApiUrl('/api/notifications'), {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(data.data);
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải thông báo:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 15000); // Poll every 15 seconds
+      return () => clearInterval(interval);
+    } else {
+      setNotifications([]);
+    }
+  }, [user]);
+
+  const handleToggleNotifications = () => {
+    const nextState = !isNotificationsOpen;
+    setIsNotificationsOpen(nextState);
+    if (nextState) {
+      fetchNotifications();
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const res = await fetch(getApiUrl('/api/notifications/read'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchNotifications();
+      }
+    } catch (err) {
+      console.error('Lỗi khi đánh dấu đã đọc tất cả:', err);
+    }
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      const res = await fetch(getApiUrl('/api/notifications/read'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchNotifications();
+      }
+    } catch (err) {
+      console.error('Lỗi khi đánh dấu đã đọc thông báo:', err);
+    }
+  };
+
+  const formatTime = (dateStr) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const hasUnread = notifications.some(n => !n.isRead);
 
   // Handle outside clicks to close dropdowns
   useEffect(() => {
@@ -56,11 +131,7 @@ export default function Navbar() {
     }
   };
 
-  const mockNotifications = [
-    { id: 1, text: 'Phiên đấu giá iPhone 15 Pro của bạn đã kết thúc.', time: '5 phút trước', unread: true },
-    { id: 2, text: 'Bạn đã bị vượt giá ở sản phẩm AirPods Pro.', time: '2 giờ trước', unread: false },
-    { id: 3, text: 'Ví của bạn đã được cộng 10,000,000đ khi đăng ký.', time: '1 ngày trước', unread: false },
-  ];
+
 
   return (
     <>
@@ -96,7 +167,7 @@ export default function Navbar() {
                 {/* Chuông Thông báo */}
                 <div className="relative" ref={notifyRef}>
                   <button
-                    onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                    onClick={handleToggleNotifications}
                     className="p-2 text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white rounded-full hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50 transition-all duration-300 relative cursor-pointer"
                   >
                     <svg
@@ -113,36 +184,62 @@ export default function Navbar() {
                         d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
                       />
                     </svg>
-                    {/* Chấm đỏ minimalistic */}
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-neutral-950 animate-pulse"></span>
+                    {/* Chấm đỏ khi có thông báo chưa đọc */}
+                    {hasUnread && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-neutral-950 animate-pulse"></span>
+                    )}
                   </button>
 
                   {/* Dropdown thông báo */}
                   <div
-                    className={`absolute right-0 mt-3 w-80 bg-white/95 dark:bg-neutral-900/95 border border-neutral-200/50 dark:border-neutral-800/50 backdrop-blur-xl rounded-2xl shadow-xl p-4 transition-all duration-300 origin-top-right ${
+                    className={`absolute right-0 mt-3 w-80 bg-white/70 dark:bg-neutral-950/70 border border-white/20 dark:border-neutral-800/30 backdrop-blur-xl rounded-2xl shadow-xl p-4 transition-all duration-300 origin-top-right z-50 ${
                       isNotificationsOpen
                         ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
                         : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
                     }`}
                   >
-                    <div className="flex justify-between items-center pb-2 border-b border-neutral-100 dark:border-neutral-800 mb-2">
-                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Thông báo</span>
-                      <span className="text-[10px] text-neutral-400">Đánh dấu đã đọc</span>
+                    <div className="flex justify-between items-center pb-2 border-b border-neutral-200/40 dark:border-neutral-800/50 mb-2 select-none">
+                      <span className="text-xs font-bold text-neutral-900 dark:text-white">Thông báo ({notifications.filter(n => !n.isRead).length})</span>
+                      <button
+                        onClick={handleMarkAllAsRead}
+                        className="text-[10px] text-amber-600 dark:text-amber-400 hover:underline font-semibold cursor-pointer bg-transparent border-0"
+                      >
+                        Đánh dấu đã đọc tất cả
+                      </button>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      {mockNotifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className={`p-2 rounded-xl text-xs flex flex-col gap-1 transition-all ${
-                            n.unread
-                              ? 'bg-neutral-50 dark:bg-neutral-800/40 border-l-2 border-neutral-900 dark:border-white font-medium'
-                              : 'text-neutral-600 dark:text-neutral-400'
-                          }`}
-                        >
-                          <p>{n.text}</p>
-                          <span className="text-[9px] text-neutral-400">{n.time}</span>
+                    <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+                      {notifications.length === 0 ? (
+                        <div className="text-center py-6 text-xs text-neutral-400 select-none">
+                          Không có thông báo nào.
                         </div>
-                      ))}
+                      ) : (
+                        notifications.map((n) => (
+                          <div
+                            key={n.id}
+                            onClick={() => handleMarkAsRead(n.id)}
+                            className={`p-3 rounded-xl text-xs flex flex-col gap-1 transition-all cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30 ${
+                              !n.isRead
+                                ? 'bg-amber-500/10 dark:bg-amber-500/5 border-l-2 border-amber-500 font-bold'
+                                : 'text-neutral-600 dark:text-neutral-400'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start gap-1">
+                              <span className={`font-bold text-neutral-900 dark:text-neutral-100 ${!n.isRead ? 'font-black' : 'font-semibold'}`}>
+                                {n.title}
+                              </span>
+                              {!n.isRead && (
+                                <span className="w-1.5 h-1.5 bg-rose-500 rounded-full flex-shrink-0 mt-1"></span>
+                              )}
+                            </div>
+                            <p className="text-neutral-600 dark:text-neutral-400 text-[11px] leading-relaxed font-normal">
+                              {n.message}
+                            </p>
+                            <span className="text-[9px] text-neutral-400/80 font-normal">
+                              {formatTime(n.createdAt)}
+                            </span>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>

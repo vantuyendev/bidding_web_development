@@ -13,6 +13,9 @@ import shippingRoutes from './routes/shippingRoutes.js';
 import disputeRoutes from './routes/disputeRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import { requireAuth } from './middlewares/authMiddleware.js';
 import './workers/auctionWorker.js';
 
 // Load environment variables
@@ -109,6 +112,8 @@ app.use('/api/shipping', shippingRoutes);
 app.use('/api/disputes', disputeRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', requireAuth, notificationRoutes);
+app.use('/api/reviews', requireAuth, reviewRoutes);
 
 // Basic route to check if server is healthy
 app.get('/', (req, res) => {

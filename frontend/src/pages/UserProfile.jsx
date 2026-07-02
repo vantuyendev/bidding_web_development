@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../api';
+import ReviewModal from '../components/ReviewModal';
 
 export default function UserProfile() {
   const { user, refreshUser } = useAuth();
@@ -13,6 +14,16 @@ export default function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewProductId, setReviewProductId] = useState('');
+  const [reviewProductName, setReviewProductName] = useState('');
+
+  const handleOpenReviewModal = (productId, productName) => {
+    setReviewProductId(productId);
+    setReviewProductName(productName);
+    setReviewModalOpen(true);
+  };
 
   // Fetch full profile info (with transactions & bids)
   const fetchFullProfile = async () => {
@@ -402,13 +413,29 @@ export default function UserProfile() {
                             </span>
                           </div>
 
-                          <div className="w-24 text-right">
+                          <div className="flex flex-col items-end gap-1.5 min-w-[100px]">
                             {isEnded ? (
-                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                Đã kết thúc
-                              </span>
+                              <>
+                                <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 select-none">
+                                  Đã kết thúc
+                                </span>
+                                {prod && Number(bid.bidAmount) === Number(prod.currentPrice) && (
+                                  prod.review ? (
+                                    <span className="inline-flex items-center justify-center gap-0.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
+                                      ★ Đã đánh giá
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleOpenReviewModal(prod.id, prod.title)}
+                                      className="inline-block px-2.5 py-1 rounded-full text-[9px] font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer text-center select-none shadow-sm"
+                                    >
+                                      Đánh giá đối tác
+                                    </button>
+                                  )
+                                )}
+                              </>
                             ) : (
-                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 select-none">
                                 Đang đấu giá
                               </span>
                             )}
@@ -528,6 +555,13 @@ export default function UserProfile() {
 
       </div>
 
+      <ReviewModal
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        productId={reviewProductId}
+        productName={reviewProductName}
+        onSuccess={fetchFullProfile}
+      />
     </div>
   );
 }

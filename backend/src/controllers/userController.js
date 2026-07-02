@@ -19,7 +19,11 @@ export const getUserProfile = async (req, res) => {
         },
         bids: {
           include: {
-            product: true
+            product: {
+              include: {
+                review: true
+              }
+            }
           },
           orderBy: { bidTime: 'desc' },
           take: 20
@@ -55,7 +59,8 @@ export const getUserProfile = async (req, res) => {
           ...b.product,
           startPrice: Number(b.product.startPrice),
           currentPrice: Number(b.product.currentPrice),
-          buyNowPrice: b.product.buyNowPrice ? Number(b.product.buyNowPrice) : null
+          buyNowPrice: b.product.buyNowPrice ? Number(b.product.buyNowPrice) : null,
+          review: b.product.review || null
         } : null
       })) : []
     };
