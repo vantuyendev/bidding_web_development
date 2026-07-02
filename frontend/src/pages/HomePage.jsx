@@ -171,55 +171,59 @@ export default function HomePage() {
     });
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 transition-colors duration-300">
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-neutral-950 text-white py-16 border-b border-neutral-800">
-        <div className="max-w-7xl mx-auto px-4 xl:px-8 text-center relative z-10">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-neutral-900 text-neutral-300 text-xs font-bold uppercase tracking-wider mb-6 border border-neutral-800">
-            ⚡ SÀN ĐẤU GIÁ REALTIME
+      <section className="relative overflow-hidden bg-zinc-950 text-zinc-100 py-16 md:py-20 border-b border-zinc-900">
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-rose-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold uppercase tracking-wider mb-6 border border-amber-500/20">
+            ⚡ SÀN ĐẤU GIÁ CAO CẤP REALTIME
           </span>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight max-w-4xl mx-auto mb-6 text-white">
-            Đấu Giá Tự Động & Sở Hữu <span className="text-neutral-300">Vật Phẩm Độc Bản</span>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight max-w-4xl mx-auto mb-6 bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+            Đấu Giá Tự Động & Sở Hữu <span className="text-amber-400">Vật Phẩm Độc Bản</span>
           </h1>
-          <p className="text-neutral-400 text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-zinc-400 text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
             Hỗ trợ cơ chế cọc bảo vệ Escrow, tự động đè giá thông minh (Auto Proxy-Bid), chống bắn tỉa bắn thầu (Sniping Protection) cùng phán quyết khiếu nại minh bạch bởi Admin.
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto border-t border-neutral-900 pt-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto border-t border-zinc-900 pt-8 text-center">
             <div>
               <p className="text-xl md:text-2xl font-black text-white">Escrow</p>
-              <p className="text-[10px] text-neutral-500 font-bold mt-1">Đóng băng cọc 10%</p>
+              <p className="text-[10px] text-zinc-500 font-medium mt-1">Đóng băng cọc 10%</p>
             </div>
             <div>
               <p className="text-xl md:text-2xl font-black text-white">Proxy Bid</p>
-              <p className="text-[10px] text-neutral-500 font-bold mt-1">Đặt giá tự động</p>
+              <p className="text-[10px] text-zinc-500 font-medium mt-1">Đặt giá tự động</p>
             </div>
             <div>
               <p className="text-xl md:text-2xl font-black text-white">Live SSE</p>
-              <p className="text-[10px] text-neutral-500 font-bold mt-1">Cập nhật giá realtime</p>
+              <p className="text-[10px] text-zinc-500 font-medium mt-1">Cập nhật giá realtime</p>
             </div>
             <div>
               <p className="text-xl md:text-2xl font-black text-white">Dispute</p>
-              <p className="text-[10px] text-neutral-500 font-bold mt-1">Kháng nghị hoàn tiền</p>
+              <p className="text-[10px] text-zinc-500 font-medium mt-1">Kháng nghị hoàn tiền</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Main Catalog Area */}
-      <main className="max-w-7xl mx-auto px-4 xl:px-8 py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         
         {/* Category Horizontal Topbar */}
         <div className="mb-8">
-          <h2 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-3">Danh mục sản phẩm</h2>
+          <h2 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3">Danh mục sản phẩm</h2>
           <div className="flex flex-wrap gap-2.5 pb-2">
             <button
               onClick={() => handleCategorySelect(null)}
-              className={`px-4 py-2 rounded-md text-xs font-bold transition-colors cursor-pointer border ${
+              className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border cursor-pointer ${
                 !selectedCategory
-                  ? 'bg-neutral-900 border-neutral-900 text-white dark:bg-white dark:border-white dark:text-neutral-950'
-                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                  ? 'bg-amber-400 border-amber-400 text-zinc-950 shadow-md scale-102'
+                  : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
               🌐 Tất cả sản phẩm
@@ -228,10 +232,10 @@ export default function HomePage() {
               <button
                 key={cat.id}
                 onClick={() => handleCategorySelect(cat)}
-                className={`px-4 py-2 rounded-md text-xs font-bold transition-colors cursor-pointer border ${
+                className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border cursor-pointer ${
                   selectedCategory?.id === cat.id
-                    ? 'bg-neutral-900 border-neutral-900 text-white dark:bg-white dark:border-white dark:text-neutral-950'
-                    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                    ? 'bg-amber-400 border-amber-400 text-zinc-950 shadow-md scale-102'
+                    : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'
                 }`}
               >
                 🏷️ {cat.name}
@@ -241,36 +245,36 @@ export default function HomePage() {
         </div>
 
         {/* Tab Selection, Search and Sort Panel */}
-        <div className="flex flex-col lg:flex-row gap-4 justify-between items-center mb-8 bg-white dark:bg-neutral-900 p-4 rounded-md border border-neutral-200 dark:border-neutral-800">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-center mb-8 bg-zinc-100/50 dark:bg-zinc-900/50 p-4 rounded-3xl border border-zinc-200/40 dark:border-zinc-800/40">
           
           {/* Tabs */}
-          <div className="flex bg-neutral-100 dark:bg-neutral-950 p-1 rounded-md w-full lg:w-auto border border-neutral-200 dark:border-neutral-800">
+          <div className="flex bg-zinc-200/50 dark:bg-zinc-800/50 p-1 rounded-2xl w-full lg:w-auto">
             <button
               onClick={() => setActiveTab('all')}
-              className={`flex-1 lg:flex-initial px-5 py-2 rounded-sm text-xs font-bold transition-colors cursor-pointer ${
+              className={`flex-1 lg:flex-initial px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'all'
-                  ? 'bg-white text-neutral-950 dark:bg-neutral-800 dark:text-white'
-                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300'
+                  ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-700 dark:text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
               }`}
             >
               Tất cả
             </button>
             <button
               onClick={() => setActiveTab('active')}
-              className={`flex-1 lg:flex-initial px-5 py-2 rounded-sm text-xs font-bold transition-colors cursor-pointer ${
+              className={`flex-1 lg:flex-initial px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'active'
-                  ? 'bg-white text-neutral-950 dark:bg-neutral-800 dark:text-white'
-                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300'
+                  ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-700 dark:text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
               }`}
             >
               🔥 Đang diễn ra
             </button>
             <button
               onClick={() => setActiveTab('ended')}
-              className={`flex-1 lg:flex-initial px-5 py-2 rounded-sm text-xs font-bold transition-colors cursor-pointer ${
+              className={`flex-1 lg:flex-initial px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'ended'
-                  ? 'bg-white text-neutral-950 dark:bg-neutral-800 dark:text-white'
-                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300'
+                  ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-700 dark:text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
               }`}
             >
               🏁 Đã kết thúc
@@ -285,15 +289,15 @@ export default function HomePage() {
                 placeholder="Tìm tên hoặc mô tả..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-64 pl-10 pr-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-md text-xs font-semibold outline-none focus:border-neutral-900 dark:focus:border-white transition-colors"
+                className="w-full sm:w-64 pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-xs font-semibold outline-none focus:border-amber-500 transition-colors"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-455">🔍</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400">🔍</span>
             </div>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-md text-xs font-semibold outline-none focus:border-neutral-900 dark:focus:border-white transition-colors cursor-pointer"
+              className="px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-xs font-semibold outline-none focus:border-amber-500 transition-colors cursor-pointer"
             >
               <option value="newest">Mới nhất</option>
               <option value="price-asc">Giá: Thấp đến Cao</option>
@@ -307,15 +311,15 @@ export default function HomePage() {
           
           {/* Dynamic Filters Sidebar */}
           {selectedCategory && availableFilters.length > 0 && (
-            <aside className="w-full md:w-64 flex-shrink-0 bg-white dark:bg-neutral-900 p-6 rounded-md border border-neutral-200 dark:border-neutral-800 self-start">
-              <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3 mb-4">
-                <h3 className="font-extrabold text-sm text-neutral-950 dark:text-white flex items-center gap-1.5">
+            <aside className="w-full md:w-64 flex-shrink-0 bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200/50 dark:border-zinc-800/80 shadow-sm self-start">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-4">
+                <h3 className="font-extrabold text-sm text-zinc-950 dark:text-white flex items-center gap-1.5">
                   <span>⚙️</span> Bộ lọc thuộc tính
                 </h3>
                 {Object.keys(activeFilters).length > 0 && (
                   <button
                     onClick={() => setActiveFilters({})}
-                    className="text-[10px] font-bold text-neutral-900 hover:underline dark:text-neutral-100"
+                    className="text-[10px] font-bold text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300"
                   >
                     Xóa lọc
                   </button>
@@ -325,7 +329,7 @@ export default function HomePage() {
               <div className="space-y-6">
                 {availableFilters.map((filter) => (
                   <div key={filter.id} className="space-y-2.5">
-                    <h4 className="text-xs font-extrabold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
+                    <h4 className="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                       {filter.name}
                     </h4>
                     
@@ -336,13 +340,13 @@ export default function HomePage() {
                           return (
                             <label
                               key={option}
-                              className="flex items-center gap-2.5 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white cursor-pointer select-none font-medium"
+                              className="flex items-center gap-2.5 text-xs text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer select-none font-medium"
                             >
                               <input
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={(e) => handleFilterChange(filter.id, option, e.target.checked)}
-                                className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900 cursor-pointer accent-neutral-900"
+                                className="h-4 w-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-400"
                               />
                               <span>{option}</span>
                             </label>
@@ -350,7 +354,7 @@ export default function HomePage() {
                         })}
                       </div>
                     ) : (
-                      <p className="text-[10px] text-neutral-500 italic">Không có tùy chọn</p>
+                      <p className="text-[10px] text-zinc-500 italic">Không có tùy chọn</p>
                     )}
                   </div>
                 ))}
@@ -362,13 +366,13 @@ export default function HomePage() {
           <section className="flex-grow">
             {loading && (
               <div className="py-24 text-center">
-                <div className="w-12 h-12 border-4 border-neutral-900 border-t-transparent dark:border-white rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-neutral-500 font-medium">Đang tìm kiếm đấu giá phù hợp...</p>
+                <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-zinc-500 font-medium">Đang tìm kiếm đấu giá phù hợp...</p>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900/30 text-red-600 dark:text-red-400 p-6 rounded-md text-center max-w-md mx-auto my-12">
+              <div className="bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900/30 text-red-600 dark:text-red-400 p-6 rounded-3xl text-center max-w-md mx-auto my-12">
                 <p className="font-bold mb-2">Đã xảy ra lỗi</p>
                 <p className="text-sm">{error}</p>
               </div>
@@ -377,10 +381,10 @@ export default function HomePage() {
             {!loading && !error && (
               <>
                 {processedProducts.length === 0 ? (
-                  <div className="py-24 bg-white dark:bg-neutral-900/40 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-md text-center max-w-lg mx-auto">
+                  <div className="py-24 bg-white dark:bg-zinc-900/40 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl text-center max-w-lg mx-auto">
                     <span className="text-4xl mb-4 block">📦</span>
-                    <h3 className="text-base font-bold text-neutral-800 dark:text-neutral-200 mb-1">Không tìm thấy sản phẩm phù hợp</h3>
-                    <p className="text-neutral-500 text-xs">Vui lòng thay đổi từ khóa tìm kiếm hoặc bỏ bớt các bộ lọc thuộc tính.</p>
+                    <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200 mb-1">Không tìm thấy sản phẩm phù hợp</h3>
+                    <p className="text-zinc-500 text-xs">Vui lòng thay đổi từ khóa tìm kiếm hoặc bỏ bớt các bộ lọc thuộc tính.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -388,119 +392,128 @@ export default function HomePage() {
                       const isEnded = product.status === 'ENDED' || product.status === 'ended' || product.status === 'RESOLVED' || new Date(product.endTime).getTime() <= currentTime;
                       const hasBuyNow = product.buyNowPrice !== null && product.buyNowPrice !== undefined;
                       
-                      // Highlight countdown in red if remaining time is under 24 hours
-                      const diffTime = new Date(product.endTime).getTime() - currentTime;
-                      const under24h = !isEnded && diffTime > 0 && diffTime < 24 * 60 * 60 * 1000;
+                      // Highlight countdown in red if remaining time is under 5 minutes
+                      const isUrgent = !isEnded && (new Date(product.endTime).getTime() - currentTime < 5 * 60 * 1000);
 
                       return (
                         <div
                           key={product.id}
-                          className="bg-white dark:bg-neutral-900 rounded-md border border-neutral-200 dark:border-neutral-800 flex flex-col h-full relative"
+                          className="group bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg border border-zinc-200/50 dark:border-zinc-800/80 hover:border-amber-400/40 transition-all duration-300 flex flex-col h-full relative"
                         >
-                          {/* Image Container: Aspect 16:9, rounded-t-md */}
-                          <div className="relative aspect-video bg-neutral-100 dark:bg-neutral-950 flex items-center justify-center border-b border-neutral-200 dark:border-neutral-800 overflow-hidden rounded-t-md">
+                          {/* Image Container */}
+                          <div className="relative aspect-[4/3] bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-5 border-b border-zinc-100 dark:border-zinc-800/50 overflow-hidden">
                             {product.imageUrl ? (
                               <img
                                 src={product.imageUrl}
                                 alt={product.title}
-                                className="w-full h-full object-cover"
+                                className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-500 group-hover:scale-105"
                               />
                             ) : (
-                              <div className="text-neutral-400 flex flex-col items-center gap-1.5">
+                              <div className="text-zinc-400 flex flex-col items-center gap-1.5">
                                 <span className="text-3xl">🖼️</span>
                                 <span className="text-[10px] font-medium">Chưa có ảnh</span>
                               </div>
                             )}
 
                             {/* Status Badge */}
-                            <div className="absolute top-2 left-2 flex flex-wrap gap-1 max-w-[80%]">
+                            <div className="absolute top-3 left-3 flex flex-wrap gap-1 max-w-[80%]">
                               {isEnded ? (
-                                <span className="px-2 py-0.5 rounded-sm bg-neutral-500/90 text-white text-[9px] font-bold uppercase tracking-wider">
+                                <span className="px-2.5 py-1 rounded-xl bg-zinc-500/15 text-zinc-500 dark:text-zinc-400 text-[10px] font-extrabold uppercase tracking-wider">
                                   Đã kết thúc
                                 </span>
                               ) : product.status === 'DISPUTED' ? (
-                                <span className="px-2 py-0.5 rounded-sm bg-rose-600 text-white text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                <span className="px-2.5 py-1 rounded-xl bg-red-500/15 text-red-500 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
                                   ⚖️ Tranh chấp
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-sm bg-emerald-600 text-white text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                <span className="px-2.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                   Đang diễn ra
                                 </span>
                               )}
                             </div>
 
-                            {/* Buy Now Badge */}
-                            <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                            {/* Buy Now & Auto Bid Badges */}
+                            <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
                               {hasBuyNow && (
-                                <span className="px-1.5 py-0.5 rounded-sm bg-neutral-900 text-white text-[9px] font-bold uppercase tracking-wider">
+                                <span className="px-2 py-0.5 rounded-lg bg-amber-500 text-zinc-950 text-[9px] font-black uppercase tracking-wider shadow-sm">
                                   ⚡ Mua đứt
                                 </span>
                               )}
+                              <span className="px-2 py-0.5 rounded-lg bg-zinc-950/80 dark:bg-zinc-800/90 text-zinc-100 text-[9px] font-extrabold uppercase tracking-wider shadow-sm">
+                                🤖 Auto-Bid
+                              </span>
                             </div>
+
+                            {/* Countdown Badge */}
+                            {!isEnded && (
+                              <div className={`absolute bottom-3 right-3 px-2.5 py-1 rounded-xl text-[10px] font-bold font-mono shadow-sm transition-colors ${
+                                isUrgent 
+                                  ? 'bg-rose-500 text-white animate-pulse' 
+                                  : 'bg-zinc-950/80 dark:bg-zinc-900/95 text-white'
+                              }`}>
+                                ⏰ {getRemainingTimeText(product.endTime, product.status)}
+                              </div>
+                            )}
                           </div>
 
                           {/* Info Body */}
-                          <div className="p-4 flex flex-col flex-grow">
+                          <div className="p-5 flex flex-col flex-grow">
                             
                             {/* Product Attribute Tags */}
-                            <div className="flex flex-wrap gap-1.5 mb-2">
-                              {product.attributes && product.attributes.slice(0, 2).map((attr) => (
+                            <div className="flex flex-wrap gap-1.5 mb-2.5">
+                              {product.attributes && product.attributes.slice(0, 3).map((attr) => (
                                 <span
                                   key={attr.keyId}
-                                  className="px-1.5 py-0.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 text-[9px] font-bold text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-750"
+                                  className="px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 border border-zinc-200/30 dark:border-zinc-700/30"
                                 >
                                   {attr.value}
                                 </span>
                               ))}
+                              {(!product.attributes || product.attributes.length === 0) && (
+                                <span className="px-2 py-0.5 rounded-lg bg-zinc-100/50 dark:bg-zinc-800/50 text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+                                  Đặc tính thường
+                                </span>
+                              )}
                             </div>
 
                             {/* Title */}
-                            <h3 className="text-lg font-bold text-neutral-900 dark:text-white leading-tight line-clamp-1 mb-1.5">
+                            <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors line-clamp-1 mb-1">
                               {product.title}
                             </h3>
                             
                             {/* Description */}
-                            <p className="text-neutral-500 dark:text-neutral-400 text-xs line-clamp-2 leading-normal mb-4 flex-grow">
+                            <p className="text-zinc-400 dark:text-zinc-500 text-xs line-clamp-2 leading-normal mb-4 flex-grow">
                               {product.description || 'Không có mô tả chi tiết cho sản phẩm.'}
                             </p>
 
-                            {/* Price & Countdown Container: side by side horizontally */}
-                            <div className="flex items-center justify-between gap-2 border-t border-neutral-200 dark:border-neutral-800 pt-3 mb-4">
+                            {/* Price Grid */}
+                            <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 dark:border-zinc-800/80 pt-3.5 mb-4">
                               <div className="flex flex-col">
-                                <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
-                                  Giá hiện tại
+                                <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                                  Giá khởi điểm
                                 </span>
-                                <span className="text-xl font-black text-neutral-900 dark:text-white mt-0.5">
-                                  {product.currentPrice.toLocaleString('vi-VN')} đ
+                                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                  {product.startPrice.toLocaleString('vi-VN')} đ
                                 </span>
                               </div>
                               <div className="flex flex-col items-end">
-                                <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
-                                  Thời gian
+                                <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">
+                                  Giá hiện tại
                                 </span>
-                                {!isEnded ? (
-                                  <div className={`mt-0.5 px-2 py-0.5 rounded-sm text-xs font-bold font-mono ${
-                                    under24h 
-                                      ? 'bg-red-50 text-red-650 dark:bg-red-950/20 dark:text-red-400 border border-red-100' 
-                                      : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
-                                  }`}>
-                                    {getRemainingTimeText(product.endTime, product.status)}
-                                  </div>
-                                ) : (
-                                  <div className="mt-0.5 px-2 py-0.5 rounded-sm text-xs font-bold bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500">
-                                    Đã kết thúc
-                                  </div>
-                                )}
+                                <span className="text-xs font-black text-amber-500 mt-0.5">
+                                  {product.currentPrice.toLocaleString('vi-VN')} đ
+                                </span>
                               </div>
                             </div>
 
-                            {/* Action CTA Button */}
+                            {/* Action CTA */}
                             <Link
                               to={`/products/${product.id}`}
-                              className={`w-full py-2 px-4 rounded-md font-bold text-xs text-center transition-colors duration-200 cursor-pointer ${
+                              className={`w-full py-3 px-4 rounded-2xl font-black text-xs text-center transition-all cursor-pointer ${
                                 isEnded
-                                  ? 'bg-neutral-100 hover:bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-300'
-                                  : 'bg-neutral-900 hover:bg-neutral-850 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-white'
+                                  ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300'
+                                  : 'bg-zinc-950 hover:bg-amber-400 dark:bg-zinc-800 dark:hover:bg-amber-400 text-white hover:text-zinc-950 shadow-sm'
                               }`}
                             >
                               {isEnded ? 'Xem Kết Quả' : 'Đấu Giá Ngay'}

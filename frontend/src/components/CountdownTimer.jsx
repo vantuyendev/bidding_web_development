@@ -44,8 +44,8 @@ export default function CountdownTimer({ endTime }) {
 
   if (timeLeft.isExpired) {
     return (
-      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-neutral-100 border border-neutral-200 text-neutral-600 text-xs font-bold dark:bg-neutral-900 dark:border-neutral-800 dark:text-neutral-400">
-        <span className="h-2 w-2 rounded-full bg-neutral-400"></span>
+      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400">
+        <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse"></span>
         Đấu giá đã kết thúc
       </div>
     );
@@ -62,10 +62,10 @@ export default function CountdownTimer({ endTime }) {
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-1.5">
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-neutral-500"></span>
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
         </span>
-        <span className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Thời gian còn lại
         </span>
       </div>
@@ -73,12 +73,12 @@ export default function CountdownTimer({ endTime }) {
         {timeBlocks.map((block, index) => (
           <div
             key={index}
-            className="flex flex-col items-center justify-center min-w-[60px] h-[60px] bg-neutral-100 text-neutral-900 rounded-md border border-neutral-200 dark:bg-neutral-900 dark:text-neutral-100 dark:border-neutral-800"
+            className="flex flex-col items-center justify-center min-w-[64px] h-[68px] bg-zinc-900 text-white rounded-xl shadow-md border border-zinc-800 dark:bg-zinc-800 dark:border-zinc-700"
           >
-            <span className="text-lg font-black tracking-tight text-neutral-900 dark:text-white">
+            <span className="text-xl font-extrabold tracking-tight text-white">
               {String(block.value).padStart(2, '0')}
             </span>
-            <span className="text-[9px] text-neutral-500 font-bold uppercase mt-0.5 tracking-wider">
+            <span className="text-[10px] text-zinc-400 font-semibold uppercase mt-0.5 tracking-wider">
               {block.label}
             </span>
           </div>
