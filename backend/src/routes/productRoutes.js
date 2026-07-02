@@ -1,11 +1,15 @@
 import express from 'express';
-import { getProductDetail, getProducts, getCategoryFilters, searchProducts } from '../controllers/productController.js';
+import { getProductDetail, getProducts, getCategoryFilters, searchProducts, createProduct } from '../controllers/productController.js';
+import { requireAuth } from '../middlewares/authMiddleware.js';
 import { streamProductEvents } from '../controllers/streamController.js';
 
 const router = express.Router();
 
 // GET /api/products - Fetch all products
 router.get('/', getProducts);
+
+// POST /api/products - Create a new product (Seller only)
+router.post('/', requireAuth, createProduct);
 
 // GET /api/products/categories/:categorySlug/filters - Get dynamic filters for a category
 router.get('/categories/:categorySlug/filters', getCategoryFilters);

@@ -262,3 +262,73 @@ export const searchProducts = async (req, res) => {
   }
 };
 
+// POST /api/products - Create a new product for bidding (Seller only)
+export const createProduct = async (req, res) => {
+  try {
+    const userId = req.session.userId;
+
+    // 1. Kiểm duyệt quyền Người bán
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || user.isVerifiedSeller === false) {
+      return res.status(403).json({
+        success: false,
+        error: 'Bạn cần xác minh tài khoản để trở thành Người bán hợp lệ trước khi đăng bài.',
+      });
+    }
+
+    // 2. Xử lý dữ liệu đầu vào
+    const {
+      title,
+      description,
+      startPrice,
+      buyNowPrice,
+      stepPrice,
+      categoryId,
+      endTime,
+      weight,
+      provinceId,
+      districtId,
+    } = req.body;
+
+    // Gán currentPrice bằng đúng với startPrice, sellerId ép cứng từ session
+    const product = await prisma.product.create({
+      data: {
+        title,
+        description,
+        startPrice: Number(startPrice),
+        currentPrice: Number(startPrice),
+        buyNowPrice: buyNowPrice ? Number(buyNowPrice) : null,
+        stepPrice: stepPrice ? Number(stepPrice) : undefined,
+        categoryId,
+        endTime: new Date(endTime),
+        weight: weight ? Number(weight) : undefined,
+        provinceId: provinceId || undefined,
+        districtId: districtId || undefined,
+        sellerId: userId,
+      },
+    });
+
+    // Format response (convert Decimals to numbers for frontend consumption)
+    const formattedProduct = {
+      ...product,
+      startPrice: Number(product.startPrice),
+      currentPrice: Number(product.currentPrice),
+      buyNowPrice: product.buyNowPrice ? Number(product.buyNowPrice) : null,
+      stepPrice: Number(product.stepPrice),
+    };
+
+    return res.status(201).json({
+      success: true,
+      data: formattedProduct,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi tạo sản phẩm.',
+    });
+  }
+};
+
