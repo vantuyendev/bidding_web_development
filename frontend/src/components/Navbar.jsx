@@ -70,6 +70,13 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Listen to custom open-post-modal event
+  useEffect(() => {
+    const handleOpenModal = () => setIsPostModalOpen(true);
+    window.addEventListener('open-post-modal', handleOpenModal);
+    return () => window.removeEventListener('open-post-modal', handleOpenModal);
+  }, []);
+
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true);
@@ -272,6 +279,14 @@ export default function Navbar() {
                     </div>
 
                     <div className="py-1">
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block w-full text-left px-4 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 font-bold transition-all cursor-pointer"
+                      >
+                        Trang cá nhân
+                      </Link>
+
                       {!user.isVerifiedSeller && (
                         <button
                           onClick={handleVerifySeller}

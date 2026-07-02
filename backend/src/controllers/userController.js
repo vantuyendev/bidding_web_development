@@ -12,6 +12,17 @@ export const getUserProfile = async (req, res) => {
             soldProducts: true,
             reviewsReceived: true
           }
+        },
+        transactions: {
+          orderBy: { createdAt: 'desc' },
+          take: 20
+        },
+        bids: {
+          include: {
+            product: true
+          },
+          orderBy: { bidTime: 'desc' },
+          take: 20
         }
       }
     });
@@ -31,7 +42,22 @@ export const getUserProfile = async (req, res) => {
       ...userProfile,
       balance: Number(userProfile.balance),
       walletBalance: Number(userProfile.walletBalance),
-      frozenBalance: Number(userProfile.frozenBalance)
+      frozenBalance: Number(userProfile.frozenBalance),
+      transactions: userProfile.transactions ? userProfile.transactions.map(t => ({
+        ...t,
+        amount: Number(t.amount)
+      })) : [],
+      bids: userProfile.bids ? userProfile.bids.map(b => ({
+        ...b,
+        bidAmount: Number(b.bidAmount),
+        maxAutoBidAmount: b.maxAutoBidAmount ? Number(b.maxAutoBidAmount) : null,
+        product: b.product ? {
+          ...b.product,
+          startPrice: Number(b.product.startPrice),
+          currentPrice: Number(b.product.currentPrice),
+          buyNowPrice: b.product.buyNowPrice ? Number(b.product.buyNowPrice) : null
+        } : null
+      })) : []
     };
 
     return res.status(200).json({

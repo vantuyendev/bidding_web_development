@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import ProductDetail from './pages/ProductDetail';
 import AuthPage from './pages/AuthPage';
 import DisputeDetail from './pages/DisputeDetail';
+import UserProfile from './pages/UserProfile';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
             {/* Protected Routes */}
             <Route element={<PrivateRoute />}>
               <Route path="/disputes/:ticketId" element={<DisputeDetail />} />
+              <Route path="/profile" element={<UserProfile />} />
             </Route>
           </Routes>
         </main>
