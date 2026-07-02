@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CountdownTimer from '../components/CountdownTimer';
-import Header from '../components/Header';
+import { useAuth } from '../context/AuthContext';
 import { getApiUrl, getSseUrl } from '../api';
 
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const { user, refreshUser } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [bidAmount, setBidAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
-  const [user, setUser] = useState(null);
   const [isProxyBid, setIsProxyBid] = useState(false);
 
   const getStepPrice = (currentPrice) => {
@@ -27,30 +27,9 @@ export default function ProductDetail() {
     ? (product.status === 'ENDED' || product.status === 'ended' || product.status === 'RESOLVED' || new Date(product.endTime).getTime() <= Date.now())
     : false;
 
-  const fetchUser = async () => {
-    try {
-      const res = await fetch(getApiUrl('/api/auth/me'), {
-        credentials: 'include'
-      });
-      const data = await res.json();
-      if (data.success) {
-        setUser(data.data);
-      }
-    } catch (err) {
-      console.error('Lỗi lấy thông tin ví:', err);
-    }
-  };
-
   useEffect(() => {
-    fetchUser();
-    const handleAuthChange = () => {
-      fetchUser();
-    };
-    window.addEventListener('auth-change', handleAuthChange);
-    return () => {
-      window.removeEventListener('auth-change', handleAuthChange);
-    };
-  }, []);
+    refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -109,7 +88,7 @@ export default function ProductDetail() {
           };
         });
         // Trigger balance and profile updates when bid events occur
-        window.dispatchEvent(new Event('auth-change'));
+        refreshUser();
       } catch (err) {
         console.error('Lỗi phân tích dữ liệu SSE:', err);
       }
@@ -169,7 +148,7 @@ export default function ProductDetail() {
             : `Đặt giá thành công! Bạn đã đặt giá ${amount.toLocaleString('vi-VN')} đ.`,
         });
 
-        window.dispatchEvent(new Event('auth-change'));
+        refreshUser();
 
         setProduct((prev) => {
           if (!prev) return null;
@@ -225,7 +204,7 @@ export default function ProductDetail() {
           text: `Chúc mừng bạn! Đã mua đứt thành công sản phẩm với giá ${Number(data.data.currentPrice).toLocaleString('vi-VN')} đ.`,
         });
 
-        window.dispatchEvent(new Event('auth-change'));
+        refreshUser();
 
         setProduct((prev) => {
           if (!prev) return null;
@@ -289,7 +268,6 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 transition-colors duration-300">
-      <Header />
       {/* Header / Navigation Breadcrumbs */}
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Header from '../components/Header';
+import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../api';
 
 export default function DisputeDetail() {
   const { ticketId } = useParams();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useAuth();
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -17,20 +17,7 @@ export default function DisputeDetail() {
 
   const messagesEndRef = useRef(null);
 
-  // 1. Fetch current logged-in user
-  const fetchCurrentUser = async () => {
-    try {
-      const res = await fetch(getApiUrl('/api/auth/me'), {
-        credentials: 'include',
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCurrentUser(data.data);
-      }
-    } catch (err) {
-      console.error('Lỗi khi lấy thông tin người dùng hiện tại:', err);
-    }
-  };
+
 
   // 2. Fetch dispute ticket details
   const fetchTicketDetails = async () => {
@@ -68,7 +55,6 @@ export default function DisputeDetail() {
   useEffect(() => {
     const initFetch = async () => {
       setLoading(true);
-      await fetchCurrentUser();
       await fetchTicketDetails();
       await fetchChatHistory();
       setLoading(false);
@@ -208,7 +194,6 @@ export default function DisputeDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col">
-        <Header />
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-zinc-400 text-sm font-semibold tracking-wider">ĐANG TẢI THÔNG TIN KHIẾU NẠI...</p>
@@ -220,7 +205,6 @@ export default function DisputeDetail() {
   if (error || !ticket) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col">
-        <Header />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-20 h-20 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 text-3xl mb-6">
             ⚠️
@@ -242,8 +226,6 @@ export default function DisputeDetail() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col font-sans selection:bg-amber-500/35">
-      {/* Top Header */}
-      <Header />
 
       {/* Main Split Screen Layout container */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden max-w-7xl w-full mx-auto p-4 sm:p-6 gap-6">

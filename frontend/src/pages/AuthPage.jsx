@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getApiUrl } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 
 export default function AuthPage({ defaultMode = 'login' }) {
+  const { login, register } = useAuth();
   const [mode, setMode] = useState(defaultMode); // 'login' or 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,26 +17,18 @@ export default function AuthPage({ defaultMode = 'login' }) {
     setError(null);
     setLoading(true);
 
-    const url = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-    const payload = mode === 'login' ? { email } : { email, password };
-
     try {
-      const res = await fetch(getApiUrl(url), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      let result;
+      if (mode === 'login') {
+        result = await login(email);
+      } else {
+        result = await register(email, password);
+      }
 
-      if (data.success) {
-        // Trigger Header component updates
-        window.dispatchEvent(new Event('auth-change'));
+      if (result.success) {
         navigate('/');
       } else {
-        setError(data.error || 'Có lỗi xảy ra, vui lòng thử lại.');
+        setError(result.error || 'Có lỗi xảy ra, vui lòng thử lại.');
       }
     } catch (err) {
       setError('Lỗi kết nối máy chủ. Vui lòng kiểm tra lại.');

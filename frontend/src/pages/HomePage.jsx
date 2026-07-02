@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
 import { getApiUrl } from '../api';
 
 export default function HomePage() {
@@ -173,7 +172,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 transition-colors duration-300">
-      <Header />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-zinc-950 text-zinc-100 py-16 md:py-20 border-b border-zinc-900">
