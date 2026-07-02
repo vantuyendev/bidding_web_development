@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { getApiUrl } from '../api';
 
 export default function ReviewModal({ isOpen, onClose, productId, productName, onSuccess }) {
-  if (!isOpen) return null;
-
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,17 +49,17 @@ export default function ReviewModal({ isOpen, onClose, productId, productName, o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop blur overlay */}
+      {/* Overlay nền mờ (không blur) */}
       <div 
-        className="absolute inset-0 bg-neutral-950/60 backdrop-blur-md transition-opacity duration-300"
+        className="absolute inset-0 bg-neutral-950/50 transition-opacity duration-200"
         onClick={onClose}
       ></div>
 
       {/* Modal Box */}
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/80 rounded-3xl p-6 shadow-2xl max-w-md w-full relative z-10 animate-fadeIn">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md p-6 shadow-md max-w-md w-full relative z-10 animate-fadeIn">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer text-lg font-bold"
+          className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-md transition-colors cursor-pointer text-lg font-bold p-1"
         >
           ✕
         </button>
@@ -72,7 +72,7 @@ export default function ReviewModal({ isOpen, onClose, productId, productName, o
         </p>
 
         {error && (
-          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-semibold">
+          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-md text-xs font-semibold">
             ⚠️ {error}
           </div>
         )}
@@ -93,7 +93,7 @@ export default function ReviewModal({ isOpen, onClose, productId, productName, o
                     type="button"
                     onClick={() => setRating(star)}
                     onMouseEnter={() => setHoverRating(star)}
-                    className="p-1 hover:scale-125 transition-transform duration-150 cursor-pointer"
+                    className="p-1 transition-transform duration-150 cursor-pointer"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -134,10 +134,10 @@ export default function ReviewModal({ isOpen, onClose, productId, productName, o
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Nhập cảm nhận của bạn về trải nghiệm giao dịch này..."
-              className="w-full min-h-[90px] bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-3.5 text-xs focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all placeholder-neutral-400 resize-none"
+              className="w-full min-h-[90px] bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md p-3 text-xs focus:ring-1 focus:ring-neutral-950 focus:border-neutral-950 dark:focus:ring-white dark:focus:border-white outline-none transition-all placeholder-neutral-400 resize-none"
               maxLength={300}
             />
-            <div className="text-right text-[9px] text-neutral-400">
+            <div className="text-right text-[9px] text-neutral-400 font-semibold">
               {comment.length}/300 ký tự
             </div>
           </div>
@@ -147,14 +147,14 @@ export default function ReviewModal({ isOpen, onClose, productId, productName, o
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 rounded-full py-2.5 text-xs font-bold hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              className="flex-1 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 rounded-md py-2.5 text-xs font-bold transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 rounded-full py-2.5 text-xs font-bold hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+              className="flex-1 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-100 rounded-md py-2.5 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
             >
               {submitting ? 'Đang gửi...' : 'Gửi Đánh giá'}
             </button>

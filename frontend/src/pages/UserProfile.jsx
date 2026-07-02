@@ -86,17 +86,17 @@ export default function UserProfile() {
 
   if (loading || !profileData) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-pulse select-none">
+      <div className="max-w-7xl mx-auto px-4 xl:px-8 py-12 animate-pulse select-none">
         <div className="flex flex-col md:flex-row gap-8 items-start">
           <div className="w-full md:w-64 space-y-4">
-            <div className="h-10 w-full bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
-            <div className="h-10 w-full bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
-            <div className="h-10 w-full bg-neutral-200 dark:bg-neutral-800 rounded-2xl"></div>
+            <div className="h-10 w-full bg-neutral-200 dark:bg-neutral-800 rounded-md"></div>
+            <div className="h-10 w-full bg-neutral-200 dark:bg-neutral-800 rounded-md"></div>
+            <div className="h-10 w-full bg-neutral-200 dark:bg-neutral-800 rounded-md"></div>
           </div>
-          <div className="flex-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/50 rounded-3xl p-8 h-96">
-            <div className="h-8 w-1/3 bg-neutral-200 dark:bg-neutral-800 rounded-xl mb-6"></div>
-            <div className="h-4 w-full bg-neutral-200 dark:bg-neutral-800 rounded-xl mb-4"></div>
-            <div className="h-4 w-2/3 bg-neutral-200 dark:bg-neutral-800 rounded-xl"></div>
+          <div className="flex-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md p-8 h-96">
+            <div className="h-8 w-1/3 bg-neutral-200 dark:bg-neutral-800 rounded-md mb-6"></div>
+            <div className="h-4 w-full bg-neutral-200 dark:bg-neutral-800 rounded-md mb-4"></div>
+            <div className="h-4 w-2/3 bg-neutral-200 dark:bg-neutral-800 rounded-md"></div>
           </div>
         </div>
       </div>
@@ -117,63 +117,63 @@ export default function UserProfile() {
   const getTxDetails = (type) => {
     switch (type) {
       case 'DEPOSIT':
-        return { label: 'Nạp tiền', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20' };
+        return { label: 'Nạp tiền', color: 'text-emerald-600 dark:text-emerald-400 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700' };
       case 'WITHDRAW':
-        return { label: 'Rút tiền', color: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20' };
+        return { label: 'Rút tiền', color: 'text-rose-600 dark:text-rose-400 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700' };
       case 'HOLD_ESCROW':
-        return { label: 'Tạm giữ cọc', color: 'text-neutral-500 bg-neutral-50 dark:bg-neutral-800/30' };
+        return { label: 'Tạm giữ cọc', color: 'text-neutral-500 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700' };
       case 'RELEASE_ESCROW':
-        return { label: 'Giải phóng cọc', color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20' };
+        return { label: 'Giải phóng cọc', color: 'text-blue-600 dark:text-blue-400 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700' };
       case 'PAYMENT':
-        return { label: 'Thanh toán mua hàng', color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' };
+        return { label: 'Thanh toán mua hàng', color: 'text-amber-600 dark:text-amber-400 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700' };
       default:
-        return { label: type, color: 'text-neutral-600 bg-neutral-50' };
+        return { label: type, color: 'text-neutral-600 bg-neutral-100' };
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 selection:bg-amber-500/20">
+    <div className="max-w-7xl mx-auto px-4 xl:px-8 py-10 md:py-16 selection:bg-neutral-500/20">
       
       <div className="flex flex-col md:flex-row gap-8 items-start">
         
         {/* Menu điều hướng nội bộ (Sidebar / Tab List) */}
-        <div className="w-full md:w-64 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible border-b md:border-b-0 border-neutral-200 dark:border-neutral-850 pb-2 md:pb-0 gap-1 select-none">
+        <div className="w-full md:w-64 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible border-b md:border-b-0 border-neutral-200 dark:border-neutral-800 pb-2 md:pb-0 gap-1 select-none">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4.5 py-3 rounded-2xl text-xs font-bold transition-all duration-300 text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
+            className={`px-4 py-2.5 rounded-md text-xs font-bold transition-colors text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
               activeTab === 'overview'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm'
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50'
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950'
+                : 'text-neutral-550 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
             }`}
           >
             <span>👤</span> Tổng quan
           </button>
           <button
             onClick={() => setActiveTab('wallet')}
-            className={`px-4.5 py-3 rounded-2xl text-xs font-bold transition-all duration-300 text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
+            className={`px-4 py-2.5 rounded-md text-xs font-bold transition-colors text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
               activeTab === 'wallet'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm'
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50'
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950'
+                : 'text-neutral-555 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
             }`}
           >
             <span>💳</span> Ví & Giao dịch
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`px-4.5 py-3 rounded-2xl text-xs font-bold transition-all duration-300 text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
+            className={`px-4 py-2.5 rounded-md text-xs font-bold transition-colors text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
               activeTab === 'history'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm'
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50'
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950'
+                : 'text-neutral-555 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
             }`}
           >
             <span>⚖️</span> Lịch sử Đấu giá
           </button>
           <button
             onClick={() => setActiveTab('listings')}
-            className={`px-4.5 py-3 rounded-2xl text-xs font-bold transition-all duration-300 text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
+            className={`px-4 py-2.5 rounded-md text-xs font-bold transition-colors text-left whitespace-nowrap cursor-pointer w-full flex items-center gap-3 ${
               activeTab === 'listings'
-                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-sm'
-                : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50'
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950'
+                : 'text-neutral-555 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
             }`}
           >
             <span>📦</span> Quản lý Đăng bán
@@ -181,7 +181,7 @@ export default function UserProfile() {
         </div>
 
         {/* Vùng hiển thị nội dung chính */}
-        <div className="flex-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-neutral-800/80 rounded-3xl p-6 md:p-8 shadow-sm">
+        <div className="flex-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md p-6 md:p-8">
           
           {/* TAB 1: TỔNG QUAN (OVERVIEW) */}
           {activeTab === 'overview' && (
@@ -189,7 +189,7 @@ export default function UserProfile() {
               
               <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-neutral-100 dark:border-neutral-800">
                 {/* Avatar lớn */}
-                <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-750 flex items-center justify-center ring-2 ring-neutral-200 dark:ring-neutral-850 shadow-sm select-none">
+                <div className="w-20 h-20 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-neutral-700 select-none">
                   <span className="text-3xl font-black text-neutral-600 dark:text-neutral-300 uppercase">
                     {profileData.email[0]}
                   </span>
@@ -202,11 +202,11 @@ export default function UserProfile() {
                       {profileData.email.split('@')[0]}
                     </h2>
                     {profileData.isVerifiedSeller ? (
-                      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-sm text-[10px] font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border border-neutral-900 dark:border-white">
                         ✓ Người bán Xác thực
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200/30 dark:border-neutral-700/30">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-sm text-[10px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
                         Khách hàng đấu giá
                       </span>
                     )}
@@ -220,8 +220,8 @@ export default function UserProfile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 
                 {/* Rating score */}
-                <div className="bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-850 rounded-2xl p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-xl flex items-center justify-center">
+                <div className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-250 rounded-md flex items-center justify-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -245,8 +245,8 @@ export default function UserProfile() {
                 </div>
 
                 {/* Successful Transactions */}
-                <div className="bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-850 rounded-2xl p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center">
+                <div className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-250 rounded-md flex items-center justify-center">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -284,7 +284,7 @@ export default function UserProfile() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 
                 {/* Số dư khả dụng */}
-                <div className="bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-850 rounded-3xl p-6 shadow-sm">
+                <div className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md p-6">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Số dư khả dụng</span>
                   <div className="text-3xl font-black text-neutral-900 dark:text-white tracking-tight mt-2">
                     {formatMoney(profileData.balance)}
@@ -292,7 +292,7 @@ export default function UserProfile() {
                 </div>
 
                 {/* Tiền tạm giữ (Escrow) */}
-                <div className="bg-neutral-50/70 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-850 rounded-3xl p-6 shadow-sm relative group">
+                <div className="bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md p-6 relative group">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Tiền tạm giữ (Escrow)</span>
                     {/* Tooltip Icon */}
@@ -308,7 +308,7 @@ export default function UserProfile() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                       </svg>
                       {/* Dropdown Tooltip box */}
-                      <span className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-neutral-950 text-white text-[9px] leading-relaxed p-2.5 rounded-xl shadow-xl border border-neutral-800 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 z-15">
+                      <span className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-neutral-950 text-white text-[9px] leading-relaxed p-2.5 rounded-md border border-neutral-800 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 z-15">
                         Đây là 10% tiền cọc khi tham gia đấu giá sản phẩm. Hệ thống sẽ trả lại khi kết thúc phiên hoặc nếu bạn không thắng.
                       </span>
                     </div>
@@ -325,7 +325,7 @@ export default function UserProfile() {
                 <h3 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">Lịch sử giao dịch ví</h3>
                 
                 {profileData.transactions?.length === 0 ? (
-                  <div className="text-center py-10 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl text-xs text-neutral-400">
+                  <div className="text-center py-10 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-md text-xs text-neutral-400">
                     Chưa phát sinh giao dịch ví nào.
                   </div>
                 ) : (
@@ -348,7 +348,7 @@ export default function UserProfile() {
                                 {formatDate(tx.createdAt)}
                               </td>
                               <td className="py-3.5 px-4">
-                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${txMeta.color}`}>
+                                <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-bold ${txMeta.color}`}>
                                   {txMeta.label}
                                 </span>
                               </td>
@@ -374,7 +374,7 @@ export default function UserProfile() {
               <h3 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">Lịch sử lượt đặt giá</h3>
 
               {profileData.bids?.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl text-xs text-neutral-400 flex flex-col items-center justify-center gap-3">
+                <div className="text-center py-12 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-md text-xs text-neutral-400 flex flex-col items-center justify-center gap-3">
                   <span className="text-3xl">⚖️</span>
                   <p>Bạn chưa tham gia đấu giá sản phẩm nào.</p>
                 </div>
@@ -386,12 +386,12 @@ export default function UserProfile() {
                     return (
                       <div
                         key={bid.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-neutral-200/50 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700/80 rounded-2xl transition-all duration-300"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-neutral-200 dark:border-neutral-850 hover:bg-neutral-50 dark:hover:bg-neutral-950 rounded-md transition-colors duration-200"
                       >
                         <div className="space-y-1.5">
                           <Link
-                            to={`/products/${bid.productId}`}
-                            className="font-bold text-xs text-neutral-900 dark:text-white hover:text-amber-500 transition-colors line-clamp-1"
+                             to={`/products/${bid.productId}`}
+                             className="font-bold text-xs text-neutral-900 dark:text-white hover:text-neutral-500 transition-colors line-clamp-1"
                           >
                             {prod?.title || 'Sản phẩm đã bị xóa'}
                           </Link>
@@ -408,7 +408,7 @@ export default function UserProfile() {
                         <div className="flex items-center justify-between sm:justify-end gap-6">
                           <div className="text-right flex flex-col items-end">
                             <span className="text-[10px] text-neutral-400">Bạn đã đặt</span>
-                            <span className="text-xs font-black text-amber-600 dark:text-amber-400 mt-0.5">
+                            <span className="text-xs font-black text-neutral-950 dark:text-white mt-0.5">
                               {formatMoney(bid.bidAmount)}
                             </span>
                           </div>
@@ -416,18 +416,18 @@ export default function UserProfile() {
                           <div className="flex flex-col items-end gap-1.5 min-w-[100px]">
                             {isEnded ? (
                               <>
-                                <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 select-none">
+                                <span className="inline-block px-2 py-0.5 rounded-sm text-[9px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 select-none border border-neutral-200 dark:border-neutral-700">
                                   Đã kết thúc
                                 </span>
                                 {prod && Number(bid.bidAmount) === Number(prod.currentPrice) && (
                                   prod.review ? (
-                                    <span className="inline-flex items-center justify-center gap-0.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
+                                    <span className="inline-flex items-center justify-center gap-0.5 px-2 py-0.5 rounded-sm text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 select-none">
                                       ★ Đã đánh giá
                                     </span>
                                   ) : (
                                     <button
                                       onClick={() => handleOpenReviewModal(prod.id, prod.title)}
-                                      className="inline-block px-2.5 py-1 rounded-full text-[9px] font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer text-center select-none shadow-sm"
+                                      className="inline-block px-2.5 py-1 rounded-md text-[9px] font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors duration-200 cursor-pointer text-center select-none"
                                     >
                                       Đánh giá đối tác
                                     </button>
@@ -435,7 +435,7 @@ export default function UserProfile() {
                                 )}
                               </>
                             ) : (
-                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 select-none">
+                              <span className="inline-block px-2 py-0.5 rounded-sm text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 select-none">
                                 Đang đấu giá
                               </span>
                             )}
@@ -460,9 +460,9 @@ export default function UserProfile() {
                   Đang tải danh mục đăng bán...
                 </div>
               ) : sellerListings.length === 0 ? (
-                /* Empty State tuyệt đẹp */
-                <div className="text-center py-16 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl flex flex-col items-center justify-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center border border-neutral-200/50 dark:border-neutral-800 text-neutral-300 dark:text-neutral-700">
+                /* Empty State */
+                <div className="text-center py-16 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-md flex flex-col items-center justify-center gap-4">
+                  <div className="w-16 h-16 rounded-md bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center border border-neutral-200 dark:border-neutral-800 text-neutral-300 dark:text-neutral-700">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -484,7 +484,7 @@ export default function UserProfile() {
                   </div>
                   <button
                     onClick={() => window.dispatchEvent(new Event('open-post-modal'))}
-                    className="mt-2 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 rounded-full text-xs font-bold px-5 py-2.5 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer shadow-sm"
+                    className="mt-2 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 rounded-md text-xs font-bold px-5 py-2.5 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors duration-200 cursor-pointer"
                   >
                     + Tạo bài Đấu giá mới
                   </button>
@@ -497,22 +497,22 @@ export default function UserProfile() {
                     return (
                       <div
                         key={prod.id}
-                        className="flex items-center justify-between gap-4 p-4 border border-neutral-200/50 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700/80 rounded-2xl transition-all duration-300"
+                        className="flex items-center justify-between gap-4 p-4 border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-950 rounded-md transition-colors duration-200"
                       >
                         <div className="flex items-center gap-4">
                           {/* Hình thu nhỏ */}
-                          <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-800 overflow-hidden flex items-center justify-center flex-shrink-0 border border-neutral-200/40 dark:border-neutral-700/30">
+                          <div className="w-12 h-12 rounded-md bg-neutral-100 dark:bg-neutral-800 overflow-hidden flex items-center justify-center flex-shrink-0 border border-neutral-200 dark:border-neutral-800">
                             {prod.imageUrl ? (
                               <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-neutral-300 text-xs select-none">📦</span>
+                              <span className="text-neutral-350 text-xs select-none">📦</span>
                             )}
                           </div>
 
                           <div className="space-y-1">
                             <Link
                               to={`/products/${prod.id}`}
-                              className="font-bold text-xs text-neutral-900 dark:text-white hover:text-amber-500 transition-colors line-clamp-1"
+                              className="font-bold text-xs text-neutral-900 dark:text-white hover:text-neutral-550 transition-colors line-clamp-1"
                             >
                               {prod.title}
                             </Link>
@@ -532,11 +532,11 @@ export default function UserProfile() {
 
                           <div className="w-24 text-right">
                             {isEnded ? (
-                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                              <span className="inline-block px-2 py-0.5 rounded-sm text-[9px] font-bold bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
                                 Đã chốt
                               </span>
                             ) : (
-                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                              <span className="inline-block px-2 py-0.5 rounded-sm text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
                                 Đang diễn ra
                               </span>
                             )}

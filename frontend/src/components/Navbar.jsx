@@ -135,12 +135,12 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-white/60 dark:bg-neutral-950/60 backdrop-blur-xl border-b border-neutral-200/50 dark:border-neutral-800/50 transition-colors duration-300">
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Logo (Trái) */}
           <Link to="/" className="flex items-center gap-2 group">
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-neutral-950 to-neutral-700 dark:from-white dark:to-neutral-300 bg-clip-text text-transparent select-none">
+            <span className="text-xl font-extrabold tracking-tight text-neutral-900 dark:text-white select-none">
               Aura Bid
             </span>
           </Link>
@@ -157,7 +157,7 @@ export default function Navbar() {
                   setIsPostModalOpen(true);
                 }
               }}
-              className="bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 rounded-full text-xs font-semibold px-4 py-2 hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm cursor-pointer"
+              className="bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 rounded-md text-xs font-bold px-4 py-2 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors duration-200 cursor-pointer"
             >
               Đăng tin
             </button>
@@ -168,7 +168,7 @@ export default function Navbar() {
                 <div className="relative" ref={notifyRef}>
                   <button
                     onClick={handleToggleNotifications}
-                    className="p-2 text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white rounded-full hover:bg-neutral-100/50 dark:hover:bg-neutral-900/50 transition-all duration-300 relative cursor-pointer"
+                    className="p-2 text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors duration-200 relative cursor-pointer"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -186,13 +186,13 @@ export default function Navbar() {
                     </svg>
                     {/* Chấm đỏ khi có thông báo chưa đọc */}
                     {hasUnread && (
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-neutral-950 animate-pulse"></span>
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-600 rounded-full ring-2 ring-white dark:ring-neutral-950 animate-pulse"></span>
                     )}
                   </button>
 
                   {/* Dropdown thông báo */}
                   <div
-                    className={`absolute right-0 mt-3 w-80 bg-white/70 dark:bg-neutral-950/70 border border-white/20 dark:border-neutral-800/30 backdrop-blur-xl rounded-2xl shadow-xl p-4 transition-all duration-300 origin-top-right z-50 ${
+                    className={`absolute right-0 mt-3 w-80 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-md shadow-md p-4 transition-all duration-200 origin-top-right z-50 ${
                       isNotificationsOpen
                         ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
                         : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
@@ -217,9 +217,9 @@ export default function Navbar() {
                           <div
                             key={n.id}
                             onClick={() => handleMarkAsRead(n.id)}
-                            className={`p-3 rounded-xl text-xs flex flex-col gap-1 transition-all cursor-pointer hover:bg-neutral-100/50 dark:hover:bg-neutral-800/30 ${
+                            className={`p-3 rounded-sm text-xs flex flex-col gap-1 transition-colors cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-900 ${
                               !n.isRead
-                                ? 'bg-amber-500/10 dark:bg-amber-500/5 border-l-2 border-amber-500 font-bold'
+                                ? 'bg-neutral-50 dark:bg-neutral-900 border-l-2 border-neutral-900 dark:border-l-white font-bold'
                                 : 'text-neutral-600 dark:text-neutral-400'
                             }`}
                           >
@@ -250,7 +250,7 @@ export default function Navbar() {
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center gap-2 group cursor-pointer focus:outline-none"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-neutral-200 to-neutral-300 dark:from-neutral-850 dark:to-neutral-800 flex items-center justify-center ring-1 ring-neutral-200 dark:ring-neutral-800 group-hover:ring-neutral-400 dark:group-hover:ring-neutral-600 transition-all duration-300">
+                    <div className="w-8 h-8 rounded-md bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-neutral-700 group-hover:border-neutral-400 dark:group-hover:border-neutral-500 transition-colors duration-200">
                       <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300 uppercase">
                         {user.email[0]}
                       </span>
@@ -259,7 +259,7 @@ export default function Navbar() {
 
                   {/* Dropdown Menu */}
                   <div
-                    className={`absolute right-0 mt-3 w-56 bg-white/95 dark:bg-neutral-900/95 border border-neutral-200/50 dark:border-neutral-800/50 backdrop-blur-xl rounded-2xl shadow-xl py-2 transition-all duration-300 origin-top-right ${
+                    className={`absolute right-0 mt-3 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md shadow-md py-2 transition-all duration-200 origin-top-right ${
                       isDropdownOpen
                         ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
                         : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
