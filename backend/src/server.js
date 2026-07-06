@@ -26,6 +26,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable trust proxy in production to support express-rate-limit behind reverse proxies (like Render)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // 1. Cấu hình Helmet đầu tiên để bảo vệ các Header nhạy cảm
 app.use(helmet());
 
