@@ -27,13 +27,46 @@ export const getProducts = async (req, res) => {
   }
 };
 
-// GET /api/products/:id - Get a product by ID
+// GET /api/products/:id - Get a product by ID (enriched with EAV specs, bids, seller, etc.)
 export const getProductDetail = async (req, res) => {
   const { id } = req.params;
 
   try {
     const product = await prisma.product.findUnique({
       where: { id },
+      include: {
+        attributes: {
+          include: {
+            attributeKey: true
+          }
+        },
+        bids: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true
+              }
+            }
+          },
+          orderBy: {
+            bidTime: 'desc'
+          }
+        },
+        seller: {
+          select: {
+            id: true,
+            email: true,
+            reputationScore: true,
+            isVerifiedSeller: true,
+            _count: {
+              select: {
+                soldProducts: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!product) {
@@ -49,6 +82,30 @@ export const getProductDetail = async (req, res) => {
       startPrice: Number(product.startPrice),
       currentPrice: Number(product.currentPrice),
       buyNowPrice: product.buyNowPrice ? Number(product.buyNowPrice) : null,
+      reservePrice: product.reservePrice ? Number(product.reservePrice) : null,
+      stepPrice: Number(product.stepPrice),
+      shippingFee: product.shippingFee ? Number(product.shippingFee) : null,
+      weight: Number(product.weight),
+      attributes: product.attributes ? product.attributes.map(attr => ({
+        keyId: attr.attributeKeyId,
+        keyName: attr.attributeKey.name,
+        keyType: attr.attributeKey.type,
+        value: attr.value
+      })) : [],
+      bids: product.bids ? product.bids.map(bid => ({
+        ...bid,
+        bidAmount: Number(bid.bidAmount),
+        maxAutoBidAmount: bid.maxAutoBidAmount ? Number(bid.maxAutoBidAmount) : null,
+        user: {
+          id: bid.user.id,
+          email: bid.user.email
+        }
+      })) : [],
+      seller: product.seller ? {
+        ...product.seller,
+        reputationScore: Number(product.seller.reputationScore),
+        soldCount: product.seller._count.soldProducts
+      } : null
     };
 
     return res.status(200).json({
@@ -285,13 +342,33 @@ export const createProduct = async (req, res) => {
       description,
       startPrice,
       buyNowPrice,
+      reservePrice,
       stepPrice,
       categoryId,
       endTime,
       weight,
+      length,
+      width,
+      height,
       provinceId,
       districtId,
+      attributes, // expects array or object map
     } = req.body;
+
+    // Parse attributes correctly
+    let parsedAttributes = [];
+    if (attributes) {
+      if (Array.isArray(attributes)) {
+        parsedAttributes = attributes.filter(a => a.attributeKeyId && a.value !== undefined && a.value !== null && a.value !== '');
+      } else if (typeof attributes === 'object') {
+        parsedAttributes = Object.entries(attributes)
+          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+          .map(([keyId, val]) => ({
+            attributeKeyId: keyId,
+            value: String(val)
+          }));
+      }
+    }
 
     // Gán currentPrice bằng đúng với startPrice, sellerId ép cứng từ session
     const product = await prisma.product.create({
@@ -301,13 +378,20 @@ export const createProduct = async (req, res) => {
         startPrice: Number(startPrice),
         currentPrice: Number(startPrice),
         buyNowPrice: buyNowPrice ? Number(buyNowPrice) : null,
+        reservePrice: reservePrice ? Number(reservePrice) : null,
         stepPrice: stepPrice ? Number(stepPrice) : undefined,
         categoryId,
         endTime: new Date(endTime),
         weight: weight ? Number(weight) : undefined,
+        length: length ? Number(length) : undefined,
+        width: width ? Number(width) : undefined,
+        height: height ? Number(height) : undefined,
         provinceId: provinceId || undefined,
         districtId: districtId || undefined,
         sellerId: userId,
+        attributes: parsedAttributes.length > 0 ? {
+          create: parsedAttributes
+        } : undefined
       },
     });
 
@@ -317,6 +401,7 @@ export const createProduct = async (req, res) => {
       startPrice: Number(product.startPrice),
       currentPrice: Number(product.currentPrice),
       buyNowPrice: product.buyNowPrice ? Number(product.buyNowPrice) : null,
+      reservePrice: product.reservePrice ? Number(product.reservePrice) : null,
       stepPrice: Number(product.stepPrice),
     };
 

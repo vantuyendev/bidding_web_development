@@ -486,3 +486,86 @@ export const createDisputeMessage = async (req, res) => {
   }
 };
 
+/**
+ * Controller to list dispute tickets.
+ * 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+export const getDisputesList = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      error: "Bạn cần đăng nhập để xem danh sách khiếu nại."
+    });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    const isAdmin = user && user.email.toLowerCase().includes("admin");
+
+    let tickets;
+    if (isAdmin) {
+      tickets = await prisma.disputeTicket.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          product: {
+            select: {
+              id: true,
+              title: true,
+              sellerId: true,
+              status: true
+            }
+          },
+          openedBy: {
+            select: {
+              id: true,
+              email: true
+            }
+          }
+        }
+      });
+    } else {
+      tickets = await prisma.disputeTicket.findMany({
+        where: {
+          OR: [
+            { openedById: userId },
+            { product: { sellerId: userId } }
+          ]
+        },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          product: {
+            select: {
+              id: true,
+              title: true,
+              sellerId: true,
+              status: true
+            }
+          },
+          openedBy: {
+            select: {
+              id: true,
+              email: true
+            }
+          }
+        }
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: tickets
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Đã xảy ra lỗi khi tải danh sách khiếu nại."
+    });
+  }
+};
+

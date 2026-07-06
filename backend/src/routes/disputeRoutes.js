@@ -4,10 +4,14 @@ import {
   adminResolveTicket,
   getDisputeDetail,
   getDisputeMessages,
-  createDisputeMessage
+  createDisputeMessage,
+  getDisputesList
 } from '../controllers/disputeController.js';
 
 const router = express.Router();
+
+// GET /api/disputes - Get all disputes list (filters for user involved or all if admin)
+router.get('/', getDisputesList);
 
 // POST /api/disputes - Create a dispute ticket (buyer only)
 router.post('/', createDisputeTicket);

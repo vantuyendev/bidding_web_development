@@ -1,4 +1,5 @@
 import prisma from '../models/db.js';
+import { Prisma } from '@prisma/client';
 
 // Retrieve the current logged-in user profile with counts of sold products and reviews received
 export const getUserProfile = async (req, res) => {
@@ -83,7 +84,7 @@ export const verifySeller = async (req, res) => {
     const userId = req.session.userId;
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { isVerifiedSeller: true }
+      data: { isVerifiedSeller: true, kycStatus: 'APPROVED' }
     });
 
     return res.status(200).json({
@@ -91,7 +92,8 @@ export const verifySeller = async (req, res) => {
       message: 'Chúc mừng! Tài khoản của bạn đã được nâng cấp thành Người bán xác thực.',
       data: {
         id: user.id,
-        isVerifiedSeller: user.isVerifiedSeller
+        isVerifiedSeller: user.isVerifiedSeller,
+        kycStatus: user.kycStatus
       }
     });
   } catch (error) {
@@ -101,3 +103,270 @@ export const verifySeller = async (req, res) => {
     });
   }
 };
+
+// Deposit funds from external balance to Aura Bid wallet balance
+export const depositFunds = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+  }
+
+  const { amount } = req.body;
+  const depositAmount = new Prisma.Decimal(amount || 0);
+
+  if (depositAmount.lte(0)) {
+    return res.status(400).json({ success: false, error: 'Số tiền nạp phải lớn hơn 0.' });
+  }
+
+  try {
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { balance: true, walletBalance: true, frozenBalance: true }
+      });
+
+      if (!user) throw new Error('Người dùng không tồn tại.');
+
+      const bankBalance = new Prisma.Decimal(user.balance);
+      if (bankBalance.lt(depositAmount)) {
+        throw new Error('Số dư tài khoản ngân hàng liên kết không đủ.');
+      }
+
+      // Decrement external bank balance and increment wallet balance
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: {
+          balance: bankBalance.minus(depositAmount),
+          walletBalance: new Prisma.Decimal(user.walletBalance).plus(depositAmount)
+        }
+      });
+
+      // Create transaction log
+      await tx.transaction.create({
+        data: {
+          userId,
+          amount: depositAmount,
+          type: 'DEPOSIT',
+          status: 'COMPLETED'
+        }
+      });
+
+      return updated;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Nạp tiền thành công: +${depositAmount.toLocaleString('vi-VN')} đ vào ví.`,
+      data: {
+        balance: Number(updatedUser.balance),
+        walletBalance: Number(updatedUser.walletBalance),
+        frozenBalance: Number(updatedUser.frozenBalance)
+      }
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi nạp tiền.'
+    });
+  }
+};
+
+// Withdraw funds from Aura Bid wallet balance to external bank balance
+export const withdrawFunds = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+  }
+
+  const { amount } = req.body;
+  const withdrawAmount = new Prisma.Decimal(amount || 0);
+
+  if (withdrawAmount.lte(0)) {
+    return res.status(400).json({ success: false, error: 'Số tiền rút phải lớn hơn 0.' });
+  }
+
+  try {
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { balance: true, walletBalance: true, frozenBalance: true }
+      });
+
+      if (!user) throw new Error('Người dùng không tồn tại.');
+
+      const walletBal = new Prisma.Decimal(user.walletBalance);
+      if (walletBal.lt(withdrawAmount)) {
+        throw new Error('Số dư ví khả dụng không đủ để thực hiện rút tiền.');
+      }
+
+      // Decrement wallet balance and increment external bank balance
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: {
+          walletBalance: walletBal.minus(withdrawAmount),
+          balance: new Prisma.Decimal(user.balance).plus(withdrawAmount)
+        }
+      });
+
+      // Create transaction log
+      await tx.transaction.create({
+        data: {
+          userId,
+          amount: withdrawAmount,
+          type: 'WITHDRAW',
+          status: 'COMPLETED'
+        }
+      });
+
+      return updated;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Rút tiền thành công: -${withdrawAmount.toLocaleString('vi-VN')} đ khỏi ví.`,
+      data: {
+        balance: Number(updatedUser.balance),
+        walletBalance: Number(updatedUser.walletBalance),
+        frozenBalance: Number(updatedUser.frozenBalance)
+      }
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi rút tiền.'
+    });
+  }
+};
+
+// Submit KYC Seller request
+export const submitKyc = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+  }
+
+  const { idCardNumber, idCardImageUrl, shopAddress, phoneNumber } = req.body;
+
+  if (!idCardNumber || !shopAddress) {
+    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp số CCCD và địa chỉ cửa hàng.' });
+  }
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        idCardNumber,
+        idCardImageUrl: idCardImageUrl || 'https://picsum.photos/seed/kyc/400/300', // mock kyc image
+        shopAddress,
+        phoneNumber: phoneNumber || undefined,
+        kycStatus: 'PENDING'
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Gửi hồ sơ KYC thành công. Vui lòng chờ Admin phê duyệt.',
+      data: {
+        id: updated.id,
+        kycStatus: updated.kycStatus
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi gửi hồ sơ KYC.'
+    });
+  }
+};
+
+// Admin retrieve pending KYC applications
+export const adminGetPendingKyc = async (req, res) => {
+  const adminId = req.session?.userId;
+  if (!adminId) {
+    return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  }
+
+  try {
+    const adminUser = await prisma.user.findUnique({ where: { id: adminId } });
+    if (!adminUser || !adminUser.email.toLowerCase().includes('admin')) {
+      return res.status(403).json({ success: false, error: 'Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện.' });
+    }
+
+    const pendingUsers = await prisma.user.findMany({
+      where: { kycStatus: 'PENDING' },
+      select: {
+        id: true,
+        email: true,
+        phoneNumber: true,
+        idCardNumber: true,
+        idCardImageUrl: true,
+        shopAddress: true,
+        kycStatus: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: pendingUsers
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi lấy hồ sơ KYC.'
+    });
+  }
+};
+
+// Admin approve/reject KYC Seller requests
+export const adminApproveKyc = async (req, res) => {
+  const adminId = req.session?.userId;
+  if (!adminId) {
+    return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  }
+
+  const { targetUserId, action } = req.body; // action: 'APPROVE' or 'REJECT'
+
+  if (!targetUserId || !['APPROVE', 'REJECT'].includes(action)) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin targetUserId hoặc action hợp lệ.' });
+  }
+
+  try {
+    const adminUser = await prisma.user.findUnique({ where: { id: adminId } });
+    if (!adminUser || !adminUser.email.toLowerCase().includes('admin')) {
+      return res.status(403).json({ success: false, error: 'Quyền truy cập bị từ chối.' });
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy người dùng cần duyệt.' });
+    }
+
+    const kycStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    const isVerifiedSeller = action === 'APPROVE';
+
+    const updatedUser = await prisma.user.update({
+      where: { id: targetUserId },
+      data: { kycStatus, isVerifiedSeller }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: action === 'APPROVE'
+        ? `Đã phê duyệt tài khoản ${updatedUser.email} thành Người bán xác thực.`
+        : `Đã từ chối hồ sơ KYC của tài khoản ${updatedUser.email}.`,
+      data: {
+        id: updatedUser.id,
+        kycStatus: updatedUser.kycStatus,
+        isVerifiedSeller: updatedUser.isVerifiedSeller
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi duyệt hồ sơ.'
+    });
+  }
+};
+

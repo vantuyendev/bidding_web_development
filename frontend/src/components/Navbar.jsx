@@ -34,13 +34,37 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 15000); // Poll every 15 seconds
-      return () => clearInterval(interval);
-    } else {
+    if (!user) {
       setNotifications([]);
+      return;
     }
+
+    fetchNotifications();
+
+    const eventSource = new EventSource(getApiUrl('/api/notifications/live'), {
+      withCredentials: true
+    });
+
+    eventSource.addEventListener('notification', (event) => {
+      try {
+        const notif = JSON.parse(event.data);
+        setNotifications(prev => {
+          // Prevent duplicates
+          if (prev.some(n => n.id === notif.id)) return prev;
+          return [notif, ...prev];
+        });
+      } catch (err) {
+        console.error('Lỗi xử lý dữ liệu SSE:', err);
+      }
+    });
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, [user]);
 
   const handleToggleNotifications = () => {

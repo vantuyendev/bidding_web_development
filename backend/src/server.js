@@ -15,6 +15,8 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import watchlistRoutes from './routes/watchlistRoutes.js';
 import { requireAuth } from './middlewares/authMiddleware.js';
 import './workers/auctionWorker.js';
 
@@ -112,6 +114,8 @@ app.use('/api/shipping', shippingRoutes);
 app.use('/api/disputes', disputeRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
 app.use('/api/reviews', requireAuth, reviewRoutes);
 

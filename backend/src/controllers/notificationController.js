@@ -1,4 +1,5 @@
 import prisma from '../models/db.js';
+import notificationEmitter from '../utils/notificationEmitter.js';
 
 // GET /api/notifications - Get list of notifications for current user
 export const getNotifications = async (req, res) => {
@@ -69,4 +70,52 @@ export const markAsRead = async (req, res) => {
       error: error.message || 'Đã xảy ra lỗi khi cập nhật trạng thái thông báo.'
     });
   }
+};
+
+// GET /api/notifications/live - SSE stream for real-time notifications
+export const streamNotifications = (req, res) => {
+  const userId = req.session?.userId;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Chưa đăng nhập' });
+  }
+
+  // Set mandatory SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+
+  res.write('\n');
+
+  const sendEvent = (event, data) => {
+    try {
+      const eventString = event ? `event: ${event}\n` : '';
+      res.write(`${eventString}data: ${JSON.stringify(data)}\n\n`);
+    } catch (e) {
+      // client closed connection
+    }
+  };
+
+  sendEvent('connected', { message: 'Notification stream connected', userId });
+
+  const onNotification = (notification) => {
+    sendEvent('notification', notification);
+  };
+
+  const eventName = `notification-${userId}`;
+  notificationEmitter.on(eventName, onNotification);
+
+  // Heartbeat to prevent disconnect
+  const heartbeat = setInterval(() => {
+    sendEvent('heartbeat', { time: new Date().toISOString() });
+  }, 15000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    notificationEmitter.off(eventName, onNotification);
+    res.end();
+  });
 };

@@ -15,8 +15,12 @@ model User {
   walletBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("wallet_balance")
   frozenBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("frozen_balance")
   reputationScore Float         @default(5.0) @map("reputation_score")
-  createdAt       DateTime         @default(now()) @map("created_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
   isVerifiedSeller Boolean      @default(false) @map("is_verified_seller")
+  idCardNumber     String?      @map("id_card_number")
+  idCardImageUrl   String?      @map("id_card_image_url")
+  shopAddress      String?      @map("shop_address")
+  kycStatus        String       @default("NONE") @map("kyc_status")
   avatarUrl        String?      @map("avatar_url")
   phoneNumber      String?      @map("phone_number")
   bids            Bid[]
@@ -24,6 +28,8 @@ model User {
   disputeTickets  DisputeTicket[]  @relation("UserDisputeTickets")
   disputeMessages DisputeMessage[] @relation("UserDisputeMessages")
   soldProducts    Product[]     @relation("ProductSeller")
+  wonProducts     Product[]     @relation("ProductWinner")
+  watchlist       Watchlist[]   @relation("UserWatchlist")
   reviewsGiven    Review[]      @relation("ReviewsGiven")
   reviewsReceived Review[]      @relation("ReviewsReceived")
   notifications   Notification[] @relation("UserNotifications")
@@ -55,11 +61,18 @@ model Product {
   
   sellerId      String             @default("seller-id-placeholder") @map("seller_id")
   seller        User               @relation("ProductSeller", fields: [sellerId], references: [id])
+  winnerId      String?            @map("winner_id")
+  winner        User?              @relation("ProductWinner", fields: [winnerId], references: [id])
+  winnerName    String?            @map("winner_name")
+  winnerPhone   String?            @map("winner_phone")
+  winnerAddress String?            @map("winner_address")
+  shippingFee   Decimal?           @map("shipping_fee") @db.Decimal(12, 2)
   category      Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   bids          Bid[]
   attributes    ProductAttribute[]
   disputeTicket DisputeTicket?
   review        Review?
+  watchlist     Watchlist[]        @relation("ProductWatchlist")
 
   @@map("products")
 }
@@ -189,3 +202,17 @@ model Notification {
 
   @@map("notifications")
 }
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation("UserWatchlist", fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation("ProductWatchlist", fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("watchlist")
+}
+

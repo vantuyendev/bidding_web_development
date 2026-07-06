@@ -14,12 +14,20 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   const [categoryId, setCategoryId] = useState('');
   const [startPriceRaw, setStartPriceRaw] = useState('');
   const [buyNowPriceRaw, setBuyNowPriceRaw] = useState('');
+  const [reservePriceRaw, setReservePriceRaw] = useState('');
   const [endTime, setEndTime] = useState('');
   const [weight, setWeight] = useState('');
+  const [length, setLength] = useState('10');
+  const [width, setWidth] = useState('10');
+  const [height, setHeight] = useState('10');
   const [provinceId, setProvinceId] = useState('HN');
+  const [districtId, setDistrictId] = useState('');
+  const [isCustomDistrict, setIsCustomDistrict] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
+
+  const [attributes, setAttributes] = useState({});
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -36,6 +44,12 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
     { id: 'KH', name: 'Khánh Hòa' },
     { id: 'QN', name: 'Quảng Ninh' },
   ];
+
+  const districtSuggestions = {
+    'Hà Nội': ['Quận Ba Đình', 'Quận Hoàn Kiếm', 'Quận Tây Hồ', 'Quận Cầu Giấy', 'Quận Đống Đa', 'Quận Hai Bà Trưng', 'Quận Hoàng Mai', 'Quận Thanh Xuân', 'Quận Long Biên', 'Quận Hà Đông', 'Quận Nam Từ Liêm', 'Quận Bắc Từ Liêm'],
+    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7', 'Quận 8', 'Quận 10', 'Quận 11', 'Quận 12', 'Quận Bình Thạnh', 'Quận Gò Vấp', 'Quận Phú Nhuận', 'Quận Tân Bình', 'Quận Tân Phú', 'Thành phố Thủ Đức'],
+    'Đà Nẵng': ['Quận Hải Châu', 'Quận Thanh Khê', 'Quận Sơn Trà', 'Quận Ngũ Hành Sơn', 'Quận Liên Chiểu', 'Quận Cẩm Lệ']
+  };
 
   // Load categories and default time
   useEffect(() => {
@@ -117,6 +131,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
     // Strip commas to get numeric values
     const startPrice = Number(startPriceRaw.replace(/,/g, ''));
     const buyNowPrice = buyNowPriceRaw ? Number(buyNowPriceRaw.replace(/,/g, '')) : null;
+    const reservePrice = reservePriceRaw ? Number(reservePriceRaw.replace(/,/g, '')) : null;
 
     if (isNaN(startPrice) || startPrice <= 0) {
       setError('Vui lòng nhập giá khởi điểm hợp lệ.');
@@ -130,16 +145,33 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       return;
     }
 
+    if (reservePrice && reservePrice <= startPrice) {
+      setError('Giá bảo lưu phải lớn hơn giá khởi điểm.');
+      setLoading(false);
+      return;
+    }
+
     const payload = {
       title,
       description,
       startPrice,
       buyNowPrice,
+      reservePrice,
       categoryId,
       endTime: new Date(endTime).toISOString(),
       weight: weight ? Number(weight) : 0.5,
+      length: Number(length) || 10,
+      width: Number(width) || 10,
+      height: Number(height) || 10,
       provinceId,
+      districtId: districtId || 'Default District',
       imageUrl: imageUrl || 'https://picsum.photos/seed/auction/600/400', // fallback image
+      attributes: Object.entries(attributes)
+        .filter(([_, val]) => val !== undefined && val !== null && val !== '')
+        .map(([keyId, val]) => ({
+          attributeKeyId: keyId,
+          value: String(val)
+        }))
     };
 
     try {
@@ -160,7 +192,14 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
         setDescription('');
         setStartPriceRaw('');
         setBuyNowPriceRaw('');
+        setReservePriceRaw('');
         setWeight('');
+        setLength('10');
+        setWidth('10');
+        setHeight('10');
+        setProvinceId('HN');
+        setDistrictId('');
+        setAttributes({});
         setImageUrl('');
         setSelectedFile(null);
         setFilePreview(null);
@@ -297,7 +336,10 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               <select
                 id="category-select"
                 value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setAttributes({}); // Reset attributes on category switch
+                }}
                 className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
                 required
               >
@@ -309,13 +351,17 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               </select>
             </div>
 
-            {/* Logistics: Thành phố */}
+            {/* Logistics: Tỉnh / Thành phố */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="province-select" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Tỉnh/Thành phố</label>
+              <label htmlFor="province-select" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Tỉnh / Thành phố</label>
               <select
                 id="province-select"
                 value={provinceId}
-                onChange={(e) => setProvinceId(e.target.value)}
+                onChange={(e) => {
+                  setProvinceId(e.target.value);
+                  setDistrictId(''); // Reset district
+                  setIsCustomDistrict(false);
+                }}
                 className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
                 required
               >
@@ -326,6 +372,76 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                 ))}
               </select>
             </div>
+
+            {/* Logistics: Quận / Huyện */}
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label htmlFor="district-select" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Quận / Huyện</label>
+              <div className="flex gap-2">
+                {!isCustomDistrict && districtSuggestions[provinceId] ? (
+                  <select
+                    id="district-select"
+                    value={districtId}
+                    onChange={(e) => {
+                      if (e.target.value === 'custom_input') {
+                        setIsCustomDistrict(true);
+                        setDistrictId('');
+                      } else {
+                        setDistrictId(e.target.value);
+                      }
+                    }}
+                    className="flex-grow px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
+                    required
+                  >
+                    <option value="">-- Chọn Quận / Huyện --</option>
+                    {districtSuggestions[provinceId].map((dist) => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                    <option value="custom_input">Khác (Nhập thủ công)</option>
+                  </select>
+                ) : (
+                  <div className="flex-1 flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Nhập Quận / Huyện của bạn"
+                      value={districtId}
+                      onChange={(e) => setDistrictId(e.target.value)}
+                      className="flex-grow px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
+                      required
+                    />
+                    {districtSuggestions[provinceId] && (
+                      <button
+                        type="button"
+                        onClick={() => { setIsCustomDistrict(false); setDistrictId(''); }}
+                        className="px-3 py-2 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[10px] hover:bg-neutral-50 font-bold transition-all text-neutral-500 cursor-pointer"
+                      >
+                        Quay lại
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Dynamic Category EAV Attributes Form */}
+            {categories.find(c => c.id === categoryId)?.attributeKeys?.length > 0 && (
+              <div className="md:col-span-2 border border-neutral-200 dark:border-neutral-800 p-4 rounded-2xl bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3 mt-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Thông số cấu hình sản phẩm</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {categories.find(c => c.id === categoryId).attributeKeys.map((key) => (
+                    <div key={key.id} className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-semibold text-neutral-500">{key.name}</label>
+                      <input
+                        type={key.type === 'number' ? 'number' : 'text'}
+                        value={attributes[key.id] || ''}
+                        onChange={(e) => setAttributes(prev => ({ ...prev, [key.id]: e.target.value }))}
+                        placeholder={`Nhập ${key.name.toLowerCase()}`}
+                        className="px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -369,9 +485,22 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               />
             </div>
 
+            {/* Reserve Price */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="reserve-price" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Giá bảo lưu tối thiểu (đ) (Tùy chọn)</label>
+              <input
+                id="reserve-price"
+                type="text"
+                value={reservePriceRaw}
+                onChange={(e) => handlePriceChange(e.target.value, setReservePriceRaw)}
+                placeholder="Ví dụ: 8,000,000"
+                className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
+              />
+            </div>
+
             {/* Weight */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="weight-input" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Cân nặng (kg)</label>
+              <label htmlFor="weight-input" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Cân nặng đóng gói (kg)</label>
               <input
                 id="weight-input"
                 type="number"
@@ -384,8 +513,39 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               />
             </div>
 
+            {/* Dimensions (Dài x Rộng x Cao) */}
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Kích thước đóng gói (cm) (Dài x Rộng x Cao)</label>
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  placeholder="Dài"
+                  value={length}
+                  onChange={(e) => setLength(e.target.value)}
+                  className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-center text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 transition-all"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Rộng"
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-center text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 transition-all"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Cao"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-center text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 transition-all"
+                  required
+                />
+              </div>
+            </div>
+
             {/* End Time */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 md:col-span-2">
               <label htmlFor="end-time" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Thời gian kết thúc</label>
               <input
                 id="end-time"

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { triggerProductUpdate } from './streamController.js';
 import { z } from 'zod';
 import { holdEscrow, releaseEscrow } from '../services/walletService.js';
+import { triggerNotificationSend } from '../utils/notificationEmitter.js';
 
 /**
  * Tính Bước giá Biến thiên tự động theo currentPrice
@@ -48,10 +49,9 @@ export const placeBid = async (req, res) => {
   }
 
   try {
-    // 2. Validate request body using Zod
+    // Validate request body using Zod
     const validation = bidSchema.safeParse(req.body);
     if (!validation.success) {
-      // Trích xuất các thông báo lỗi kiểm duyệt
       const errors = validation.error.errors.map(err => err.message).join(' ');
       return res.status(400).json({
         success: false,
@@ -69,10 +69,9 @@ export const placeBid = async (req, res) => {
     const ipAddress = req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || null;
     const userAgent = req.headers['user-agent'] || null;
 
-
-    // 3. High-security Database Transaction
+    // High-security Database Transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Ensure mock user exists in DB to prevent foreign key constraint error
+      // Ensure mock user exists in DB
       await tx.user.upsert({
         where: { id: userId },
         update: {},
@@ -85,7 +84,7 @@ export const placeBid = async (req, res) => {
         },
       });
 
-      // Row-level Locking: Lock product row to prevent Race Condition
+      // Row-level Locking: Lock product row
       const products = await tx.$queryRaw`
         SELECT * FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
@@ -99,7 +98,7 @@ export const placeBid = async (req, res) => {
       const endTime = new Date(product.end_time);
 
       // Check if auction has ended
-      if (now > endTime) {
+      if (now > endTime || product.status === 'ENDED' || product.status === 'ended' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
         throw new Error("Buổi đấu giá đã kết thúc");
       }
 
@@ -112,26 +111,21 @@ export const placeBid = async (req, res) => {
       let isProxySetup = false;
 
       if (maxAutoBidDecimal !== null) {
-        // Trường hợp Thiết lập Tự động Đấu giá (Proxy Bid)
+        // Proxy Bid
         isProxySetup = true;
-
-        // Kiểm tra và đảm bảo số dư ví đủ để cọc 10% của maxAutoBidAmount
         depositAmount = maxAutoBidDecimal.mul(0.1);
 
-        // Nếu maxAutoBidAmount < nextValidBid, quăng lỗi
         if (maxAutoBidDecimal.lt(nextValidBid)) {
           throw new Error("Mức giá tối đa thiết lập phải lớn hơn giá thầu hợp lệ tiếp theo");
         }
 
-        // Tự động tạo lượt Bid mới bằng chính giá trị nextValidBid
         initialBidAmountDecimal = nextValidBid;
       } else {
-        // Trường hợp đặt giá tĩnh (Manual Bid)
+        // Manual Bid
         if (bidDecimal === null) {
           throw new Error("Vui lòng cung cấp số tiền đặt giá");
         }
 
-        // Kiểm tra xem bidAmount có lớn hơn hoặc bằng nextValidBid không
         if (bidDecimal.lt(nextValidBid)) {
           throw new Error(`Giá đặt phải lớn hơn hoặc bằng giá thầu tối thiểu: ${nextValidBid.toString()}`);
         }
@@ -140,25 +134,36 @@ export const placeBid = async (req, res) => {
         initialBidAmountDecimal = bidDecimal;
       }
 
-      // Gọi hàm holdEscrow để đóng băng depositAmount của User A
+      // Đóng băng tiền cọc
       await holdEscrow(tx, userId, depositAmount);
 
-      // Xử lý hoàn cọc cho người bị vượt giá cũ:
-      // Truy vấn bảng Bid để tìm lượt đặt giá cao nhất hiện tại của sản phẩm đó trước khi bị User A đè giá
+      const notificationsToTrigger = [];
+
+      // Hoàn cọc cho người bị vượt giá cũ
       const oldHighestBid = await tx.bid.findFirst({
         where: { productId: product.id },
         orderBy: { bidAmount: 'desc' }
       });
 
-      // Nếu tìm thấy User B, trả lại tiền cọc cũ cho User B ngay lập tức
       if (oldHighestBid && oldHighestBid.userId && oldHighestBid.bidAmount) {
         const oldDepositAmount = oldHighestBid.isAutoBid && oldHighestBid.maxAutoBidAmount
           ? new Prisma.Decimal(oldHighestBid.maxAutoBidAmount).mul(0.1)
           : new Prisma.Decimal(oldHighestBid.bidAmount).mul(0.1);
         await releaseEscrow(tx, oldHighestBid.userId, oldDepositAmount);
+
+        // Tạo thông báo vượt giá
+        const notif = await tx.notification.create({
+          data: {
+            userId: oldHighestBid.userId,
+            title: 'Bạn đã bị vượt giá',
+            message: `Lượt đặt giá của bạn cho sản phẩm "${product.title}" đã bị vượt qua. Số tiền cọc đã được hoàn trả vào ví.`,
+            type: 'OUTBID'
+          }
+        });
+        notificationsToTrigger.push(notif);
       }
 
-      // Tạo lượt Bid mới đầu tiên của User A
+      // Tạo lượt Bid mới
       const initialBid = await tx.bid.create({
         data: {
           productId: product.id,
@@ -172,25 +177,22 @@ export const placeBid = async (req, res) => {
         },
       });
 
-      // Cập nhật giá sản phẩm tạm thời trong transaction
+      // Cập nhật giá sản phẩm tạm thời
       await tx.product.update({
         where: { id: product.id },
-        data: {
-          currentPrice: initialBidAmountDecimal
-        }
+        data: { currentPrice: initialBidAmountDecimal }
       });
 
       let currentHighestBidderId = userId;
       let currentPrice = initialBidAmountDecimal;
       const bidsCreated = [initialBid];
 
-      // Vòng lặp Đè giá Tự động (The Proxy Loop)
+      // Proxy Loop
       let loopCount = 0;
       const maxIterations = 100;
       while (loopCount < maxIterations) {
         loopCount++;
 
-        // Lấy tất cả lượt đặt giá để lọc ra lượt mới nhất của từng người dùng
         const allBids = await tx.bid.findMany({
           where: { productId: product.id },
           orderBy: { bidTime: 'desc' }
@@ -203,7 +205,6 @@ export const placeBid = async (req, res) => {
           }
         }
 
-        // Tìm xem có User X khác có cấu hình Proxy Bid và maxAutoBidAmount > currentPrice
         let otherProxy = null;
         for (const bid of latestUserBids.values()) {
           if (
@@ -219,32 +220,38 @@ export const placeBid = async (req, res) => {
         }
 
         if (!otherProxy) {
-          break; // Không tìm thấy User X nào khác thỏa mãn, thoát vòng lặp
+          break;
         }
 
-        // Tính giá đặt tiếp theo cho User X
         const currentStep = calculateStepPrice(currentPrice);
         const nextBidAmount = currentPrice.plus(currentStep);
 
         const otherProxyMax = new Prisma.Decimal(otherProxy.maxAutoBidAmount);
         if (nextBidAmount.gt(otherProxyMax)) {
-          // Giá thầu tự động tiếp theo vượt quá giới hạn của User X
           break;
         }
 
-        // Đủ điều kiện đè giá: User X tự động đặt giá tiếp theo
-        // 1. Đóng băng tiền cọc cho User X (10% của maxAutoBidAmount)
+        // Đóng băng cọc User X và hoàn cọc currentHighestBidder
         const userXDeposit = otherProxyMax.mul(0.1);
         await holdEscrow(tx, otherProxy.userId, userXDeposit);
 
-        // 2. Hoàn cọc cho người giữ giá cao nhất cũ vừa bị đè (currentHighestBidderId)
         const outbidBid = bidsCreated[bidsCreated.length - 1];
         const outbidDeposit = outbidBid.isAutoBid && outbidBid.maxAutoBidAmount
           ? new Prisma.Decimal(outbidBid.maxAutoBidAmount).mul(0.1)
           : new Prisma.Decimal(outbidBid.bidAmount).mul(0.1);
         await releaseEscrow(tx, currentHighestBidderId, outbidDeposit);
 
-        // 3. Tạo bản ghi đặt giá mới cho User X
+        // Thông báo cho người bị đè
+        const notifOutbid = await tx.notification.create({
+          data: {
+            userId: currentHighestBidderId,
+            title: 'Bạn đã bị vượt giá (Đấu giá Tự động)',
+            message: `Lượt đặt giá của bạn cho sản phẩm "${product.title}" đã bị hệ thống tự động vượt qua.`,
+            type: 'OUTBID'
+          }
+        });
+        notificationsToTrigger.push(notifOutbid);
+
         const newBid = await tx.bid.create({
           data: {
             productId: product.id,
@@ -260,13 +267,11 @@ export const placeBid = async (req, res) => {
 
         bidsCreated.push(newBid);
 
-        // 4. Cập nhật currentPrice của sản phẩm
         await tx.product.update({
           where: { id: product.id },
           data: { currentPrice: nextBidAmount }
         });
 
-        // 5. Cập nhật tracking variables để tiếp tục vòng lặp
         currentHighestBidderId = otherProxy.userId;
         currentPrice = nextBidAmount;
       }
@@ -279,12 +284,10 @@ export const placeBid = async (req, res) => {
       const timeRemainingMs = endTime.getTime() - now.getTime();
       let newEndTime = undefined;
 
-      // If time remaining is less than 30s, add 2 minutes
       if (timeRemainingMs > 0 && timeRemainingMs < 30 * 1000) {
         newEndTime = new Date(endTime.getTime() + 2 * 60 * 1000);
       }
 
-      // Update product info (currentPrice and new endTime if applicable)
       const updatedProduct = await tx.product.update({
         where: { id: product.id },
         data: {
@@ -297,10 +300,11 @@ export const placeBid = async (req, res) => {
         currentPrice: updatedProduct.currentPrice,
         endTime: updatedProduct.endTime,
         bidsCreated: bidsCreated,
+        notificationsToTrigger
       };
     });
 
-    // Broadcast SSE update event for each generated bid in chronological order
+    // Broadcast SSE update event for bids
     for (const bid of result.bidsCreated) {
       triggerProductUpdate(
         productId,
@@ -309,11 +313,16 @@ export const placeBid = async (req, res) => {
       );
     }
 
+    // Broadcast user notifications
+    for (const notif of result.notificationsToTrigger) {
+      triggerNotificationSend(notif.userId, notif);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Đặt giá thành công",
       data: {
-        currentPrice: result.currentPrice,
+        currentPrice: Number(result.currentPrice),
         endTime: result.endTime,
       },
     });
@@ -326,29 +335,15 @@ export const placeBid = async (req, res) => {
   }
 };
 
-/**
- * Controller to handle buy-it-now requests, instantly ending the auction.
- * 
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 export const buyNow = async (req, res) => {
   const userId = req.session?.userId;
-
   if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: 'Bạn cần đăng nhập để mua đứt sản phẩm'
-    });
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để mua đứt sản phẩm' });
   }
 
   const { productId } = req.body;
-
   if (!productId) {
-    return res.status(400).json({
-      success: false,
-      error: 'Thiếu thông tin productId.'
-    });
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin productId.' });
   }
 
   try {
@@ -366,7 +361,6 @@ export const buyNow = async (req, res) => {
         },
       });
 
-      // Row-level lock product to prevent double buy or concurrent bid updates
       const products = await tx.$queryRaw`
         SELECT * FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
@@ -379,7 +373,7 @@ export const buyNow = async (req, res) => {
       const now = new Date();
       const endTime = new Date(product.end_time);
 
-      if (now > endTime || product.status === 'ENDED' || product.status === 'ended') {
+      if (now > endTime || product.status === 'ENDED' || product.status === 'ended' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
         throw new Error("Buổi đấu giá đã kết thúc");
       }
 
@@ -399,10 +393,12 @@ export const buyNow = async (req, res) => {
         throw new Error("Số dư ví không đủ để đặt cọc mua đứt (cần cọc 10% giá trị mua đứt).");
       }
 
-      // 1. Hold deposit (10% of buyNowPrice)
+      // Hold deposit (10%)
       await holdEscrow(tx, userId, depositAmount);
 
-      // 2. Release previous highest bidder deposit if any
+      const notificationsToTrigger = [];
+
+      // Release previous highest bidder deposit if any
       const oldHighestBid = await tx.bid.findFirst({
         where: { productId: product.id },
         orderBy: { bidAmount: 'desc' }
@@ -413,9 +409,42 @@ export const buyNow = async (req, res) => {
           ? new Prisma.Decimal(oldHighestBid.maxAutoBidAmount).mul(0.1)
           : new Prisma.Decimal(oldHighestBid.bidAmount).mul(0.1);
         await releaseEscrow(tx, oldHighestBid.userId, oldDeposit);
+
+        // Notify old highest bidder
+        const notifOutbid = await tx.notification.create({
+          data: {
+            userId: oldHighestBid.userId,
+            title: 'Buổi đấu giá kết thúc đột ngột (Mua đứt)',
+            message: `Sản phẩm "${product.title}" đã được một người dùng khác mua đứt. Tiền cọc đấu giá của bạn đã được hoàn trả.`,
+            type: 'SYSTEM'
+          }
+        });
+        notificationsToTrigger.push(notifOutbid);
       }
 
-      // 3. Create winning bid record
+      // Notify seller
+      const notifSeller = await tx.notification.create({
+        data: {
+          userId: product.seller_id,
+          title: 'Sản phẩm đã được mua đứt',
+          message: `Sản phẩm "${product.title}" của bạn đã được mua đứt với giá ${Number(buyNowPriceDecimal).toLocaleString('vi-VN')} đ. Vui lòng chuẩn bị giao hàng.`,
+          type: 'SYSTEM'
+        }
+      });
+      notificationsToTrigger.push(notifSeller);
+
+      // Notify buyer
+      const notifBuyer = await tx.notification.create({
+        data: {
+          userId: userId,
+          title: 'Mua đứt sản phẩm thành công',
+          message: `Bạn đã mua đứt sản phẩm "${product.title}" thành công. Vui lòng thanh toán 90% còn lại.`,
+          type: 'WON'
+        }
+      });
+      notificationsToTrigger.push(notifBuyer);
+
+      // Create winning bid record
       const bid = await tx.bid.create({
         data: {
           productId: product.id,
@@ -427,13 +456,14 @@ export const buyNow = async (req, res) => {
         }
       });
 
-      // 4. End the auction: set currentPrice = buyNowPrice, status = ENDED
+      // End the auction: set currentPrice = buyNowPrice, status = PENDING_PAYMENT
       const updatedProduct = await tx.product.update({
         where: { id: product.id },
         data: {
           currentPrice: buyNowPriceDecimal,
-          status: "ENDED",
-          endTime: now
+          status: "PENDING_PAYMENT",
+          endTime: now,
+          winnerId: userId
         }
       });
 
@@ -441,7 +471,8 @@ export const buyNow = async (req, res) => {
         currentPrice: updatedProduct.currentPrice,
         endTime: updatedProduct.endTime,
         status: updatedProduct.status,
-        bid
+        bid,
+        notificationsToTrigger
       };
     });
 
@@ -453,11 +484,16 @@ export const buyNow = async (req, res) => {
       result.status
     );
 
+    // Trigger user notifications via SSE
+    for (const notif of result.notificationsToTrigger) {
+      triggerNotificationSend(notif.userId, notif);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Mua đứt sản phẩm thành công",
       data: {
-        currentPrice: result.currentPrice,
+        currentPrice: Number(result.currentPrice),
         endTime: result.endTime,
         status: result.status
       }
@@ -470,4 +506,3 @@ export const buyNow = async (req, res) => {
     });
   }
 };
-
