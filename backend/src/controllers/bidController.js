@@ -98,7 +98,7 @@ export const placeBid = async (req, res) => {
       const endTime = new Date(product.end_time);
 
       // Check if auction has ended
-      if (now > endTime || product.status === 'ENDED' || product.status === 'ended' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
+      if (now > endTime || product.status === 'ENDED' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
         throw new Error("Buổi đấu giá đã kết thúc");
       }
 
@@ -373,7 +373,7 @@ export const buyNow = async (req, res) => {
       const now = new Date();
       const endTime = new Date(product.end_time);
 
-      if (now > endTime || product.status === 'ENDED' || product.status === 'ended' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
+      if (now > endTime || product.status === 'ENDED' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
         throw new Error("Buổi đấu giá đã kết thúc");
       }
 

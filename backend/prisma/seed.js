@@ -262,8 +262,12 @@ async function main() {
         endTime: productData.endTime,
         status: productData.status,
         categoryId: productData.categoryId,
+        sellerId: productData.sellerId || 'seller-id-placeholder',
       },
-      create: productData,
+      create: {
+        ...productData,
+        sellerId: productData.sellerId || 'seller-id-placeholder',
+      },
     });
     console.log(`[SEED] Created/Verified product: ${productData.title} (ID: ${productData.id})`);
 

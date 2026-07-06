@@ -20,9 +20,7 @@ cron.schedule('* * * * *', async () => {
           endTime: {
             lte: now,
           },
-          status: {
-            in: ['active', 'ACTIVE'],
-          },
+          status: 'ACTIVE',
         },
       });
 

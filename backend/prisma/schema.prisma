@@ -11,6 +11,7 @@ model User {
   id              String        @id @default(uuid())
   email           String        @unique
   passwordHash    String        @map("password_hash")
+  name            String?       // Tên hiển thị của người dùng
   balance         Decimal       @default(10000000.00) @db.Decimal(12, 2)
   walletBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("wallet_balance")
   frozenBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("frozen_balance")
@@ -20,7 +21,7 @@ model User {
   idCardNumber     String?      @map("id_card_number")
   idCardImageUrl   String?      @map("id_card_image_url")
   shopAddress      String?      @map("shop_address")
-  kycStatus        String       @default("NONE") @map("kyc_status")
+  kycStatus        KycStatus    @default(NONE) @map("kyc_status")
   avatarUrl        String?      @map("avatar_url")
   phoneNumber      String?      @map("phone_number")
   bids            Bid[]
@@ -50,7 +51,7 @@ model Product {
   autoExtension Boolean            @default(true) @map("auto_extension")
   startTime     DateTime           @default(now()) @map("start_time")
   endTime       DateTime           @map("end_time")
-  status        String             @default("active")
+  status        ProductStatus      @default(ACTIVE)
   categoryId    String             @map("category_id")
   weight        Float              @default(0.5)
   length        Int                @default(10)
@@ -59,7 +60,7 @@ model Product {
   provinceId    String             @default("") @map("province_id")
   districtId    String             @default("") @map("district_id")
   
-  sellerId      String             @default("seller-id-placeholder") @map("seller_id")
+  sellerId      String             @map("seller_id")
   seller        User               @relation("ProductSeller", fields: [sellerId], references: [id])
   winnerId      String?            @map("winner_id")
   winner        User?              @relation("ProductWinner", fields: [winnerId], references: [id])
@@ -74,6 +75,11 @@ model Product {
   review        Review?
   watchlist     Watchlist[]        @relation("ProductWatchlist")
 
+  @@index([status])
+  @@index([categoryId])
+  @@index([sellerId])
+  @@index([winnerId])
+  @@index([endTime])
   @@map("products")
 }
 
@@ -118,7 +124,7 @@ model Bid {
   userId           String   @map("user_id")
   bidAmount        Decimal  @map("bid_amount") @db.Decimal(12, 2)
   bidTime          DateTime @default(now()) @map("bid_time")
-  status           String?  @default("success")
+  status           BidStatus? @default(SUCCESS)
   ipAddress        String?  @map("ip_address")
   userAgent        String?  @map("user_agent")
   isAutoBid        Boolean  @default(false) @map("is_auto_bid")
@@ -127,6 +133,8 @@ model Bid {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([productId])
+  @@index([userId])
   @@map("bids")
 }
 
@@ -134,12 +142,13 @@ model Transaction {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   amount    Decimal  @db.Decimal(12, 2)
-  type      String
-  status    String   @default("COMPLETED")
+  type      TransactionType
+  status    TransactionStatus @default(COMPLETED)
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("transactions")
 }
 
@@ -150,13 +159,14 @@ model DisputeTicket {
   reason           String
   description      String
   unboxingVideoUrl String?          @map("unboxing_video_url")
-  status           String           @default("PENDING")
+  status           DisputeStatus    @default(PENDING)
   createdAt        DateTime         @default(now()) @map("created_at")
 
   product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
   openedBy         User             @relation("UserDisputeTickets", fields: [openedById], references: [id], onDelete: Cascade)
   messages         DisputeMessage[]
 
+  @@index([openedById])
   @@map("dispute_tickets")
 }
 
@@ -170,6 +180,8 @@ model DisputeMessage {
   ticket    DisputeTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   sender    User          @relation("UserDisputeMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
+  @@index([ticketId])
+  @@index([senderId])
   @@map("dispute_messages")
 }
 
@@ -186,6 +198,8 @@ model Review {
   targetUser User    @relation("ReviewsReceived", fields: [targetUserId], references: [id], onDelete: Cascade)
   product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@index([reviewerId])
+  @@index([targetUserId])
   @@map("reviews")
 }
 
@@ -195,11 +209,12 @@ model Notification {
   title     String
   message   String
   isRead    Boolean  @default(false) @map("is_read")
-  type      String   // 'OUTBID' | 'WON' | 'SYSTEM'
+  type      NotificationType
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isRead])
   @@map("notifications")
 }
 
@@ -213,6 +228,61 @@ model Watchlist {
   product   Product  @relation("ProductWatchlist", fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@index([productId])
   @@map("watchlist")
+}
+
+enum KycStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  ACTIVE
+  PENDING_PAYMENT
+  PAID
+  SHIPPED
+  COMPLETED
+  UNSOLD
+  DISPUTED
+  ENDED
+  DRAFT
+  CANCELLED
+}
+
+enum BidStatus {
+  SUCCESS
+  OUTBID
+  REFUNDED
+  CANCELLED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  HOLD_ESCROW
+  RELEASE_ESCROW
+  PAYMENT
+  DISPUTE_PAY_BUYER_DEDUCT
+  DISPUTE_PAY_SELLER_ADD
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum DisputeStatus {
+  PENDING
+  RESOLVED
+}
+
+enum NotificationType {
+  OUTBID
+  WON
+  SYSTEM
 }
 
