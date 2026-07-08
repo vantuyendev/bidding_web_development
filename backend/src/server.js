@@ -18,6 +18,8 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import watchlistRoutes from './routes/watchlistRoutes.js';
 import { requireAuth } from './middlewares/authMiddleware.js';
+import { errorHandler } from './middlewares/errorMiddleware.js';
+import { logger } from './utils/logger.js';
 import './workers/auctionWorker.js';
 
 // Load environment variables
@@ -124,6 +126,9 @@ app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
 app.use('/api/reviews', requireAuth, reviewRoutes);
 
+// Mounting Centralized Error Handler Middleware (MUST be registered after all route definitions)
+app.use(errorHandler);
+
 // Basic route to check if server is healthy
 app.get('/', (req, res) => {
   res.json({
@@ -135,5 +140,8 @@ app.get('/', (req, res) => {
 
 // Listen on the configured port
 app.listen(PORT, () => {
-  console.log(`[Server] running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  logger.info(`Server successfully started`, {
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development'
+  });
 });

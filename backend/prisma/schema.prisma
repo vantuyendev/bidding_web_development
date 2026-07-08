@@ -34,6 +34,9 @@ model User {
   reviewsGiven    Review[]      @relation("ReviewsGiven")
   reviewsReceived Review[]      @relation("ReviewsReceived")
   notifications   Notification[] @relation("UserNotifications")
+  auditLogs       AuditLog[]
+  supportTickets  SupportTicket[]
+  supportMessages SupportMessage[]
 
   @@map("users")
 }
@@ -74,6 +77,7 @@ model Product {
   disputeTicket DisputeTicket?
   review        Review?
   watchlist     Watchlist[]        @relation("ProductWatchlist")
+  transactions  Transaction[]
 
   @@index([status])
   @@index([categoryId])
@@ -145,10 +149,13 @@ model Transaction {
   type      TransactionType
   status    TransactionStatus @default(COMPLETED)
   createdAt DateTime @default(now()) @map("created_at")
+  productId String?  @map("product_id")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([productId])
   @@map("transactions")
 }
 
@@ -230,6 +237,47 @@ model Watchlist {
   @@unique([userId, productId])
   @@index([productId])
   @@map("watchlist")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  action    String
+  target    String?
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  details   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model SupportTicket {
+  id          String           @id @default(uuid())
+  userId      String           @map("user_id")
+  subject     String
+  status      String           @default("OPEN") // "OPEN", "CLOSED"
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    SupportMessage[]
+
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id        String        @id @default(uuid())
+  ticketId  String        @map("ticket_id")
+  senderId  String        @map("sender_id")
+  message   String
+  sentAt    DateTime      @default(now()) @map("sent_at")
+
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender    User          @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("support_messages")
 }
 
 enum KycStatus {

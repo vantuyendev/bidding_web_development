@@ -157,7 +157,7 @@ export const adminResolveTicket = async (req, res) => {
 
       if (status === 'RESOLVED_REFUND') {
         // Refund Buyer: Release buyer's frozen deposit to buyer's wallet balance
-        await releaseEscrow(tx, buyerId, depositAmount);
+        await releaseEscrow(tx, buyerId, depositAmount, product.id);
       } else if (status === 'RESOLVED_PAY') {
         // Pay Seller: Release deposit from buyer's frozen balance and transfer to seller
         const buyer = await tx.user.findUnique({

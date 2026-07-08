@@ -3,13 +3,14 @@ import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
 import { triggerProductUpdate } from '../controllers/streamController.js';
 import { releaseEscrow } from '../services/walletService.js';
+import { logger } from '../utils/logger.js';
 
-console.log('[CRON WORKER] Background auction worker script loaded.');
+logger.info('Background auction worker script loaded');
 
 // Setup cron schedule to run every minute ('* * * * *')
 cron.schedule('* * * * *', async () => {
   const now = new Date();
-  console.log(`[CRON WORKER] Checking for expired active auctions at ${now.toISOString()}...`);
+  logger.info('Checking for expired active auctions', { timestamp: now.toISOString() });
 
   try {
     // Run db queries inside a transaction for complete data integrity
@@ -73,9 +74,12 @@ cron.schedule('* * * * *', async () => {
               }
             });
 
-            console.log(
-              `[CRON WORKER] Sản phẩm "${product.title}" đã thắng. Người thắng cuộc: User ID "${highestBid.userId}" với mức giá ${highestBid.bidAmount} đ.`
-            );
+            logger.info('Auction ended with a winner', {
+              productId: product.id,
+              productTitle: product.title,
+              winnerId: highestBid.userId,
+              winningAmount: Number(highestBid.bidAmount)
+            });
           } else {
             // Reserve price NOT met -> UNSOLD, refund deposit to bidder
             updatedStatus = 'UNSOLD';
@@ -85,7 +89,7 @@ cron.schedule('* * * * *', async () => {
               ? new Prisma.Decimal(highestBid.maxAutoBidAmount).mul(0.1)
               : new Prisma.Decimal(highestBid.bidAmount).mul(0.1);
 
-            await releaseEscrow(tx, highestBid.userId, depositAmount);
+            await releaseEscrow(tx, highestBid.userId, depositAmount, product.id);
 
             // Create notification for bidder
             await tx.notification.create({
@@ -107,9 +111,12 @@ cron.schedule('* * * * *', async () => {
               }
             });
 
-            console.log(
-              `[CRON WORKER] Sản phẩm "${product.title}" đã kết thúc nhưng KHÔNG ĐẠT GIÁ BẢO LƯU (${product.reservePrice} đ). Giá cược cao nhất: ${highestBid.bidAmount} đ.`
-            );
+            logger.info('Auction ended unsold (reserve price not met)', {
+              productId: product.id,
+              productTitle: product.title,
+              highestBidAmount: Number(highestBid.bidAmount),
+              reservePrice: Number(product.reservePrice)
+            });
           }
         } else {
           // No bids -> UNSOLD
@@ -125,9 +132,10 @@ cron.schedule('* * * * *', async () => {
             }
           });
 
-          console.log(
-            `[CRON WORKER] Sản phẩm "${product.title}" đã kết thúc nhưng không có lượt đặt giá nào.`
-          );
+          logger.info('Auction ended unsold (no bids)', {
+            productId: product.id,
+            productTitle: product.title
+          });
         }
 
         // Update status and winner of product
@@ -152,7 +160,7 @@ cron.schedule('* * * * *', async () => {
 
     // Emit SSE real-time updates for all closed auctions AFTER database transaction succeeds
     if (transactionResult.length > 0) {
-      console.log(`[CRON WORKER] Successfully closed ${transactionResult.length} expired auctions.`);
+      logger.info('Successfully closed expired auctions', { count: transactionResult.length });
       for (const auction of transactionResult) {
         triggerProductUpdate(
           auction.productId,
@@ -163,7 +171,6 @@ cron.schedule('* * * * *', async () => {
       }
     }
   } catch (error) {
-    console.error('[CRON WORKER] Error running closeExpiredAuctions:', error);
+    logger.error('Error running closeExpiredAuctions background worker', error);
   }
 });
-

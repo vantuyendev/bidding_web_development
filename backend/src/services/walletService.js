@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client';
  * @param {string} userId - ID of the user
  * @param {number|Prisma.Decimal|string} amount - Amount to freeze
  */
-export async function holdEscrow(tx, userId, amount) {
+export async function holdEscrow(tx, userId, amount, productId = null) {
   if (!tx) {
     throw new Error("Transaction client context (tx) là bắt buộc.");
   }
@@ -60,7 +60,8 @@ export async function holdEscrow(tx, userId, amount) {
       userId: userId,
       amount: amountDecimal,
       type: "HOLD_ESCROW",
-      status: "COMPLETED"
+      status: "COMPLETED",
+      productId: productId
     }
   });
 }
@@ -71,7 +72,7 @@ export async function holdEscrow(tx, userId, amount) {
  * @param {string} userId - ID of the user
  * @param {number|Prisma.Decimal|string} amount - Amount to release
  */
-export async function releaseEscrow(tx, userId, amount) {
+export async function releaseEscrow(tx, userId, amount, productId = null) {
   if (!tx) {
     throw new Error("Transaction client context (tx) là bắt buộc.");
   }
@@ -122,7 +123,8 @@ export async function releaseEscrow(tx, userId, amount) {
       userId: userId,
       amount: amountDecimal,
       type: "RELEASE_ESCROW",
-      status: "COMPLETED"
+      status: "COMPLETED",
+      productId: productId
     }
   });
 }

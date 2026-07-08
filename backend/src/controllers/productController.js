@@ -1,10 +1,24 @@
 import prisma from '../models/db.js';
+import ApiError from '../utils/ApiError.js';
 
-// GET /api/products - Get all products in the database
-export const getProducts = async (req, res) => {
+// GET /api/products - Get all products in the database (with query optimization)
+export const getProducts = async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
       orderBy: { startTime: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        imageUrl: true,
+        startPrice: true,
+        currentPrice: true,
+        buyNowPrice: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        categoryId: true
+      }
     });
 
     // Convert Decimals to numbers for easier consumption on frontend
@@ -20,15 +34,12 @@ export const getProducts = async (req, res) => {
       data: formattedProducts,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi không xác định.",
-    });
+    return next(error);
   }
 };
 
 // GET /api/products/:id - Get a product by ID (enriched with EAV specs, bids, seller, etc.)
-export const getProductDetail = async (req, res) => {
+export const getProductDetail = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -70,10 +81,7 @@ export const getProductDetail = async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        error: "Không tìm thấy sản phẩm."
-      });
+      throw new ApiError(404, "Không tìm thấy sản phẩm.");
     }
 
     // Convert Decimals to numbers for easier consumption on frontend
@@ -113,15 +121,12 @@ export const getProductDetail = async (req, res) => {
       data: formattedProduct
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi không xác định."
-    });
+    return next(error);
   }
 };
 
 // GET /api/products/categories/:categorySlug/filters - Get dynamic filters for a category
-export const getCategoryFilters = async (req, res) => {
+export const getCategoryFilters = async (req, res, next) => {
   const { categorySlug } = req.params;
 
   try {
@@ -133,10 +138,7 @@ export const getCategoryFilters = async (req, res) => {
     });
 
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        error: "Không tìm thấy danh mục ngành hàng."
-      });
+      throw new ApiError(404, "Không tìm thấy danh mục ngành hàng.");
     }
 
     // Dynamically retrieve unique options for each attribute key to aid front-end filter generation
@@ -164,15 +166,12 @@ export const getCategoryFilters = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi không xác định."
-    });
+    return next(error);
   }
 };
 
-// GET /api/products/search - Search products with dynamic EAV filters
-export const searchProducts = async (req, res) => {
+// GET /api/products/search - Search products with dynamic EAV filters (with query optimization)
+export const searchProducts = async (req, res, next) => {
   try {
     const { q, query, categorySlug, categoryId, page = 1, limit = 10 } = req.query;
 
@@ -268,7 +267,18 @@ export const searchProducts = async (req, res) => {
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where: whereClause,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          imageUrl: true,
+          startPrice: true,
+          currentPrice: true,
+          buyNowPrice: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+          categoryId: true,
           category: true,
           attributes: {
             include: {
@@ -312,15 +322,12 @@ export const searchProducts = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi không xác định."
-    });
+    return next(error);
   }
 };
 
 // POST /api/products - Create a new product for bidding (Seller only)
-export const createProduct = async (req, res) => {
+export const createProduct = async (req, res, next) => {
   try {
     const userId = req.session.userId;
 
@@ -330,10 +337,7 @@ export const createProduct = async (req, res) => {
     });
 
     if (!user || user.isVerifiedSeller === false) {
-      return res.status(403).json({
-        success: false,
-        error: 'Bạn cần xác minh tài khoản để trở thành Người bán hợp lệ trước khi đăng bài.',
-      });
+      throw new ApiError(403, 'Bạn cần xác minh tài khoản để trở thành Người bán hợp lệ trước khi đăng bài.');
     }
 
     // 2. Xử lý dữ liệu đầu vào
@@ -371,28 +375,47 @@ export const createProduct = async (req, res) => {
     }
 
     // Gán currentPrice bằng đúng với startPrice, sellerId ép cứng từ session
-    const product = await prisma.product.create({
-      data: {
-        title,
-        description,
-        startPrice: Number(startPrice),
-        currentPrice: Number(startPrice),
-        buyNowPrice: buyNowPrice ? Number(buyNowPrice) : null,
-        reservePrice: reservePrice ? Number(reservePrice) : null,
-        stepPrice: stepPrice ? Number(stepPrice) : undefined,
-        categoryId,
-        endTime: new Date(endTime),
-        weight: weight ? Number(weight) : undefined,
-        length: length ? Number(length) : undefined,
-        width: width ? Number(width) : undefined,
-        height: height ? Number(height) : undefined,
-        provinceId: provinceId || undefined,
-        districtId: districtId || undefined,
-        sellerId: userId,
-        attributes: parsedAttributes.length > 0 ? {
-          create: parsedAttributes
-        } : undefined
-      },
+    const product = await prisma.$transaction(async (tx) => {
+      const prod = await tx.product.create({
+        data: {
+          title,
+          description,
+          startPrice: Number(startPrice),
+          currentPrice: Number(startPrice),
+          buyNowPrice: buyNowPrice ? Number(buyNowPrice) : null,
+          reservePrice: reservePrice ? Number(reservePrice) : null,
+          stepPrice: stepPrice ? Number(stepPrice) : undefined,
+          categoryId,
+          endTime: new Date(endTime),
+          weight: weight ? Number(weight) : undefined,
+          length: length ? Number(length) : undefined,
+          width: width ? Number(width) : undefined,
+          height: height ? Number(height) : undefined,
+          provinceId: provinceId || undefined,
+          districtId: districtId || undefined,
+          sellerId: userId,
+          attributes: parsedAttributes.length > 0 ? {
+            create: parsedAttributes
+          } : undefined
+        },
+      });
+
+      // Tạo Audit Log cho Product Creation
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'CREATE_PRODUCT',
+          target: prod.id,
+          ipAddress: req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || null,
+          userAgent: req.headers['user-agent'] || null,
+          details: JSON.stringify({
+            title: prod.title,
+            startPrice: Number(prod.startPrice)
+          })
+        }
+      });
+
+      return prod;
     });
 
     // Format response (convert Decimals to numbers for frontend consumption)
@@ -410,10 +433,6 @@ export const createProduct = async (req, res) => {
       data: formattedProduct,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi tạo sản phẩm.',
-    });
+    return next(error);
   }
 };
-
