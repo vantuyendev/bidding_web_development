@@ -1,1 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Syne:wght@400..800&display=swap');
+
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-display: "Syne", sans-serif;
+
+  --color-gold-50: #fbf8f3;
+  --color-gold-100: #f4edd9;
+  --color-gold-200: #e7dbb3;
+  --color-gold-300: #d6c084;
+  --color-gold-400: #c5a45b;
+  --color-gold-500: #b58d3d;
+  --color-gold-600: #99712f;
+  --color-gold-700: #7d5727;
+  --color-gold-800: #664421;
+  --color-gold-900: #54371d;
+  
+  --animate-spring-in: spring-in 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  --animate-fade-in-up: fade-in-up 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes spring-in {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(2rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Custom classes for agency-level aesthetics */
+.text-grain {
+  position: relative;
+}
+.text-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+}
+
+/* Scroll Fade Up Animation classes */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(1.5rem);
+  transition: opacity 0.8s cubic-bezier(0.32, 0.72, 0, 1), transform 0.8s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.reveal-on-scroll.active {
+  opacity: 1;
+  transform: translateY(0);
+}
