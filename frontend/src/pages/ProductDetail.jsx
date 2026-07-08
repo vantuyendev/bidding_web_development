@@ -513,7 +513,9 @@ export default function ProductDetail() {
             to="/"
             className="flex items-center gap-2 text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white text-xs font-bold transition-colors group"
           >
-            <span className="transform group-hover:-translate-x-0.5 transition-transform inline-block">←</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 transform group-hover:-translate-x-0.5 transition-transform inline-block">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
             QUAY LẠI TRANG CHỦ
           </Link>
           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono tracking-wider font-semibold">
@@ -542,7 +544,9 @@ export default function ProductDetail() {
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-zinc-400 dark:text-zinc-650">
-                    <span className="text-4xl">🖼️</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-zinc-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                    </svg>
                     <span className="text-xs font-semibold">Chưa có hình ảnh sản phẩm</span>
                   </div>
                 )}
@@ -655,8 +659,10 @@ export default function ProductDetail() {
                   {/* Tab Payment Escrow */}
                   {activeTab === 'payment' && (
                     <div className="space-y-5 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                      <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-400 rounded-2xl font-bold flex gap-3">
-                        <span className="text-base">🤝</span>
+                      <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-400 rounded-2xl font-bold flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-amber-600 flex-shrink-0">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
                         <p>Aura Bid Escrow - Bảo vệ quyền lợi người mua & người bán tối đa.</p>
                       </div>
                       <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-white mt-4">Điều khoản thầu cọc</h4>
@@ -837,16 +843,19 @@ export default function ProductDetail() {
 
                   {isEnded ? (
                     <div className="p-4 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-800/80 rounded-2xl text-xs space-y-4">
-                      <p className="font-bold text-zinc-900 dark:text-white border-b border-zinc-200/50 dark:border-zinc-800 pb-2">
-                        🏁 Trạng thái giao dịch Ký quỹ (Escrow)
+                      <p className="font-bold text-zinc-900 dark:text-white border-b border-zinc-200/50 dark:border-zinc-800 pb-2 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h1.5m9.75 0H18M3 21h1.5m9.75 0H18M3 9h1.5m9.75 0H18M3 15h1.5m9.75 0H18m-9-12v18" />
+                        </svg>
+                        <span>Trạng thái giao dịch Ký quỹ (Escrow)</span>
                       </p>
 
                       {product.status === 'PENDING_PAYMENT' && (
                         <div className="space-y-3">
                           <p className="text-zinc-500 leading-relaxed font-medium">
                             {user?.id === product.winnerId
-                              ? '🎉 Chúc mừng bạn đã thắng lot này! Vui lòng thanh toán 90% số tiền còn lại và điền địa chỉ giao nhận.'
-                              : '⏳ Đang chờ người thắng cuộc hoàn tất thủ tục thanh toán ký quỹ còn lại.'}
+                              ? 'Chúc mừng bạn đã thắng lot này! Vui lòng thanh toán 90% số tiền còn lại và điền địa chỉ giao nhận.'
+                              : 'Đang chờ người thắng cuộc hoàn tất thủ tục thanh toán ký quỹ còn lại.'}
                           </p>
                           {user?.id === product.winnerId && (
                             <button
@@ -884,10 +893,10 @@ export default function ProductDetail() {
 
                       {product.status === 'SHIPPED' && (
                         <div className="space-y-3">
-                          <p className="text-zinc-500 leading-relaxed font-medium">
+                          <p className="text-zinc-550 leading-relaxed font-medium">
                             {user?.id === product.winnerId
-                              ? '🚚 Đơn hàng đang được giao tới bạn. Xác nhận sau khi nhận sản phẩm đúng chất lượng mô tả.'
-                              : '⏳ Hàng đang trên đường giao nhận. Giải ngân ký quỹ khi người mua bấm xác nhận hàng.'}
+                              ? 'Đơn hàng đang được giao tới bạn. Xác nhận sau khi nhận sản phẩm đúng chất lượng mô tả.'
+                              : 'Hàng đang trên đường giao nhận. Giải ngân ký quỹ khi người mua bấm xác nhận hàng.'}
                           </p>
                           {user?.id === product.winnerId && (
                             <button
@@ -912,8 +921,11 @@ export default function ProductDetail() {
                       )}
 
                       {product.status === 'UNSOLD' && (
-                        <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-xl leading-relaxed text-center font-bold">
-                          ⚠️ Phiên đấu giá kết thúc không thành công.
+                        <div className="p-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-xl leading-relaxed text-center font-bold flex items-center justify-center gap-1.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-zinc-450">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                          </svg>
+                          <span>Phiên đấu giá kết thúc không thành công.</span>
                         </div>
                       )}
 
@@ -982,7 +994,12 @@ export default function ProductDetail() {
                           className="h-4.5 w-4.5 rounded border-zinc-300 text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
                         />
                         <label htmlFor="proxy-bid-toggle-detail" className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer flex flex-col">
-                          <span>🤖 Kích hoạt Robot Đấu giá Tự động (Proxy Bid)</span>
+                          <span className="flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-amber-500">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25M7.5 12h9M7.5 9h9" />
+                            </svg>
+                            <span>Kích hoạt Robot Đấu giá Tự động (Proxy Bid)</span>
+                          </span>
                           <span className="text-[8px] font-medium text-zinc-400 mt-0.5">Tự động nâng giá thầu khi có người khác vượt giá.</span>
                         </label>
                       </div>
@@ -1008,8 +1025,11 @@ export default function ProductDetail() {
                           </div>
 
                           {bidAmount && !isNaN(Number(bidAmount)) && Number(bidAmount) > 0 && (
-                            <span className="text-[9px] text-zinc-400 dark:text-zinc-500 italic block mt-1">
-                              ⚠️ Tạm khóa 10% ({Math.floor(Number(bidAmount) * 0.1).toLocaleString('vi-VN')} đ) trong ví làm cọc.
+                            <span className="text-[9px] text-zinc-400 dark:text-zinc-500 italic flex items-center gap-1 mt-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-amber-500">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                              </svg>
+                              <span>Tạm khóa 10% ({Math.floor(Number(bidAmount) * 0.1).toLocaleString('vi-VN')} đ) trong ví làm cọc.</span>
                             </span>
                           )}
                         </div>
@@ -1028,9 +1048,12 @@ export default function ProductDetail() {
                               type="button"
                               onClick={handleBuyNow}
                               disabled={isSubmitting || isEnded}
-                              className="flex-1 py-3.5 px-6 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 shadow-md transition-all cursor-pointer"
+                              className="flex-1 py-3.5 px-6 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                             >
-                              ⚡ Mua đứt: {Number(product.buyNowPrice).toLocaleString('vi-VN')} đ
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                              </svg>
+                              <span>Mua đứt: {Number(product.buyNowPrice).toLocaleString('vi-VN')} đ</span>
                             </button>
                           )}
                         </div>
@@ -1126,13 +1149,18 @@ export default function ProductDetail() {
                           className="max-h-full max-w-full object-contain transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105"
                         />
                       ) : (
-                        <span className="text-2xl text-zinc-400">🖼️</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-zinc-400">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                        </svg>
                       )}
                       
-                      <div className={`absolute bottom-3 right-3 px-2 py-1 rounded-xl text-[8px] font-mono font-bold shadow-sm transition-colors ${
+                      <div className={`absolute bottom-3 right-3 px-2 py-1 rounded-xl text-[8px] font-mono font-bold shadow-sm transition-colors flex items-center gap-1 ${
                         isUrgent ? 'bg-rose-500 text-white animate-pulse' : 'bg-zinc-950/80 text-white'
                       }`}>
-                        ⏰ {getRemainingTimeText(relProd.endTime, relProd.status)}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-2.5 h-2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        <span>{getRemainingTimeText(relProd.endTime, relProd.status)}</span>
                       </div>
                     </div>
 
@@ -1179,7 +1207,12 @@ export default function ProductDetail() {
             </button>
 
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-neutral-900 dark:text-white">💳 Xác nhận đơn hàng & Ký quỹ an toàn</h3>
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-amber-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-5.25-12h18A2.25 2.25 0 0 1 22.5 6v12a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 18V6A2.25 2.25 0 0 1 3.75 3.75Z" />
+                </svg>
+                <span>Xác nhận đơn hàng & Ký quỹ an toàn</span>
+              </h3>
               <p className="text-[10px] text-neutral-450 leading-relaxed">
                 Vui lòng điền thông tin địa chỉ giao nhận hàng. Aura Bid sẽ tạm giữ 100% tiền hàng + phí giao hàng cho đến khi bạn xác nhận đã nhận hàng thành công.
               </p>

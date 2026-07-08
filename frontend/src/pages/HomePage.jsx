@@ -234,7 +234,10 @@ export default function HomePage() {
 
         <div className="max-w-5xl mx-auto text-center relative z-10 animate-fade-in-up">
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/[0.04] dark:bg-white/[0.04] border border-zinc-900/10 dark:border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] mb-8 text-amber-700 dark:text-amber-400">
-            ✨ Let's go treasure-hunting
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-amber-500">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 21l-.813-5.096L3 15l5.096-.813L9 9l.813 5.096L15 15l-5.187.904ZM18 10.5l-.5 2.5-2.5-.5.5-2.5 2.5.5ZM16.8 5.4l-.3 1.5-1.5-.3.3-1.5 1.5.3Z" />
+            </svg>
+            Let's go treasure-hunting
           </span>
           
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-medium tracking-tight text-zinc-950 dark:text-white leading-[1.08] mb-8 max-w-4xl mx-auto">
@@ -250,7 +253,9 @@ export default function HomePage() {
           <div className="w-full max-w-2xl mx-auto mb-16 p-2 rounded-[2rem] bg-zinc-900/5 dark:bg-white/5 border border-zinc-900/10 dark:border-white/10 shadow-sm backdrop-blur-md">
             <div className="flex flex-col sm:flex-row items-center gap-2 bg-white dark:bg-zinc-900 rounded-[calc(2rem-0.5rem)] p-1.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
               <div className="relative flex-grow w-full flex items-center pl-4">
-                <span className="text-zinc-400 text-sm">🔍</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-zinc-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.637 10.637Z" />
+                </svg>
                 <input
                   type="text"
                   placeholder="Tìm kiếm tác phẩm nghệ thuật, đồ cổ, đồng hồ..."
@@ -577,10 +582,13 @@ export default function HomePage() {
                     />
                     
                     {/* Time indicator */}
-                    <div className={`absolute bottom-3 right-3 px-2 py-1 rounded-xl text-[9px] font-mono font-bold shadow-sm transition-colors ${
+                    <div className={`absolute bottom-3 right-3 px-2.5 py-1.5 rounded-xl text-[9px] font-mono font-bold shadow-sm transition-colors flex items-center gap-1.5 ${
                       isUrgent ? 'bg-rose-500 text-white animate-pulse' : 'bg-zinc-950/80 text-white'
                     }`}>
-                      ⏰ {getRemainingTimeText(lot.endTime, lot.status)}
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                      <span>{getRemainingTimeText(lot.endTime, lot.status)}</span>
                     </div>
                   </div>
 
@@ -752,25 +760,32 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-2.5 pb-4 border-b border-zinc-100 dark:border-zinc-900">
               <button
                 onClick={() => handleCategorySelect(null)}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-500 cursor-pointer border ${
+                className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-500 cursor-pointer border flex items-center gap-1.5 ${
                   !selectedCategory
                     ? 'bg-zinc-950 border-zinc-950 text-white dark:bg-white dark:border-white dark:text-zinc-950 shadow-md scale-102'
                     : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/40 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
                 }`}
               >
-                🌐 Tất cả sản phẩm
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-.778.099-1.533.284-2.253" />
+                </svg>
+                <span>Tất cả sản phẩm</span>
               </button>
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => handleCategorySelect(cat)}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-500 cursor-pointer border ${
+                  className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-500 cursor-pointer border flex items-center gap-1.5 ${
                     selectedCategory?.id === cat.id
                       ? 'bg-zinc-950 border-zinc-950 text-white dark:bg-white dark:border-white dark:text-zinc-950 shadow-md scale-102'
                       : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200/40 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60'
                   }`}
                 >
-                  🏷️ {cat.name}
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581a1.5 1.5 0 0 0 2.122 0l4.318-4.318a1.5 1.5 0 0 0 0-2.122L10.15 3.659A2.25 2.25 0 0 0 9.568 3Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6Z" />
+                  </svg>
+                  <span>{cat.name}</span>
                 </button>
               ))}
             </div>
@@ -793,23 +808,27 @@ export default function HomePage() {
               </button>
               <button
                 onClick={() => setActiveTab('active')}
-                className={`flex-1 lg:flex-initial px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer ${
+                className={`flex-1 lg:flex-initial px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
                   activeTab === 'active'
                     ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-800 dark:text-white'
                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
                 }`}
               >
-                🔥 Đang diễn ra
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Đang diễn ra</span>
               </button>
               <button
                 onClick={() => setActiveTab('ended')}
-                className={`flex-1 lg:flex-initial px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer ${
+                className={`flex-1 lg:flex-initial px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
                   activeTab === 'ended'
                     ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-800 dark:text-white'
                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300'
                 }`}
               >
-                🏁 Đã kết thúc
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h1.5m9.75 0H18M3 21h1.5m9.75 0H18M3 9h1.5m9.75 0H18M3 15h1.5m9.75 0H18m-9-12v18" />
+                </svg>
+                <span>Đã kết thúc</span>
               </button>
             </div>
 
@@ -823,7 +842,11 @@ export default function HomePage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full sm:w-64 pl-10 pr-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 rounded-xl text-xs font-semibold outline-none focus:border-amber-500 transition-colors"
                 />
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 text-xs">🔍</span>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-zinc-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.637 10.637Z" />
+                  </svg>
+                </div>
               </div>
 
               <select
@@ -847,7 +870,10 @@ export default function HomePage() {
               <aside className="w-full md:w-64 flex-shrink-0 bg-zinc-50 dark:bg-zinc-900/20 p-6 rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/80 shadow-sm self-start">
                 <div className="flex items-center justify-between border-b border-zinc-200/40 dark:border-zinc-800 pb-3.5 mb-6">
                   <h3 className="font-serif font-bold text-sm text-zinc-950 dark:text-white flex items-center gap-2">
-                    <span>⚙️</span> Thuộc tính lọc
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-zinc-500">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                    </svg>
+                    <span>Thuộc tính lọc</span>
                   </h3>
                   {Object.keys(activeFilters).length > 0 && (
                     <button
@@ -914,8 +940,10 @@ export default function HomePage() {
               {!loading && !error && (
                 <>
                   {processedProducts.length === 0 ? (
-                    <div className="py-24 bg-zinc-50/50 dark:bg-zinc-900/10 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-[2rem] text-center max-w-lg mx-auto">
-                      <span className="text-4xl mb-4 block">📦</span>
+                    <div className="py-24 bg-zinc-50/50 dark:bg-zinc-900/10 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-[2rem] text-center max-w-lg mx-auto flex flex-col items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-zinc-400 mb-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                      </svg>
                       <h3 className="text-base font-serif font-bold text-zinc-800 dark:text-zinc-200 mb-1">Không tìm thấy vật phẩm</h3>
                       <p className="text-zinc-500 dark:text-zinc-400 text-xs">Vui lòng thay đổi từ khóa hoặc điều kiện bộ lọc thuộc tính.</p>
                     </div>
@@ -945,7 +973,9 @@ export default function HomePage() {
                                   />
                                 ) : (
                                   <div className="text-zinc-400 flex flex-col items-center gap-1.5 select-none">
-                                    <span className="text-2xl">🖼️</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-zinc-400">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                                    </svg>
                                     <span className="text-[10px] font-bold">Chưa tải ảnh</span>
                                   </div>
                                 )}
@@ -958,7 +988,10 @@ export default function HomePage() {
                                     </span>
                                   ) : product.status === 'DISPUTED' ? (
                                     <span className="px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
-                                      ⚖️ Tranh chấp
+                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3 text-rose-500">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M3 8.25h18M5.25 8.25C5.25 12.375 7.5 15 12 15s6.75-2.625 6.75-6.75M12 3l-1.5 1.5M12 3l1.5 1.5" />
+                                      </svg>
+                                      Tranh chấp
                                     </span>
                                   ) : (
                                     <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
@@ -970,20 +1003,26 @@ export default function HomePage() {
 
                                 <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
                                   {hasBuyNow && (
-                                    <span className="px-2 py-0.5 rounded-md bg-amber-600 text-white text-[8px] font-bold uppercase tracking-wider">
-                                      ⚡ Mua thầu
+                                    <span className="px-2 py-0.5 rounded-md bg-amber-600 text-white text-[8px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-2.5 h-2.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                                      </svg>
+                                      Mua thầu
                                     </span>
                                   )}
                                 </div>
 
                                 {/* Live Timer */}
                                 {!isEnded && (
-                                  <div className={`absolute bottom-3 right-3 px-2.5 py-1 rounded-xl text-[9px] font-mono font-bold shadow-sm transition-colors ${
+                                  <div className={`absolute bottom-3 right-3 px-2.5 py-1.5 rounded-xl text-[9px] font-mono font-bold shadow-sm transition-colors flex items-center gap-1 ${
                                     isUrgent 
                                       ? 'bg-rose-500 text-white animate-pulse' 
                                       : 'bg-zinc-950/80 text-white'
                                   }`}>
-                                    ⏰ {getRemainingTimeText(product.endTime, product.status)}
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                    </svg>
+                                    <span>{getRemainingTimeText(product.endTime, product.status)}</span>
                                   </div>
                                 )}
                               </div>
