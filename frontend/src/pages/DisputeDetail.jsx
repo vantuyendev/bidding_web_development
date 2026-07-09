@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../api';
@@ -20,7 +20,7 @@ export default function DisputeDetail() {
 
 
   // 2. Fetch dispute ticket details
-  const fetchTicketDetails = async () => {
+  const fetchTicketDetails = useCallback(async () => {
     try {
       const res = await fetch(getApiUrl(`/api/disputes/${ticketId}`), {
         credentials: 'include',
@@ -34,10 +34,10 @@ export default function DisputeDetail() {
     } catch (err) {
       setError('Lỗi kết nối máy chủ khi tải thông tin khiếu nại.');
     }
-  };
+  }, [ticketId]);
 
   // 3. Fetch dispute chat history
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = useCallback(async () => {
     try {
       const res = await fetch(getApiUrl(`/api/disputes/${ticketId}/messages`), {
         credentials: 'include',
@@ -49,7 +49,7 @@ export default function DisputeDetail() {
     } catch (err) {
       console.error('Lỗi khi tải lịch sử tin nhắn:', err);
     }
-  };
+  }, [ticketId]);
 
   // Run initial fetches
   useEffect(() => {
@@ -61,11 +61,13 @@ export default function DisputeDetail() {
     };
 
     initFetch();
-  }, [ticketId]);
+  }, [fetchTicketDetails, fetchChatHistory]);
 
   // Polling for real-time messages
+  const ticketStatus = ticket?.status;
+  const hasTicket = !!ticket;
   useEffect(() => {
-    if (!ticketId || (ticket && ticket.status !== 'PENDING')) return;
+    if (!ticketId || (hasTicket && ticketStatus !== 'PENDING')) return;
 
     const timer = setInterval(() => {
       fetchChatHistory();
@@ -74,7 +76,7 @@ export default function DisputeDetail() {
     }, 4000);
 
     return () => clearInterval(timer);
-  }, [ticketId, ticket?.status]);
+  }, [ticketId, ticketStatus, hasTicket, fetchChatHistory, fetchTicketDetails]);
 
   // Scroll to bottom of chat
   useEffect(() => {
@@ -158,8 +160,6 @@ export default function DisputeDetail() {
 
   // Determine user role
   const isAdmin = currentUser?.email?.toLowerCase().includes('admin');
-  const isBuyer = ticket && currentUser?.id === ticket.openedById;
-  const isSeller = ticket && currentUser?.id === ticket.product?.sellerId;
 
   // Determine status color classes
   const getStatusBadge = (status) => {
@@ -357,11 +357,15 @@ export default function DisputeDetail() {
                     <div className={`max-w-[85%] flex flex-col ${isMsgBuyer ? 'items-end' : 'items-start'}`}>
                       {/* Message Sender Header */}
                       <span className="text-[10px] text-zinc-400 font-bold mb-1 px-1 flex items-center gap-1.5">
-                        {isMsgAdmin && (
-                          <span className="px-1.5 py-0.5 rounded bg-gradient-to-r from-red-500 to-amber-500 text-[8px] font-black text-white uppercase tracking-wider shadow shadow-amber-500/20">
-                            TRỌNG TÀI
-                          </span>
-                        )}
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-wider ${
+                          isMsgAdmin 
+                            ? 'bg-gradient-to-r from-red-500 to-amber-500 shadow-sm shadow-amber-500/20' 
+                            : isMsgBuyer 
+                              ? 'bg-blue-600 shadow-sm shadow-blue-600/20' 
+                              : 'bg-zinc-700 shadow-sm shadow-zinc-750/20'
+                        }`}>
+                          {senderLabel}
+                        </span>
                         <span>{msg.sender?.email}</span>
                         <span className="text-[9px] font-normal text-zinc-500">
                           {new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}

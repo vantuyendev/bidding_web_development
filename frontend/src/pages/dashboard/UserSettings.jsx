@@ -1,11 +1,9 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 
 export default function UserSettings(props) {
   const context = useOutletContext() || {};
   const profileData = props.profileData || context.profileData;
-  const { user } = useAuth();
   
   if (!profileData) return null;
 

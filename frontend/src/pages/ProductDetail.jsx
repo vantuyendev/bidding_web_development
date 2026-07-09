@@ -5,7 +5,7 @@ import { getApiUrl, getSseUrl } from '../api';
 import Badge from '../components/ui/Badge';
 import CountdownBadge from '../components/ui/CountdownBadge';
 import ProductCard from '../components/ProductCard';
-import { SkeletonGrid } from '../components/ui/SkeletonCard';
+import Modal from '../components/ui/Modal';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 function getStepPrice(currentPrice) {
@@ -72,6 +72,15 @@ export default function ProductDetail() {
   const [estShipping, setEstShipping]     = useState(null);
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+
+  // Double-confirm modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: '',
+    amount: 0,
+    deposit: 0,
+    action: null
+  });
 
   // UI tabs
   const [activeTab, setActiveTab]         = useState('details');
@@ -191,15 +200,7 @@ export default function ProductDetail() {
     } finally { setWatchlistLoading(false); }
   };
 
-  const handlePlaceBid = async (e) => {
-    e.preventDefault();
-    if (!product) return;
-    const amount = parseFloat(bidAmount);
-    const minAmount = Number(product.currentPrice) + getStepPrice(product.currentPrice);
-    if (isNaN(amount) || amount < minAmount) {
-      setMessage({ type: 'error', text: `Minimum bid is ${fmtVND(minAmount)}` });
-      return;
-    }
+  const executePlaceBid = async (amount) => {
     setIsSubmitting(true);
     setMessage(null);
     try {
@@ -220,7 +221,73 @@ export default function ProductDetail() {
       }
     } catch {
       setMessage({ type: 'error', text: 'Server connection error.' });
-    } finally { setIsSubmitting(false); }
+    } finally {
+      setIsSubmitting(false);
+      setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handlePlaceBid = (e) => {
+    e.preventDefault();
+    if (!product) return;
+    const amount = parseFloat(bidAmount);
+    const minAmount = Number(product.currentPrice) + getStepPrice(product.currentPrice);
+    if (isNaN(amount) || amount < minAmount) {
+      setMessage({ type: 'error', text: `Minimum bid is ${fmtVND(minAmount)}` });
+      return;
+    }
+    setConfirmModal({
+      isOpen: true,
+      type: 'bid',
+      amount: amount,
+      deposit: amount * 0.1,
+      action: () => executePlaceBid(amount)
+    });
+  };
+
+  const executeBuyNow = async (amount) => {
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const res = await fetch(getApiUrl('/api/bids/buy-now'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ productId: id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: `Chúc mừng! Bạn đã mua đứt sản phẩm với giá ${fmtVND(amount)}.` });
+        setProduct(prev => prev ? {
+          ...prev,
+          currentPrice: Number(data.data.currentPrice),
+          status: data.data.status,
+          endTime: data.data.endTime,
+          winnerId: user.id
+        } : null);
+        refreshUser();
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Mua đứt thất bại. Vui lòng thử lại.' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Lỗi kết nối máy chủ.' });
+    } finally {
+      setIsSubmitting(false);
+      setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handleBuyNowClick = () => {
+    if (!user) { navigate('/login'); return; }
+    if (!product || !product.buyNowPrice) return;
+    const amount = Number(product.buyNowPrice);
+    setConfirmModal({
+      isOpen: true,
+      type: 'buyNow',
+      amount: amount,
+      deposit: amount * 0.1,
+      action: () => executeBuyNow(amount)
+    });
   };
 
   const handleCheckoutSubmit = async (e) => {
@@ -656,6 +723,7 @@ export default function ProductDetail() {
                       <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Or buy immediately:</div>
                       <button
                         id="buy-now-btn"
+                        onClick={handleBuyNowClick}
                         style={{
                           width: '100%', padding: '10px', border: '2px solid hsl(196,100%,36%)',
                           borderRadius: 4, background: 'white', color: 'hsl(196,100%,36%)',
@@ -836,6 +904,50 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
+      {/* ── Double-Confirm Modal ── */}
+      <Modal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.type === 'bid' ? 'Xác nhận đặt giá' : 'Xác nhận mua đứt'}
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4 text-left">
+          <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
+            {confirmModal.type === 'bid' ? (
+              <>
+                Bạn có chắc chắn muốn đặt cọc 10% (<strong className="text-amber-600 dark:text-amber-400 font-bold">{fmtVND(confirmModal.deposit)}</strong>) để tham gia đấu giá sản phẩm này với mức giá <strong className="text-neutral-900 dark:text-white font-bold">{fmtVND(confirmModal.amount)}</strong>?
+              </>
+            ) : (
+              <>
+                Bạn có chắc chắn muốn đặt cọc 10% (<strong className="text-amber-600 dark:text-amber-400 font-bold">{fmtVND(confirmModal.deposit)}</strong>) để mua đứt sản phẩm này với giá <strong className="text-neutral-900 dark:text-white font-bold">{fmtVND(confirmModal.amount)}</strong>?
+              </>
+            )}
+          </p>
+          <div className="p-3 bg-neutral-50 dark:bg-neutral-950/40 border border-neutral-100 dark:border-neutral-850 rounded-2xl text-[11px] text-neutral-500 leading-relaxed space-y-1">
+            <p className="font-bold text-neutral-700 dark:text-neutral-400">⚠️ Lưu ý quan trọng:</p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li>Tiền cọc sẽ bị tạm khóa trong hệ thống trung gian (Escrow).</li>
+              <li>Nếu bạn không thắng hoặc đấu giá bị hủy, tiền cọc sẽ được hoàn trả đầy đủ.</li>
+              <li>Nếu bạn thắng nhưng từ chối thanh toán phần còn lại, tiền cọc sẽ bị tịch thu.</li>
+            </ul>
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+              className="px-4 py-2 border border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={confirmModal.action}
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-zinc-950 rounded-xl text-xs font-black transition-all active:scale-[0.97] disabled:opacity-50 cursor-pointer"
+            >
+              {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
