@@ -179,7 +179,7 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', background: 'hsl(40,20%,97%)' }}>
 
       {/* ── Hero ── */}
-      <HeroBanner featuredItems={featuredItems} />
+      <HeroBanner featuredItems={featuredItems} categories={categories} />
 
       {/* ── Category Shelf ── */}
       <CategoryShelf categories={categories} onSelect={handleCategorySelect} />
