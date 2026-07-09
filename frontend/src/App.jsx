@@ -14,7 +14,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Navbar />
-        <main className="min-h-screen pt-20 bg-neutral-50/50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50 transition-colors duration-300">
+        <main className="min-h-screen bg-[hsl(40,20%,97%)] text-[hsl(12,14%,11%)]">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/products/:id" element={<ProductDetail />} />

@@ -1,70 +1,438 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Syne:wght@400..800&display=swap');
+/* ============================================================
+   AuraBid — Global Design System
+   Inspired by LiveAuctioneers aesthetic
+   Fonts: Inter (body) + Jost (display/headings)
+   ============================================================ */
 
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-display: "Syne", sans-serif;
+/* ── Google Fonts via index.html preconnect ── */
 
-  --color-gold-50: #fbf8f3;
-  --color-gold-100: #f4edd9;
-  --color-gold-200: #e7dbb3;
-  --color-gold-300: #d6c084;
-  --color-gold-400: #c5a45b;
-  --color-gold-500: #b58d3d;
-  --color-gold-600: #99712f;
-  --color-gold-700: #7d5727;
-  --color-gold-800: #664421;
-  --color-gold-900: #54371d;
-  
-  --animate-spring-in: spring-in 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-  --animate-fade-in-up: fade-in-up 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+@theme {
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Jost", "Inter", ui-sans-serif, sans-serif;
+
+  /* ── Color Palette: Auction House Premium ── */
+
+  /* Primary Teal (LiveAuctioneers inspired) */
+  --color-primary-50:  hsl(196, 100%, 95%);
+  --color-primary-100: hsl(196, 100%, 88%);
+  --color-primary-200: hsl(196, 100%, 76%);
+  --color-primary-300: hsl(196, 100%, 60%);
+  --color-primary-400: hsl(196, 100%, 46%);
+  --color-primary-500: hsl(196, 100%, 36%);   /* #0097ba — main brand */
+  --color-primary-600: hsl(196, 100%, 28%);
+  --color-primary-700: hsl(196, 100%, 22%);
+  --color-primary-800: hsl(196, 100%, 16%);
+  --color-primary-900: hsl(196, 100%, 10%);
+
+  /* Warm Neutrals */
+  --color-warm-50:  hsl(40, 40%, 99%);
+  --color-warm-100: hsl(40, 20%, 97%);        /* #FAF9F7 - page bg */
+  --color-warm-200: hsl(40, 15%, 93%);
+  --color-warm-300: hsl(40, 10%, 87%);
+  --color-warm-400: hsl(40, 8%, 75%);
+  --color-warm-500: hsl(40, 6%, 60%);
+
+  /* Deep Charcoal */
+  --color-charcoal-900: hsl(12, 14%, 11%);    /* #211614 - primary text */
+  --color-charcoal-800: hsl(12, 12%, 18%);
+  --color-charcoal-700: hsl(12, 10%, 28%);
+  --color-charcoal-600: hsl(12, 8%, 40%);     /* #656565 - muted text */
+  --color-charcoal-500: hsl(12, 5%, 55%);
+  --color-charcoal-400: hsl(12, 4%, 70%);
+
+  /* Live Red */
+  --color-live-500: hsl(3, 83%, 60%);         /* #ef4c45 - LIVE badge */
+  --color-live-600: hsl(3, 83%, 48%);
+
+  /* Border */
+  --color-border: hsl(0, 0%, 89%);            /* #e3e3e3 */
+
+  /* Gold accents */
+  --color-gold-400: hsl(43, 74%, 58%);
+  --color-gold-500: hsl(43, 74%, 48%);
+
+  /* Emerald (won/verified) */
+  --color-success-500: hsl(152, 72%, 40%);
+  --color-success-600: hsl(152, 72%, 32%);
+
+  /* Animations */
+  --animate-spring-in:   spring-in 0.6s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  --animate-fade-in-up:  fade-in-up 0.6s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  --animate-fade-in:     fade-in 0.4s ease forwards;
+  --animate-pulse-slow:  pulse-slow 2.5s ease-in-out infinite;
 }
 
+/* ── Keyframes ── */
 @keyframes spring-in {
-  from {
-    transform: scale(0.96);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
 }
 
 @keyframes fade-in-up {
-  from {
-    transform: translateY(2rem);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(1.5rem); opacity: 0; }
+  to   { transform: translateY(0);      opacity: 1; }
 }
 
-/* Custom classes for agency-level aesthetics */
-.text-grain {
-  position: relative;
-}
-.text-grain::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.025;
-  pointer-events: none;
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* Scroll Fade Up Animation classes */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+
+/* ── Base Reset & Root ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: hsl(40, 20%, 97%);
+  color: hsl(12, 14%, 11%);
+  line-height: 1.6;
+  min-height: 100dvh;
+}
+
+/* ── Typography helpers ── */
+.font-display { font-family: var(--font-display); }
+
+/* ── Scroll Reveal Animation ── */
 .reveal-on-scroll {
   opacity: 0;
   transform: translateY(1.5rem);
-  transition: opacity 0.8s cubic-bezier(0.32, 0.72, 0, 1), transform 0.8s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: opacity 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+              transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
 }
-
 .reveal-on-scroll.active {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* ── Skeleton Loader ── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(0, 0%, 92%) 25%,
+    hsl(0, 0%, 96%) 50%,
+    hsl(0, 0%, 92%) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* ── Auction Badge System ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.badge-live {
+  background-color: hsl(3, 83%, 60%);
+  color: white;
+}
+.badge-live::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  animation: pulse-slow 1.5s ease-in-out infinite;
+}
+
+.badge-timed {
+  background-color: hsl(40, 20%, 97%);
+  color: hsl(12, 14%, 11%);
+  border: 1px solid hsl(0, 0%, 89%);
+}
+
+.badge-buy-now {
+  background-color: hsl(196, 100%, 36%);
+  color: white;
+}
+
+.badge-ended {
+  background-color: hsl(0, 0%, 89%);
+  color: hsl(12, 8%, 40%);
+}
+
+.badge-won {
+  background-color: hsl(152, 72%, 40%);
+  color: white;
+}
+
+.badge-verified {
+  background-color: hsl(152, 72%, 93%);
+  color: hsl(152, 72%, 32%);
+  border: 1px solid hsl(152, 72%, 75%);
+}
+
+/* ── Countdown Urgency ── */
+.countdown-normal  { color: hsl(12, 8%, 40%); }
+.countdown-warning { color: hsl(35, 90%, 48%); font-weight: 700; }
+.countdown-urgent  { color: hsl(3, 83%, 48%);  font-weight: 800; animation: pulse-slow 1.5s infinite; }
+
+/* ── Card System ── */
+.auction-card {
+  background: white;
+  border: 1px solid hsl(0, 0%, 89%);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+}
+.auction-card:hover {
+  box-shadow: 0 4px 20px hsla(0, 0%, 0%, 0.12);
+  transform: translateY(-2px);
+}
+
+/* ── Image Hover Reveal ── */
+.img-hover-primary {
+  transition: opacity 0.3s ease-in-out;
+  transition-delay: 0s;
+}
+.auction-card:hover .img-hover-primary {
+  opacity: 0;
+  transition-delay: 0.25s;
+}
+
+.img-hover-secondary {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  position: absolute;
+  inset: 0;
+  object-fit: contain;
+  margin: auto;
+  max-height: 100%;
+  max-width: 100%;
+}
+.auction-card:hover .img-hover-secondary {
+  opacity: 1;
+  transition-delay: 0.15s;
+}
+
+/* ── Glassmorphism (for modals & dropdowns) ── */
+.glass {
+  background: hsla(0, 0%, 100%, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsla(0, 0%, 100%, 0.3);
+}
+.glass-dark {
+  background: hsla(12, 14%, 7%, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsla(255, 255%, 255%, 0.08);
+}
+
+/* ── Watchlist Heart Button ── */
+.watchlist-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: hsla(0, 0%, 100%, 0.9);
+  border: 1px solid hsl(0, 0%, 89%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+.watchlist-btn:hover { transform: scale(1.1); background: white; }
+.watchlist-btn.active { background: hsl(3, 83%, 96%); border-color: hsl(3, 83%, 60%); }
+.watchlist-btn.active svg { color: hsl(3, 83%, 60%); fill: hsl(3, 83%, 60%); }
+
+/* ── Progress Bar (Catalog Card) ── */
+.auction-progress {
+  height: 4px;
+  background: hsl(0, 0%, 89%);
+  width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.auction-progress-fill {
+  height: 100%;
+  background: hsl(3, 83%, 60%);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+  min-width: 2.5%;
+}
+
+/* ── Bid Input ── */
+.bid-input {
+  width: 100%;
+  border: 2px solid hsl(0, 0%, 89%);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: hsl(12, 14%, 11%);
+  outline: none;
+  transition: border-color 0.2s ease;
+  background: white;
+}
+.bid-input:focus { border-color: hsl(196, 100%, 36%); }
+
+.bid-btn-primary {
+  width: 100%;
+  background: hsl(196, 100%, 36%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 20px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.bid-btn-primary:hover  { background: hsl(196, 100%, 28%); }
+.bid-btn-primary:active { transform: scale(0.98); }
+.bid-btn-primary:disabled { background: hsl(0, 0%, 75%); cursor: not-allowed; }
+
+/* ── Section Layout Utilities ── */
+.page-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: hsl(12, 14%, 11%);
+  letter-spacing: 0.01em;
+  margin-bottom: 16px;
+}
+
+/* ── Mega Menu ── */
+.mega-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 2px solid hsl(196, 100%, 36%);
+  border-bottom: 1px solid hsl(0, 0%, 89%);
+  box-shadow: 0 8px 32px hsla(0, 0%, 0%, 0.10);
+  z-index: 100;
+  transform-origin: top center;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.mega-menu.hidden-menu {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+.mega-menu.visible-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ── Category Nav Tab ── */
+.cat-nav-tab {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(12, 14%, 11%);
+  padding: 10px 14px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+}
+.cat-nav-tab:hover { color: hsl(196, 100%, 36%); border-bottom-color: hsl(196, 100%, 36%); }
+.cat-nav-tab.active { color: hsl(196, 100%, 36%); border-bottom-color: hsl(196, 100%, 36%); font-weight: 600; }
+
+/* ── Filter Chips ── */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid hsl(0, 0%, 89%);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(12, 14%, 11%);
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.filter-chip:hover { border-color: hsl(12, 14%, 11%); background: hsl(40, 20%, 97%); }
+.filter-chip.active { background: hsl(12, 14%, 11%); color: white; border-color: hsl(12, 14%, 11%); }
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: hsl(0, 0%, 89%);
+  margin: 20px 0;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(40, 20%, 97%); }
+::-webkit-scrollbar-thumb { background: hsl(0, 0%, 80%); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(0, 0%, 65%); }
+
+/* ── Responsive Image Ratio ── */
+.ratio-4-3 { padding-bottom: 75%; }
+.ratio-2-3 { padding-bottom: 66.666%; }
+.ratio-1-1 { padding-bottom: 100%; }
+.img-contain-abs {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── Dark Mode overrides (minimal — mainly for Navbar) ── */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: hsl(222, 20%, 10%);
+    color: hsl(40, 20%, 92%);
+  }
 }
