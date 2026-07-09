@@ -2,7 +2,6 @@
   "name": "Auction Web Project",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "frontend",
-  "workspaceFolder": "/workspace",
   "forwardPorts": [3000, 5000, 5432],
   "portsAttributes": {
     "3000": {
