@@ -139,7 +139,7 @@ export default function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
     }
   };
@@ -511,10 +511,10 @@ export default function Navbar() {
           >
             {/* All Items tab */}
             <Link
-              to="/"
+              to="/products"
               id="nav-tab-all"
               className="cat-nav-tab"
-              style={{ borderBottomColor: location.pathname === '/' && !location.search ? 'hsl(196,100%,36%)' : 'transparent' }}
+              style={{ borderBottomColor: location.pathname === '/products' && !location.search ? 'hsl(196,100%,36%)' : 'transparent' }}
             >
               All
             </Link>
@@ -528,7 +528,7 @@ export default function Navbar() {
                 onMouseLeave={closeMegaMenu}
               >
                 <Link
-                  to={`/?category=${cat.slug}`}
+                  to={`/products?category=${cat.slug}`}
                   id={`nav-tab-${cat.slug}`}
                   className={`cat-nav-tab ${activeMegaMenu === cat.slug ? 'active' : ''}`}
                 >
@@ -574,21 +574,29 @@ export default function Navbar() {
                           {cat.name}
                         </div>
                         <div className="flex flex-col gap-1">
-                          {['All', 'Active Auctions', 'Ending Soon', 'Recently Sold'].map(sub => (
-                            <Link
-                              key={sub}
-                              to={`/?category=${cat.slug}${sub === 'All' ? '' : `&filter=${sub.toLowerCase().replace(/\s+/g, '-')}`}`}
-                              onClick={() => setActiveMegaMenu(null)}
-                              style={{
-                                fontSize: 13, color: 'hsl(12,14%,11%)', textDecoration: 'none',
-                                padding: '4px 0', fontWeight: 400, transition: 'color 0.15s',
-                              }}
-                              onMouseOver={(e) => { e.currentTarget.style.color = 'hsl(196,100%,36%)'; }}
-                              onMouseOut={(e) => { e.currentTarget.style.color = 'hsl(12,14%,11%)'; }}
-                            >
-                              {sub}
-                            </Link>
-                          ))}
+                          {['All', 'Active Auctions', 'Ending Soon', 'Recently Sold'].map(sub => {
+                            const status = sub === 'Active Auctions' ? 'active' : sub === 'Ending Soon' ? 'active' : sub === 'Recently Sold' ? 'ended' : '';
+                            const sort = sub === 'Ending Soon' ? 'ending' : '';
+                            const params = new URLSearchParams();
+                            params.set('category', cat.slug);
+                            if (status) params.set('status', status);
+                            if (sort) params.set('sort', sort);
+                            return (
+                              <Link
+                                key={sub}
+                                to={`/products?${params.toString()}`}
+                                onClick={() => setActiveMegaMenu(null)}
+                                style={{
+                                  fontSize: 13, color: 'hsl(12,14%,11%)', textDecoration: 'none',
+                                  padding: '4px 0', fontWeight: 400, transition: 'color 0.15s',
+                                }}
+                                onMouseOver={(e) => { e.currentTarget.style.color = 'hsl(196,100%,36%)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.color = 'hsl(12,14%,11%)'; }}
+                              >
+                                {sub}
+                              </Link>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>

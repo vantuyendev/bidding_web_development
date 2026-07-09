@@ -1,34 +1,64 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Navbar from './components/Navbar';
+import { ToastProvider } from './components/ui/Toast';
+import MainLayout from './components/layout/MainLayout';
 import PrivateRoute from './components/PrivateRoute';
 import HomePage from './pages/HomePage';
 import ProductDetail from './pages/ProductDetail';
 import AuthPage from './pages/AuthPage';
 import DisputeDetail from './pages/DisputeDetail';
 import UserProfile from './pages/UserProfile';
+import CatalogPage from './pages/catalog/CatalogPage';
+
+// Dashboard pages
+import UserSettings from './pages/dashboard/UserSettings';
+import WalletDashboard from './pages/dashboard/WalletDashboard';
+import BidHistory from './pages/dashboard/BidHistory';
+import SellerListings from './pages/dashboard/SellerListings';
+import Watchlist from './pages/dashboard/Watchlist';
+import KycSubmission from './pages/dashboard/KycSubmission';
+
+// Admin pages
+import KycApproval from './pages/admin/KycApproval';
+import DisputeManagement from './pages/admin/DisputeManagement';
 
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Navbar />
-        <main className="min-h-screen bg-[hsl(40,20%,97%)] text-[hsl(12,14%,11%)]">
+      <ToastProvider>
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
-            <Route path="/login" element={<AuthPage defaultMode="login" />} />
-            <Route path="/register" element={<AuthPage defaultMode="register" />} />
-            
-            {/* Protected Routes */}
-            <Route element={<PrivateRoute />}>
-              <Route path="/disputes/:ticketId" element={<DisputeDetail />} />
-              <Route path="/profile" element={<UserProfile />} />
+            {/* Wrap all routes inside MainLayout (Header/Navbar, Footer, connection offline banners) */}
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={<CatalogPage />} />
+              <Route path="/products/:id" element={<ProductDetail />} />
+              <Route path="/login" element={<AuthPage defaultMode="login" />} />
+              <Route path="/register" element={<AuthPage defaultMode="register" />} />
+              
+              {/* Protected Routes */}
+              <Route element={<PrivateRoute />}>
+                <Route path="/disputes/:ticketId" element={<DisputeDetail />} />
+                
+                {/* Profile Dashboard Layout and Sub-Routes */}
+                <Route path="/profile" element={<UserProfile />}>
+                  <Route index element={<UserSettings />} />
+                  <Route path="wallet" element={<WalletDashboard />} />
+                  <Route path="bids" element={<BidHistory />} />
+                  <Route path="listings" element={<SellerListings />} />
+                  <Route path="watchlist" element={<Watchlist />} />
+                  <Route path="kyc" element={<KycSubmission />} />
+                </Route>
+
+                {/* Admin Sections */}
+                <Route path="/admin/kyc" element={<KycApproval />} />
+                <Route path="/admin/disputes" element={<DisputeManagement />} />
+              </Route>
             </Route>
           </Routes>
-        </main>
-      </BrowserRouter>
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

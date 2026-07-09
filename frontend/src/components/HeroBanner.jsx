@@ -13,7 +13,7 @@ export default function HeroBanner({ featuredItems = [] }) {
   const handleSearch = (e) => {
     e.preventDefault();
     if (query.trim()) {
-      navigate(`/?q=${encodeURIComponent(query.trim())}`);
+      navigate(`/products?q=${encodeURIComponent(query.trim())}`);
     }
   };
 

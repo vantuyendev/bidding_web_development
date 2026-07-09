@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { getApiUrl } from '../api';
 
 export default function ReviewModal({ isOpen, onClose, productId, productName, onSuccess }) {
-  if (!isOpen) return null;
-
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
