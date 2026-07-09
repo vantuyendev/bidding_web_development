@@ -1,16 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+/* ─── Pure visual scene — no data needed ─── */
+function AuctionScene() {
+  return (
+    <div className="av-scene">
+      {/* Rotating orbit rings */}
+      <div className="av-orbit av-orbit-1" />
+      <div className="av-orbit av-orbit-2" />
+      <div className="av-orbit av-orbit-3" />
+
+      {/* Central glow core */}
+      <div className="av-core">
+        <div className="av-core-ring" />
+        <div className="av-core-inner">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Floating item cards */}
+      <div className="av-card av-card-1">
+        <span className="av-card-emoji">⌚</span>
+        <div className="av-card-shine" />
+      </div>
+      <div className="av-card av-card-2">
+        <span className="av-card-emoji">🏎️</span>
+        <div className="av-card-shine" />
+      </div>
+      <div className="av-card av-card-3">
+        <span className="av-card-emoji">💎</span>
+        <div className="av-card-shine" />
+      </div>
+      <div className="av-card av-card-4">
+        <span className="av-card-emoji">🖼️</span>
+        <div className="av-card-shine" />
+      </div>
+      <div className="av-card av-card-5">
+        <span className="av-card-emoji">👜</span>
+        <div className="av-card-shine" />
+      </div>
+      <div className="av-card av-card-6">
+        <span className="av-card-emoji">🍷</span>
+        <div className="av-card-shine" />
+      </div>
+
+      {/* Floating particles */}
+      {[...Array(12)].map((_, i) => (
+        <div key={i} className={`av-particle av-particle-${i + 1}`} />
+      ))}
+    </div>
+  );
+}
 
 export default function AuthPage({ defaultMode = 'login' }) {
   const { login, register } = useAuth();
-  const [mode, setMode] = useState(defaultMode); // 'login' or 'register'
+  const [mode, setMode] = useState(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 50);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,108 +96,168 @@ export default function AuthPage({ defaultMode = 'login' }) {
     }
   };
 
+  const switchMode = () => {
+    setMode(mode === 'login' ? 'register' : 'login');
+    setError(null);
+    setEmail('');
+    setPassword('');
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex items-center justify-center p-6 relative overflow-hidden select-none">
-      {/* Dynamic Background Gradients */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div style={{ minHeight: '100dvh', display: 'flex', fontFamily: 'var(--font-sans)' }}>
 
-      <div className="max-w-md w-full relative z-10">
-        {/* Back to Home Link */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-200 text-sm font-medium mb-8 transition-colors group"
-        >
-          <span className="transform group-hover:-translate-x-1 transition-transform inline-block">←</span>
-          Quay lại trang chủ
-        </Link>
+      {/* ── Left Panel: Brand Hero ── */}
+      <div className="auth-hero" aria-hidden="true">
+        {/* Decorative orbs */}
+        <div className="auth-orb auth-orb-1" />
+        <div className="auth-orb auth-orb-2" />
+        <div className="auth-orb auth-orb-3" />
 
-        {/* Auth Form Card */}
-        <div className="bg-zinc-900/60 border border-zinc-800/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-black bg-gradient-to-r from-amber-400 via-rose-400 to-rose-500 bg-clip-text text-transparent mb-2">
-              {mode === 'login' ? 'Chào Mừng Trở Lại' : 'Tạo Tài Khoản Mới'}
-            </h1>
-            <p className="text-zinc-400 text-sm">
-              {mode === 'login'
-                ? 'Đăng nhập để tham gia đấu giá các vật phẩm độc bản'
-                : 'Đăng ký để nhận 10,000,000 đ ví ảo và đấu giá ngay'}
-            </p>
+        <div className="auth-hero-content">
+          {/* Logo */}
+          <Link to="/" className="auth-brand-link">
+            <div className="auth-logo-mark">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <span className="auth-logo-text">AuraBid</span>
+          </Link>
+
+          {/* Pure visual animation */}
+          <AuctionScene />
+        </div>
+      </div>
+
+      {/* ── Right Panel: Auth Form ── */}
+      <div className="auth-form-panel">
+        <div className={`auth-form-wrapper${mounted ? ' auth-form-wrapper--visible' : ''}`}>
+
+          {/* Back link */}
+          <Link to="/" className="auth-back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Trang chủ
+          </Link>
+
+          {/* Mode tabs */}
+          <div className="auth-tabs">
+            <button
+              className={`auth-tab${mode === 'login' ? ' auth-tab--active' : ''}`}
+              onClick={() => mode !== 'login' && switchMode()}
+            >
+              Đăng nhập
+            </button>
+            <button
+              className={`auth-tab${mode === 'register' ? ' auth-tab--active' : ''}`}
+              onClick={() => mode !== 'register' && switchMode()}
+            >
+              Đăng ký
+            </button>
           </div>
 
+          {/* Form heading */}
+          <div className="auth-heading">
+            <h1 className="auth-form-title">
+              {mode === 'login' ? 'Chào mừng trở lại 👋' : 'Tạo tài khoản mới'}
+            </h1>
+          </div>
+
+          {/* Error */}
           {error && (
-            <div className="mb-6 p-4 rounded-2xl bg-rose-950/20 border border-rose-900/30 text-rose-400 text-sm font-semibold flex items-center gap-2 animate-fadeIn">
-              <span className="flex-shrink-0">✕</span>
-              <p>{error}</p>
+            <div className="auth-error" role="alert">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {/* Email Field */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="email" className="text-xs font-semibold text-zinc-400">
+
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="auth-form" noValidate>
+            {/* Email */}
+            <div className="auth-field">
+              <label htmlFor="email" className="auth-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
                 Địa chỉ Email
               </label>
               <input
                 id="email"
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ten-dang-nhap@example.com"
-                className="w-full px-5 py-3.5 bg-zinc-950 text-zinc-50 rounded-2xl border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                placeholder="email@example.com"
+                className="auth-input"
               />
             </div>
 
-            {/* Password Field */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-xs font-semibold text-zinc-400">
+            {/* Password */}
+            <div className="auth-field">
+              <label htmlFor="password" className="auth-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
                 Mật khẩu
               </label>
               <input
                 id="password"
                 type="password"
                 required
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-5 py-3.5 bg-zinc-950 text-zinc-50 rounded-2xl border border-zinc-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                className="auth-input"
               />
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-4 px-6 rounded-2xl font-bold text-base text-zinc-950 bg-gradient-to-r from-amber-400 via-amber-500 to-rose-500 hover:opacity-95 active:scale-[0.98] transition-all flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-amber-500/10"
+              className="auth-submit-btn"
             >
               {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin"></div>
-                  Đang xử lý...
-                </>
-              ) : mode === 'login' ? (
-                'Đăng Nhập'
+                <span className="auth-spinner" />
               ) : (
-                'Đăng Ký Ngay'
+                <>
+                  {mode === 'login' ? 'Đăng Nhập' : 'Đăng Ký Ngay'}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </>
               )}
             </button>
           </form>
 
-          {/* Toggle Link */}
-          <div className="text-center mt-6">
-            <button
-              onClick={() => {
-                setMode(mode === 'login' ? 'register' : 'login');
-                setError(null);
-              }}
-              className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
-            >
-              {mode === 'login'
-                ? 'Chưa có tài khoản? Đăng ký tại đây'
-                : 'Đã có tài khoản? Đăng nhập tại đây'}
+          {/* Footer */}
+          <p className="auth-footer-text">
+            {mode === 'login' ? 'Chưa có tài khoản? ' : 'Đã có tài khoản? '}
+            <button onClick={switchMode} className="auth-footer-link">
+              {mode === 'login' ? 'Đăng ký miễn phí' : 'Đăng nhập'}
             </button>
-          </div>
+          </p>
+
+          <p className="auth-legal">
+            Bằng cách tiếp tục, bạn đồng ý với{' '}
+            <a href="#" className="auth-legal-link">Điều khoản dịch vụ</a>
+            {' '}và{' '}
+            <a href="#" className="auth-legal-link">Chính sách bảo mật</a>.
+          </p>
         </div>
       </div>
     </div>

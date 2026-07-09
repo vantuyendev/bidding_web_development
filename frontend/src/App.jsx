@@ -31,13 +31,15 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            {/* Wrap all routes inside MainLayout (Header/Navbar, Footer, connection offline banners) */}
+            {/* Auth routes — full-screen, no navbar */}
+            <Route path="/login" element={<AuthPage defaultMode="login" />} />
+            <Route path="/register" element={<AuthPage defaultMode="register" />} />
+
+            {/* All other routes inside MainLayout (Header/Navbar, Footer) */}
             <Route element={<MainLayout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/products" element={<CatalogPage />} />
               <Route path="/products/:id" element={<ProductDetail />} />
-              <Route path="/login" element={<AuthPage defaultMode="login" />} />
-              <Route path="/register" element={<AuthPage defaultMode="register" />} />
               
               {/* Protected Routes */}
               <Route element={<PrivateRoute />}>
