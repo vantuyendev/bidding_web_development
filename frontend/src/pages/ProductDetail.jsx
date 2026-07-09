@@ -55,6 +55,7 @@ export default function ProductDetail() {
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [sseConnected, setSseConnected] = useState(true);
 
   // Bid state
   const [bidAmount, setBidAmount]       = useState('');
@@ -72,6 +73,12 @@ export default function ProductDetail() {
   const [estShipping, setEstShipping]     = useState(null);
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+
+  // Dispute Modal
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputeForm, setDisputeForm] = useState({ reason: 'Sản phẩm không đúng mô tả', description: '', videoUrl: '' });
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  const [disputeError, setDisputeError] = useState('');
 
   // Double-confirm modal state
   const [confirmModal, setConfirmModal] = useState({
@@ -152,27 +159,53 @@ export default function ProductDetail() {
   /* ── SSE realtime ── */
   useEffect(() => {
     if (!id) return;
-    const es = new EventSource(getSseUrl(id), { withCredentials: true });
-    es.onmessage = (ev) => {
-      try {
-        const data = JSON.parse(ev.data);
-        setProduct(prev => {
-          if (!prev) return null;
-          const newPrice = Number(data.currentPrice);
-          const nextBid = newPrice + getStepPrice(newPrice);
-          setBidAmount(curr => {
-            const val = parseFloat(curr);
-            if (isNaN(val) || val <= newPrice) return String(nextBid);
-            return curr;
+    let es;
+    let timer;
+    let active = true;
+
+    function connect() {
+      if (!active) return;
+      es = new EventSource(getSseUrl(id), { withCredentials: true });
+
+      es.onopen = () => {
+        if (active) setSseConnected(true);
+      };
+
+      es.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          setProduct(prev => {
+            if (!prev) return null;
+            const newPrice = Number(data.currentPrice);
+            const nextBid = newPrice + getStepPrice(newPrice);
+            setBidAmount(curr => {
+              const val = parseFloat(curr);
+              if (isNaN(val) || val <= newPrice) return String(nextBid);
+              return curr;
+            });
+            return { ...prev, currentPrice: newPrice, endTime: data.endTime, ...(data.status ? { status: data.status } : {}) };
           });
-          return { ...prev, currentPrice: newPrice, endTime: data.endTime, ...(data.status ? { status: data.status } : {}) };
-        });
-        if (data.bid) setBids(prev => [data.bid, ...prev.slice(0, 19)]);
-        refreshUser();
-      } catch {}
+          if (data.bid) setBids(prev => [data.bid, ...prev.slice(0, 19)]);
+          refreshUser();
+        } catch {}
+      };
+
+      es.onerror = () => {
+        if (active) {
+          setSseConnected(false);
+          es.close();
+          timer = setTimeout(connect, 4000);
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      active = false;
+      if (es) es.close();
+      clearTimeout(timer);
     };
-    es.onerror = () => es.close();
-    return () => es.close();
   }, [id, refreshUser]);
 
   /* ── Checkout shipping estimate ── */
@@ -316,6 +349,42 @@ export default function ProductDetail() {
       } else { setCheckoutError(data.error || 'Checkout failed.'); }
     } catch { setCheckoutError('Server error.'); }
     finally { setCheckoutSubmitting(false); }
+  };
+
+  const handleDisputeSubmit = async (e) => {
+    e.preventDefault();
+    setDisputeError('');
+    if (!disputeForm.description) {
+      setDisputeError('Vui lòng nhập mô tả chi tiết khiếu nại.');
+      return;
+    }
+    setDisputeSubmitting(true);
+    try {
+      const res = await fetch(getApiUrl('/api/disputes'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: id,
+          reason: disputeForm.reason,
+          description: disputeForm.description,
+          unboxingVideoUrl: disputeForm.videoUrl || null
+        }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setDisputeModalOpen(false);
+        setProduct(prev => prev ? { ...prev, status: 'DISPUTED' } : null);
+        refreshUser();
+        navigate(`/disputes/${data.data.id}`);
+      } else {
+        setDisputeError(data.error || 'Tạo khiếu nại thất bại.');
+      }
+    } catch (err) {
+      setDisputeError('Lỗi kết nối máy chủ.');
+    } finally {
+      setDisputeSubmitting(false);
+    }
   };
 
   const handleShip = async () => {
@@ -588,6 +657,11 @@ export default function ProductDetail() {
                     </span>
                   </div>
                 )}
+                {!isEnded && !sseConnected && (
+                  <div style={{ marginTop: 8, padding: '6px 10px', background: 'hsl(3,83%,95%)', border: '1px solid hsl(3,83%,85%)', borderRadius: 4, color: 'hsl(3,83%,40%)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }} className="animate-pulse">
+                    <span>🔴</span> Mất kết nối live. Đang thử kết nối lại...
+                  </div>
+                )}
                 {isEnded && product.endTime && (
                   <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginTop: 4 }}>Ended {fmtDate(product.endTime)}</div>
                 )}
@@ -744,9 +818,23 @@ export default function ProductDetail() {
               {isEnded && (
                 <div style={{ padding: '16px 20px' }}>
                   {isWinner && product.status === 'ENDED' && (
-                    <button id="checkout-btn" onClick={() => setCheckoutModalOpen(true)} className="bid-btn-primary">
-                      Complete Purchase
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <button id="checkout-btn" onClick={() => setCheckoutModalOpen(true)} className="bid-btn-primary">
+                        Complete Purchase
+                      </button>
+                      <button
+                        id="open-dispute-btn"
+                        onClick={() => setDisputeModalOpen(true)}
+                        style={{
+                          width: '100%', padding: '10px', border: '1px solid hsl(3,83%,60%)',
+                          borderRadius: 4, background: 'white', color: 'hsl(3,83%,60%)',
+                          fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
+                          letterSpacing: '0.04em', textTransform: 'uppercase', transition: 'all 0.15s',
+                        }}
+                      >
+                        ⚖️ Khiếu nại sản phẩm
+                      </button>
+                    </div>
                   )}
                   {isWinner && product.status === 'PAID' && (
                     <div style={{ fontSize: 13, color: 'hsl(152,72%,40%)', fontWeight: 700, textAlign: 'center', padding: 8 }}>
@@ -899,6 +987,74 @@ export default function ProductDetail() {
 
               <button id="checkout-submit-btn" type="submit" disabled={checkoutSubmitting} className="bid-btn-primary" style={{ marginTop: 4 }}>
                 {checkoutSubmitting ? 'Processing…' : 'Confirm & Pay'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Dispute Modal ── */}
+      {disputeModalOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'hsla(0,0%,0%,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={e => { if (e.target === e.currentTarget) setDisputeModalOpen(false); }}
+        >
+          <div style={{ background: 'white', borderRadius: 8, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px hsla(0,0%,0%,0.25)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid hsl(0,0%,89%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'hsl(12,14%,11%)' }}>Khiếu nại sản phẩm</h2>
+              <button onClick={() => setDisputeModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'hsl(12,8%,50%)' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleDisputeSubmit} style={{ padding: '20px 24px' }}>
+              {disputeError && (
+                <div style={{ fontSize: 12, color: 'hsl(3,83%,40%)', background: 'hsl(3,83%,95%)', padding: '8px 12px', borderRadius: 4, marginBottom: 14 }}>
+                  {disputeError}
+                </div>
+              )}
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Lý do khiếu nại</label>
+                <select
+                  id="dispute-reason"
+                  value={disputeForm.reason}
+                  onChange={e => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
+                  style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white' }}
+                >
+                  <option>Sản phẩm không đúng mô tả</option>
+                  <option>Sản phẩm bị hỏng hóc / vỡ nát</option>
+                  <option>Người bán không giao hàng / giao chậm</option>
+                  <option>Khác</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Mô tả chi tiết lỗi</label>
+                <textarea
+                  id="dispute-desc"
+                  rows="4"
+                  value={disputeForm.description}
+                  onChange={e => setDisputeForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Vui lòng mô tả chi tiết vấn đề bạn gặp phải với sản phẩm này..."
+                  style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white', resize: 'vertical' }}
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Video khui hộp bằng chứng (URL)</label>
+                <input
+                  id="dispute-video"
+                  type="text"
+                  value={disputeForm.videoUrl}
+                  onChange={e => setDisputeForm(prev => ({ ...prev, videoUrl: e.target.value }))}
+                  placeholder="https://example.com/unboxing-video.mp4"
+                  style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white' }}
+                />
+                <span style={{ fontSize: 10, color: 'hsl(12,8%,60%)', marginTop: 4, display: 'block' }}>Gợi ý: Dán link video bằng chứng để Admin dễ dàng phân xử.</span>
+              </div>
+
+              <button id="dispute-submit-btn" type="submit" disabled={disputeSubmitting} className="bid-btn-primary">
+                {disputeSubmitting ? 'Đang gửi khiếu nại…' : 'Gửi khiếu nại'}
               </button>
             </form>
           </div>

@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/ui/Toast';
 import MainLayout from './components/layout/MainLayout';
 import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
 import HomePage from './pages/HomePage';
 import ProductDetail from './pages/ProductDetail';
 import AuthPage from './pages/AuthPage';
@@ -18,6 +19,7 @@ import BidHistory from './pages/dashboard/BidHistory';
 import SellerListings from './pages/dashboard/SellerListings';
 import Watchlist from './pages/dashboard/Watchlist';
 import KycSubmission from './pages/dashboard/KycSubmission';
+import UserDisputes from './pages/dashboard/UserDisputes';
 
 // Admin pages
 import KycApproval from './pages/admin/KycApproval';
@@ -49,11 +51,14 @@ export default function App() {
                   <Route path="listings" element={<SellerListings />} />
                   <Route path="watchlist" element={<Watchlist />} />
                   <Route path="kyc" element={<KycSubmission />} />
+                  <Route path="disputes" element={<UserDisputes />} />
                 </Route>
 
                 {/* Admin Sections */}
-                <Route path="/admin/kyc" element={<KycApproval />} />
-                <Route path="/admin/disputes" element={<DisputeManagement />} />
+                <Route element={<AdminRoute />}>
+                  <Route path="/admin/kyc" element={<KycApproval />} />
+                  <Route path="/admin/disputes" element={<DisputeManagement />} />
+                </Route>
               </Route>
             </Route>
           </Routes>

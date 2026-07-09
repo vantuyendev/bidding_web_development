@@ -72,15 +72,37 @@ export default function Navbar() {
   useEffect(() => {
     if (!user) { setNotifications([]); return; }
     fetchNotifications();
-    const es = new EventSource(getApiUrl('/api/notifications/live'), { withCredentials: true });
-    es.addEventListener('notification', (ev) => {
-      try {
-        const n = JSON.parse(ev.data);
-        setNotifications(prev => prev.some(x => x.id === n.id) ? prev : [n, ...prev]);
-      } catch (_) {}
-    });
-    es.onerror = () => es.close();
-    return () => es.close();
+
+    let es;
+    let timer;
+    let active = true;
+
+    function connect() {
+      if (!active) return;
+      es = new EventSource(getApiUrl('/api/notifications/live'), { withCredentials: true });
+
+      es.addEventListener('notification', (ev) => {
+        try {
+          const n = JSON.parse(ev.data);
+          setNotifications(prev => prev.some(x => x.id === n.id) ? prev : [n, ...prev]);
+        } catch (_) {}
+      });
+
+      es.onerror = () => {
+        if (active) {
+          es.close();
+          timer = setTimeout(connect, 5000);
+        }
+      };
+    }
+
+    connect();
+
+    return () => {
+      active = false;
+      if (es) es.close();
+      clearTimeout(timer);
+    };
   }, [user, fetchNotifications]);
 
   // Click outside to close dropdowns

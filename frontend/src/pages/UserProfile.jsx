@@ -127,6 +127,9 @@ export default function UserProfile() {
           <NavLink to="/profile/watchlist" className={() => navLinkClass('/profile/watchlist')}>
             <span>❤️</span> Yêu thích
           </NavLink>
+          <NavLink to="/profile/disputes" className={() => navLinkClass('/profile/disputes')}>
+            <span>⚖️</span> Khiếu nại của tôi
+          </NavLink>
           
           {profileData.kycStatus !== 'APPROVED' && !isAdmin && (
             <NavLink to="/profile/kyc" className={() => navLinkClass('/profile/kyc')}>

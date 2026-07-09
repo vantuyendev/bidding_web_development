@@ -29,8 +29,13 @@ export default function WatchlistButton({
     setLoading(true);
     try {
       const method = watched ? 'DELETE' : 'POST';
-      const res = await fetch(getApiUrl(`/api/watchlist/${productId}`), {
+      const endpoint = watched ? `/api/watchlist/${productId}` : '/api/watchlist';
+      const body = watched ? undefined : JSON.stringify({ productId });
+      const headers = watched ? undefined : { 'Content-Type': 'application/json' };
+      const res = await fetch(getApiUrl(endpoint), {
         method,
+        headers,
+        body,
         credentials: 'include',
       });
       const data = await res.json();
