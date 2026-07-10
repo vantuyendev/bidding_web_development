@@ -72,10 +72,10 @@ app.use(cors({
 // Parse JSON bodies
 app.use(express.json());
 
-// 4. Cấu hình Global Rate Limiter: Tối đa 100 requests mỗi 15 phút
+// 4. Cấu hình Global Rate Limiter: Tối đa 100 requests mỗi 15 phút (tăng lên 10000 ở dev)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: 100, // Tối đa 100 requests từ mỗi IP
+  max: process.env.NODE_ENV === 'development' ? 10000 : 100, // Tối đa 100 requests từ mỗi IP
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -85,10 +85,10 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// 5. Cấu hình Strict Rate Limiter chống Bot spam giá và Brute force đăng nhập: Tối đa 5 requests / phút
+// 5. Cấu hình Strict Rate Limiter chống Bot spam giá và Brute force đăng nhập: Tối đa 5 requests / phút (tăng lên 100 ở dev)
 const strictLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 phút
-  max: 5, // Tối đa 5 requests từ mỗi IP
+  max: process.env.NODE_ENV === 'development' ? 100 : 5, // Tối đa 5 requests từ mỗi IP
   standardHeaders: true,
   legacyHeaders: false,
   message: {

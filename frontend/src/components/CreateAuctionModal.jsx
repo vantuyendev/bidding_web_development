@@ -20,7 +20,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   const [length, setLength] = useState('10');
   const [width, setWidth] = useState('10');
   const [height, setHeight] = useState('10');
-  const [provinceId, setProvinceId] = useState('HN');
+  const [provinceId, setProvinceId] = useState('Hà Nội');
   const [districtId, setDistrictId] = useState('');
   const [isCustomDistrict, setIsCustomDistrict] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
@@ -255,7 +255,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
         setLength('10');
         setWidth('10');
         setHeight('10');
-        setProvinceId('HN');
+        setProvinceId('Hà Nội');
         setDistrictId('');
         setAttributes({});
         setNewCategoryName('');

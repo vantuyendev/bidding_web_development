@@ -33,7 +33,4 @@ frontend_backup/
 .agents/
 skills-lock.json
 
-bidding_system_gap_analysis.md
-frontend_ui_gap_analysis.md
-session_analysis_report.md
-
+.mcp.json
