@@ -32,7 +32,7 @@ export const requireNotBanned = async (req, res, next) => {
   }
 };
 
-// Kiểm tra quyền admin (email chứa 'admin')
+// Kiểm tra quyền admin (dùng cột is_admin trong DB, không phụ thuộc vào email)
 export const requireAdmin = async (req, res, next) => {
   if (!req.session?.userId) {
     return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
@@ -40,9 +40,9 @@ export const requireAdmin = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.session.userId },
-      select: { email: true, isBanned: true }
+      select: { isAdmin: true, isBanned: true }
     });
-    if (!user || !user.email.toLowerCase().includes('admin')) {
+    if (!user || !user.isAdmin) {
       return res.status(403).json({ success: false, error: 'Quyền truy cập bị từ chối.' });
     }
     if (user.isBanned) {

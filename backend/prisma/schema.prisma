@@ -29,6 +29,8 @@ model User {
   isBanned         Boolean      @default(false) @map("is_banned")
   banReason        String?      @map("ban_reason")
   bannedAt         DateTime?    @map("banned_at")
+  // Admin role — chỉ được gán thủ công hoặc qua seed script
+  isAdmin          Boolean      @default(false) @map("is_admin")
 
   bids            Bid[]
   transactions    Transaction[]
