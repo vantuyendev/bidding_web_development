@@ -125,12 +125,27 @@ export default function Navbar() {
   const megaMenuRef = useRef(null);
   const megaTimerRef = useRef(null);
   const moreCategoriesRef = useRef(null);
+  const moreCategoriesBtnRef = useRef(null);
+  const scrollRef = useRef(null);
 
   // Scroll detection for glass blur
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Horizontal scrolling via mouse wheel on category bar
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleWheel = (e) => {
+      if (e.deltaY === 0) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
   }, []);
 
   const fetchCategories = useCallback(() => {
@@ -198,7 +213,13 @@ export default function Navbar() {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsDropdownOpen(false);
       if (notifyRef.current && !notifyRef.current.contains(e.target)) setIsNotificationsOpen(false);
-      if (moreCategoriesRef.current && !moreCategoriesRef.current.contains(e.target)) setIsMoreCategoriesOpen(false);
+      if (
+        moreCategoriesRef.current &&
+        !moreCategoriesRef.current.contains(e.target) &&
+        (!moreCategoriesBtnRef.current || !moreCategoriesBtnRef.current.contains(e.target))
+      ) {
+        setIsMoreCategoriesOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -244,7 +265,9 @@ export default function Navbar() {
   };
 
   const closeMegaMenu = () => {
-    megaTimerRef.current = setTimeout(() => setActiveMegaMenu(null), 120);
+    megaTimerRef.current = setTimeout(() => {
+      setActiveMegaMenu(null);
+    }, 120);
   };
 
   const handleSearch = (e) => {
@@ -613,6 +636,7 @@ export default function Navbar() {
           }}
         >
           <div
+            ref={scrollRef}
             style={{
               maxWidth: 1240, margin: '0 auto', padding: '0 20px',
               display: 'flex', alignItems: 'center', gap: 0,
@@ -632,86 +656,37 @@ export default function Navbar() {
 
             {/* Dynamic category tabs */}
             {categories.slice(0, 8).map(cat => (
-              <div
+              <Link
                 key={cat.id}
-                style={{ position: 'relative' }}
+                to={`/products?category=${cat.slug}`}
+                id={`nav-tab-${cat.slug}`}
+                className={`cat-nav-tab ${activeMegaMenu === cat.slug ? 'active' : ''}`}
                 onMouseEnter={() => openMegaMenu(cat.slug)}
                 onMouseLeave={closeMegaMenu}
+                onClick={(e) => {
+                  if (activeMegaMenu !== cat.slug) {
+                    e.preventDefault();
+                    openMegaMenu(cat.slug);
+                  }
+                }}
               >
-                <Link
-                  to={`/products?category=${cat.slug}`}
-                  id={`nav-tab-${cat.slug}`}
-                  className={`cat-nav-tab ${activeMegaMenu === cat.slug ? 'active' : ''}`}
-                >
-                  {cat.name}
-                  <ChevronDown />
-                </Link>
-              </div>
+                {cat.name}
+                <ChevronDown />
+              </Link>
             ))}
 
-            {/* Dropdown "Xem thêm" for remaining categories */}
+            {/* Dropdown "Xem thêm" button for remaining categories */}
             {categories.length > 8 && (
-              <div
-                ref={moreCategoriesRef}
-                style={{ position: 'relative' }}
+              <button
+                ref={moreCategoriesBtnRef}
+                type="button"
+                onClick={() => setIsMoreCategoriesOpen(s => !s)}
+                className={`cat-nav-tab ${isMoreCategoriesOpen ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
               >
-                <button
-                  type="button"
-                  onClick={() => setIsMoreCategoriesOpen(s => !s)}
-                  className={`cat-nav-tab ${isMoreCategoriesOpen ? 'active' : ''}`}
-                  style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                >
-                  Xem thêm
-                  <ChevronDown />
-                </button>
-
-                {/* Dropdown list */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '100%',
-                    width: 200,
-                    background: 'white',
-                    border: '1px solid hsl(0,0%,89%)',
-                    borderRadius: 8,
-                    boxShadow: '0 8px 32px hsla(0,0%,0%,0.12)',
-                    zIndex: 200,
-                    padding: '8px 0',
-                    transition: 'opacity 0.2s, transform 0.2s',
-                    opacity: isMoreCategoriesOpen ? 1 : 0,
-                    transform: isMoreCategoriesOpen ? 'translateY(0)' : 'translateY(-8px)',
-                    pointerEvents: isMoreCategoriesOpen ? 'auto' : 'none',
-                  }}
-                >
-                  {categories.slice(8).map(cat => (
-                    <Link
-                      key={cat.id}
-                      to={`/products?category=${cat.slug}`}
-                      onClick={() => setIsMoreCategoriesOpen(false)}
-                      style={{
-                        display: 'block',
-                        padding: '10px 16px',
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: 'hsl(12,14%,11%)',
-                        textDecoration: 'none',
-                        transition: 'background 0.1s, color 0.1s',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.background = 'hsl(40,20%,97%)';
-                        e.currentTarget.style.color = 'hsl(196,100%,36%)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.background = '';
-                        e.currentTarget.style.color = 'hsl(12,14%,11%)';
-                      }}
-                    >
-                      {cat.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+                Xem thêm
+                <ChevronDown />
+              </button>
             )}
 
             {/* Divider */}
@@ -730,6 +705,56 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
+
+          {/* Dropdown "Xem thêm" list, positioned outside scrollable container to prevent vertical clipping */}
+          {isMoreCategoriesOpen && categories.length > 8 && (
+            <div
+              ref={moreCategoriesRef}
+              style={{
+                position: 'absolute',
+                right: 'max(20px, calc((100% - 1240px) / 2 + 20px))',
+                top: '100%',
+                width: 200,
+                background: 'white',
+                border: '1px solid hsl(0,0%,89%)',
+                borderRadius: 8,
+                boxShadow: '0 8px 32px hsla(0,0%,0%,0.12)',
+                zIndex: 200,
+                padding: '8px 0',
+                transition: 'opacity 0.2s, transform 0.2s',
+                opacity: isMoreCategoriesOpen ? 1 : 0,
+                transform: isMoreCategoriesOpen ? 'translateY(0)' : 'translateY(-8px)',
+                pointerEvents: isMoreCategoriesOpen ? 'auto' : 'none',
+              }}
+            >
+              {categories.slice(8).map(cat => (
+                <Link
+                  key={cat.id}
+                  to={`/products?category=${cat.slug}`}
+                  onClick={() => setIsMoreCategoriesOpen(false)}
+                  style={{
+                    display: 'block',
+                    padding: '10px 16px',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: 'hsl(12,14%,11%)',
+                    textDecoration: 'none',
+                    transition: 'background 0.1s, color 0.1s',
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = 'hsl(40,20%,97%)';
+                    e.currentTarget.style.color = 'hsl(196,100%,36%)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = '';
+                    e.currentTarget.style.color = 'hsl(12,14%,11%)';
+                  }}
+                >
+                  {cat.name}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Mega Menu */}
           {activeMegaMenu && (
