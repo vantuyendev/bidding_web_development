@@ -69,8 +69,9 @@ app.use(cors({
   credentials: true // BẮT BUỘC ĐỂ NHẬN COOKIE
 }));
 
-// Parse JSON bodies
-app.use(express.json());
+// Parse JSON bodies (increased limit to 10mb to support base64 product image uploads)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // 4. Cấu hình Global Rate Limiter: Tối đa 100 requests mỗi 15 phút (tăng lên 10000 ở dev)
 const globalLimiter = rateLimit({

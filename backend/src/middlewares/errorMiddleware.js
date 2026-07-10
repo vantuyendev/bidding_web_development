@@ -37,6 +37,19 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Handle request entity too large (e.g. base64 image upload exceeds body-parser limit)
+  if (err.status === 413 || err.type === 'entity.too.large') {
+    logger.warn(`Request entity too large: ${err.message}`, {
+      requestId,
+      path: req.path,
+      method: req.method,
+    });
+    return res.status(413).json({
+      success: false,
+      error: 'Dung lượng ảnh hoặc dữ liệu quá lớn. Vui lòng chọn ảnh nhỏ hơn 10MB.'
+    });
+  }
+
   // Handle default fallback unexpected errors
   logger.error(`Unexpected Server Error: ${err.message || err}`, err, {
     requestId,
