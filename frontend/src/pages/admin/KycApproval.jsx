@@ -14,7 +14,7 @@ export default function KycApproval() {
   const fetchPendingKyc = async () => {
     setPendingKycLoading(true);
     try {
-      const res = await fetch(getApiUrl('/api/users/admin/kyc-pending'), {
+      const res = await fetch(getApiUrl('/api/admin/kyc-pending'), {
         credentials: 'include'
       });
       const data = await res.json();
@@ -32,7 +32,7 @@ export default function KycApproval() {
     setAdminActionError('');
     setAdminActionSuccess('');
     try {
-      const res = await fetch(getApiUrl('/api/users/admin/approve-kyc'), {
+      const res = await fetch(getApiUrl('/api/admin/approve-kyc'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetUserId, action }),

@@ -22,6 +22,12 @@ import KycSubmission from './pages/dashboard/KycSubmission';
 import UserDisputes from './pages/dashboard/UserDisputes';
 
 // Admin pages
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminAuctions from './pages/admin/AdminAuctions';
+import AdminWalletRequests from './pages/admin/AdminWalletRequests';
+import AdminProductApproval from './pages/admin/AdminProductApproval';
 import KycApproval from './pages/admin/KycApproval';
 import DisputeManagement from './pages/admin/DisputeManagement';
 
@@ -58,8 +64,15 @@ export default function App() {
 
                 {/* Admin Sections */}
                 <Route element={<AdminRoute />}>
-                  <Route path="/admin/kyc" element={<KycApproval />} />
-                  <Route path="/admin/disputes" element={<DisputeManagement />} />
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="auctions" element={<AdminAuctions />} />
+                    <Route path="wallet-requests" element={<AdminWalletRequests />} />
+                    <Route path="products" element={<AdminProductApproval />} />
+                    <Route path="kyc" element={<KycApproval />} />
+                    <Route path="disputes" element={<DisputeManagement />} />
+                  </Route>
                 </Route>
               </Route>
             </Route>

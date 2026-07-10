@@ -140,11 +140,8 @@ export default function UserProfile() {
           {isAdmin && (
             <>
               <div className="hidden md:block my-3 border-t border-neutral-200 dark:border-neutral-800" />
-              <NavLink to="/admin/kyc" className={() => navLinkClass('/admin/kyc')}>
-                <span>🔑</span> Duyệt KYC Người bán
-              </NavLink>
-              <NavLink to="/admin/disputes" className={() => navLinkClass('/admin/disputes')}>
-                <span>⚖️</span> Quản lý Khiếu nại (Admin)
+              <NavLink to="/admin" className={() => navLinkClass('/admin')}>
+                <span>🛠️</span> Trang Quản trị Admin
               </NavLink>
             </>
           )}

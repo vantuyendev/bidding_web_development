@@ -15,6 +15,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   const [startPriceRaw, setStartPriceRaw] = useState('');
   const [buyNowPriceRaw, setBuyNowPriceRaw] = useState('');
   const [reservePriceRaw, setReservePriceRaw] = useState('');
+  const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [weight, setWeight] = useState('');
   const [length, setLength] = useState('10');
@@ -96,6 +97,12 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
         }
       };
       fetchCategories();
+
+      // Default start time: now
+      const now = new Date();
+      const startTzoffset = now.getTimezoneOffset() * 60000;
+      const startLocalISOTime = new Date(now.getTime() - startTzoffset).toISOString().slice(0, 16);
+      setStartTime(startLocalISOTime);
 
       // Default end time: 24 hours from now
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -221,6 +228,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       reservePrice,
       categoryId,
       newCategoryName: categoryId === 'new' ? newCategoryName : undefined,
+      startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
       endTime: new Date(endTime).toISOString(),
       weight: weight ? Number(weight) : 0.5,
       length: Number(length) || 10,
@@ -261,6 +269,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
         setNewCategoryName('');
         setNewCategoryAttributes([]);
         setCustomAttributes([]);
+        setStartTime('');
         setImageUrl('');
         setSelectedFile(null);
         setFilePreview(null);
@@ -726,17 +735,32 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* End Time */}
+            {/* Start & End Time */}
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label htmlFor="end-time" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Thời gian kết thúc</label>
-              <input
-                id="end-time"
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
-                required
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="start-time" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Thời gian bắt đầu</label>
+                  <input
+                    id="start-time"
+                    type="datetime-local"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="end-time" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Thời gian kết thúc (Tối đa 48 giờ)</label>
+                  <input
+                    id="end-time"
+                    type="datetime-local"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
