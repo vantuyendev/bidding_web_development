@@ -19,6 +19,7 @@ export const getProducts = async (req, res, next) => {
         endTime: true,
         status: true,
         categoryId: true,
+        sellerId: true,
         category: {
           select: {
             id: true,
@@ -302,6 +303,7 @@ export const searchProducts = async (req, res, next) => {
           endTime: true,
           status: true,
           categoryId: true,
+          sellerId: true,
           category: true,
           attributes: {
             include: {
