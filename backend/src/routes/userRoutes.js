@@ -7,7 +7,8 @@ import {
   withdrawFunds,
   submitKyc,
   adminGetPendingKyc,
-  adminApproveKyc
+  adminApproveKyc,
+  getPublicUserProfile
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -32,6 +33,9 @@ router.get('/admin/kyc-pending', requireAuth, adminGetPendingKyc);
 
 // POST /admin/approve-kyc - Approve or reject KYC application (protected, admin only in controller)
 router.post('/admin/approve-kyc', requireAuth, adminApproveKyc);
+
+// GET /:id - Fetch public profile and reviews of a user (seller)
+router.get('/:id', getPublicUserProfile);
 
 export default router;
 

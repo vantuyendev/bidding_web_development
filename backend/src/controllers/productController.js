@@ -100,7 +100,8 @@ export const getProductDetail = async (req, res, next) => {
               }
             }
           }
-        }
+        },
+        review: true
       }
     });
 
@@ -137,7 +138,8 @@ export const getProductDetail = async (req, res, next) => {
         ...product.seller,
         reputationScore: Number(product.seller.reputationScore),
         soldCount: product.seller._count.soldProducts
-      } : null
+      } : null,
+      review: product.review || null
     };
 
     return res.status(200).json({

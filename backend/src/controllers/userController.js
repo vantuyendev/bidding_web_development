@@ -370,3 +370,84 @@ export const adminApproveKyc = async (req, res) => {
   }
 };
 
+// GET /api/users/:id - Fetch public profile of a user (seller) with reviews received
+export const getPublicUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            soldProducts: true,
+            reviewsReceived: true
+          }
+        },
+        reviewsReceived: {
+          include: {
+            reviewer: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            product: {
+              select: {
+                id: true,
+                title: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'Không tìm thấy thông tin người dùng.'
+      });
+    }
+
+    const data = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      reputationScore: Number(user.reputationScore),
+      isVerifiedSeller: user.isVerifiedSeller,
+      createdAt: user.createdAt,
+      soldCount: user._count.soldProducts,
+      reviewsCount: user._count.reviewsReceived,
+      reviews: user.reviewsReceived.map(review => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        reviewer: {
+          id: review.reviewer.id,
+          name: review.reviewer.name || review.reviewer.email
+        },
+        product: review.product ? {
+          id: review.product.id,
+          title: review.product.title
+        } : null
+      }))
+    };
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi lấy thông tin người dùng.'
+    });
+  }
+};
+
+
