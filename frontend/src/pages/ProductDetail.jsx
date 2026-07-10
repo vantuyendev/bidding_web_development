@@ -6,6 +6,7 @@ import Badge from '../components/ui/Badge';
 import CountdownBadge from '../components/ui/CountdownBadge';
 import ProductCard from '../components/ProductCard';
 import Modal from '../components/ui/Modal';
+import ReviewModal from '../components/ReviewModal';
 
 /* ── Helpers ─────────────────────────────────────────────── */
 function getStepPrice(currentPrice) {
@@ -88,6 +89,12 @@ export default function ProductDetail() {
     deposit: 0,
     action: null
   });
+
+  // Seller profile states
+  const [sellerModalOpen, setSellerModalOpen] = useState(false);
+  const [sellerLoading, setSellerLoading] = useState(false);
+  const [sellerData, setSellerData] = useState(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   // UI tabs
   const [activeTab, setActiveTab]         = useState('details');
@@ -218,6 +225,34 @@ export default function ProductDetail() {
   }, [checkoutForm.province, checkoutForm.district, checkoutModalOpen, id]);
 
   /* ── Handlers ── */
+  const openSellerProfile = async () => {
+    if (!product || !product.sellerId) return;
+    setSellerModalOpen(true);
+    setSellerLoading(true);
+    try {
+      const res = await fetch(getApiUrl(`/api/users/${product.sellerId}`));
+      const data = await res.json();
+      if (data.success) {
+        setSellerData(data.data);
+      } else {
+        setSellerData(null);
+      }
+    } catch {
+      setSellerData(null);
+    } finally {
+      setSellerLoading(false);
+    }
+  };
+
+  const handleReviewSuccess = () => {
+    openSellerProfile();
+    fetch(getApiUrl(`/api/products/${id}`), { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) setProduct(d.data);
+      });
+  };
+
   const toggleWatchlist = async () => {
     if (!user) { navigate('/login'); return; }
     setWatchlistLoading(true);
@@ -689,13 +724,27 @@ export default function ProductDetail() {
                 </button>
 
                 {product.seller && (
-                  <div style={{ fontSize: 12, color: 'hsl(12,8%,50%)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    onClick={openSellerProfile}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      color: 'hsl(196,100%,36%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                    title="Click to view seller profile and reviews"
+                  >
                     <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'hsl(196,100%,90%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'hsl(196,100%,36%)' }}>
                       {(product.seller.name || product.seller.email || '?')[0].toUpperCase()}
                     </div>
-                    <span>{product.seller.name || product.seller.email}</span>
+                    <span style={{ textDecoration: 'underline', fontWeight: 650 }}>{product.seller.name || product.seller.email}</span>
                     {product.seller.isVerifiedSeller && <span style={{ fontSize: 10, color: 'hsl(152,72%,40%)', fontWeight: 700 }}>✓</span>}
-                  </div>
+                  </button>
                 )}
               </div>
 
@@ -1104,6 +1153,112 @@ export default function ProductDetail() {
           </div>
         </div>
       </Modal>
+
+      {/* ── Seller Profile Modal ── */}
+      <Modal
+        isOpen={sellerModalOpen}
+        onClose={() => setSellerModalOpen(false)}
+        title="Thông tin Người bán"
+        maxWidth="max-w-lg"
+      >
+        {sellerLoading ? (
+          <div className="text-center py-6 text-xs text-neutral-400">Đang tải hồ sơ người bán...</div>
+        ) : sellerData ? (
+          <div className="space-y-4 text-left text-xs">
+            <div className="flex items-center gap-4 border-b border-neutral-100 dark:border-neutral-800 pb-4">
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'hsl(196,100%,90%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: 'hsl(196,100%,36%)' }}>
+                {(sellerData.name || sellerData.email || '?')[0].toUpperCase()}
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-neutral-900 dark:text-white flex items-center gap-1.5 select-none">
+                  {sellerData.name || sellerData.email}
+                  {sellerData.isVerifiedSeller && (
+                    <span className="text-[10px] text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 font-bold">
+                      ✓ Đã xác thực
+                    </span>
+                  )}
+                </h4>
+                <p className="text-[10px] text-neutral-400 mt-0.5 select-none">
+                  Thành viên từ: {new Date(sellerData.createdAt).toLocaleDateString('vi-VN')}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 bg-neutral-50 dark:bg-neutral-950/40 p-4 rounded-2xl border border-neutral-100 dark:border-neutral-850 select-none">
+              <div>
+                <span className="block text-[10px] text-neutral-400 font-medium">Điểm uy tín</span>
+                <span className="text-sm font-black text-amber-500 flex items-center gap-1 mt-0.5">
+                  ★ {Number(sellerData.reputationScore || 5).toFixed(1)} / 5.0
+                </span>
+              </div>
+              <div>
+                <span className="block text-[10px] text-neutral-400 font-medium">Số đơn hàng đã bán</span>
+                <span className="text-sm font-black text-neutral-900 dark:text-white mt-0.5">
+                  {sellerData.soldCount || 0} sản phẩm
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h5 className="font-bold text-neutral-900 dark:text-white select-none">Đánh giá nhận được ({sellerData.reviews?.length || 0})</h5>
+                {user && product && (product.status === 'ENDED' || new Date(product.endTime).getTime() <= Date.now()) && product.winnerId === user.id && !product.review && (
+                  <button
+                    onClick={() => {
+                      setSellerModalOpen(false);
+                      setReviewModalOpen(true);
+                    }}
+                    className="text-[10px] font-bold text-amber-500 hover:underline cursor-pointer"
+                  >
+                    + Viết đánh giá
+                  </button>
+                )}
+              </div>
+
+              {(!sellerData.reviews || sellerData.reviews.length === 0) ? (
+                <div className="text-center py-6 text-[11px] text-neutral-400 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl select-none">
+                  Chưa có đánh giá nào cho người bán này.
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                  {sellerData.reviews.map((rev) => (
+                    <div key={rev.id} className="p-3 border border-neutral-100 dark:border-neutral-800/80 rounded-2xl bg-white dark:bg-neutral-900 space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-[11px] text-neutral-700 dark:text-neutral-300">
+                          {rev.reviewer?.name}
+                        </span>
+                        <span className="text-[10px] text-amber-500 font-bold">
+                          {'★'.repeat(rev.rating)}{'☆'.repeat(5 - rev.rating)}
+                        </span>
+                      </div>
+                      {rev.comment && (
+                        <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                          {rev.comment}
+                        </p>
+                      )}
+                      <div className="flex justify-between items-center text-[9px] text-neutral-400">
+                        <span>Sản phẩm: {rev.product?.title || 'Đã ẩn'}</span>
+                        <span>{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-6 text-xs text-rose-500">Không thể tải thông tin người bán.</div>
+        )}
+      </Modal>
+
+      {/* ── Partner Review Modal ── */}
+      <ReviewModal
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        productId={product?.id}
+        productName={product?.title}
+        onSuccess={handleReviewSuccess}
+      />
     </div>
   );
 }
