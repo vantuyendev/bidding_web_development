@@ -38,11 +38,13 @@ export default function Navbar() {
   const [activeMegaMenu, setActiveMegaMenu] = useState(null); // category slug
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMoreCategoriesOpen, setIsMoreCategoriesOpen] = useState(false);
 
   const dropdownRef = useRef(null);
   const notifyRef = useRef(null);
   const megaMenuRef = useRef(null);
   const megaTimerRef = useRef(null);
+  const moreCategoriesRef = useRef(null);
 
   // Scroll detection for glass blur
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function Navbar() {
   useEffect(() => {
     fetch(getApiUrl('/api/categories'))
       .then(r => r.json())
-      .then(d => { if (d.success) setCategories(d.data.slice(0, 8)); })
+      .then(d => { if (d.success) setCategories(d.data); })
       .catch(() => {});
   }, []);
 
@@ -110,6 +112,7 @@ export default function Navbar() {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsDropdownOpen(false);
       if (notifyRef.current && !notifyRef.current.contains(e.target)) setIsNotificationsOpen(false);
+      if (moreCategoriesRef.current && !moreCategoriesRef.current.contains(e.target)) setIsMoreCategoriesOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -542,7 +545,7 @@ export default function Navbar() {
             </Link>
 
             {/* Dynamic category tabs */}
-            {categories.map(cat => (
+            {categories.slice(0, 5).map(cat => (
               <div
                 key={cat.id}
                 style={{ position: 'relative' }}
@@ -559,6 +562,71 @@ export default function Navbar() {
                 </Link>
               </div>
             ))}
+
+            {/* Dropdown "Xem thêm" for remaining categories */}
+            {categories.length > 5 && (
+              <div
+                ref={moreCategoriesRef}
+                style={{ position: 'relative' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsMoreCategoriesOpen(s => !s)}
+                  className={`cat-nav-tab ${isMoreCategoriesOpen ? 'active' : ''}`}
+                  style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+                >
+                  Xem thêm
+                  <ChevronDown />
+                </button>
+
+                {/* Dropdown list */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '100%',
+                    width: 200,
+                    background: 'white',
+                    border: '1px solid hsl(0,0%,89%)',
+                    borderRadius: 8,
+                    boxShadow: '0 8px 32px hsla(0,0%,0%,0.12)',
+                    zIndex: 200,
+                    padding: '8px 0',
+                    transition: 'opacity 0.2s, transform 0.2s',
+                    opacity: isMoreCategoriesOpen ? 1 : 0,
+                    transform: isMoreCategoriesOpen ? 'translateY(0)' : 'translateY(-8px)',
+                    pointerEvents: isMoreCategoriesOpen ? 'auto' : 'none',
+                  }}
+                >
+                  {categories.slice(5).map(cat => (
+                    <Link
+                      key={cat.id}
+                      to={`/products?category=${cat.slug}`}
+                      onClick={() => setIsMoreCategoriesOpen(false)}
+                      style={{
+                        display: 'block',
+                        padding: '10px 16px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: 'hsl(12,14%,11%)',
+                        textDecoration: 'none',
+                        transition: 'background 0.1s, color 0.1s',
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'hsl(40,20%,97%)';
+                        e.currentTarget.style.color = 'hsl(196,100%,36%)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = '';
+                        e.currentTarget.style.color = 'hsl(12,14%,11%)';
+                      }}
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Divider */}
             <div style={{ width: 1, height: 20, background: 'hsl(0,0%,89%)', margin: '0 8px', flexShrink: 0 }} />

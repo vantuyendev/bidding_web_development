@@ -29,6 +29,33 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
 
   const [attributes, setAttributes] = useState({});
 
+  // Dynamic Categories and Custom Attributes states
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryAttributes, setNewCategoryAttributes] = useState([]);
+  const [customAttributes, setCustomAttributes] = useState([]);
+
+  // Helpers for managing new category attribute keys
+  const addNewCatAttr = () => {
+    setNewCategoryAttributes(prev => [...prev, { name: '', type: 'TEXT', value: '' }]);
+  };
+  const removeNewCatAttr = (index) => {
+    setNewCategoryAttributes(prev => prev.filter((_, idx) => idx !== index));
+  };
+  const updateNewCatAttr = (index, field, val) => {
+    setNewCategoryAttributes(prev => prev.map((item, idx) => idx === index ? { ...item, [field]: val } : item));
+  };
+
+  // Helpers for custom attributes on existing category
+  const addCustomAttr = () => {
+    setCustomAttributes(prev => [...prev, { name: '', value: '' }]);
+  };
+  const removeCustomAttr = (index) => {
+    setCustomAttributes(prev => prev.filter((_, idx) => idx !== index));
+  };
+  const updateCustomAttr = (index, field, val) => {
+    setCustomAttributes(prev => prev.map((item, idx) => idx === index ? { ...item, [field]: val } : item));
+  };
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -151,6 +178,41 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       return;
     }
 
+    const attributesPayload = [];
+
+    if (categoryId !== 'new') {
+      // 1. Thuộc tính có sẵn của danh mục hiện tại
+      Object.entries(attributes)
+        .filter(([_, val]) => val !== undefined && val !== null && String(val).trim() !== '')
+        .forEach(([keyId, val]) => {
+          attributesPayload.push({
+            attributeKeyId: keyId,
+            value: String(val).trim()
+          });
+        });
+
+      // 2. Thuộc tính tự do tự định nghĩa thêm
+      customAttributes
+        .filter(attr => attr.name && attr.name.trim() !== '' && attr.value && attr.value.trim() !== '')
+        .forEach(attr => {
+          attributesPayload.push({
+            attributeKeyName: attr.name.trim(),
+            value: attr.value.trim()
+          });
+        });
+    } else {
+      // 3. Thuộc tính ban đầu của danh mục mới tự tạo
+      newCategoryAttributes
+        .filter(attr => attr.name && attr.name.trim() !== '' && attr.value && attr.value.trim() !== '')
+        .forEach(attr => {
+          attributesPayload.push({
+            attributeKeyName: attr.name.trim(),
+            attributeKeyType: attr.type,
+            value: attr.value.trim()
+          });
+        });
+    }
+
     const payload = {
       title,
       description,
@@ -158,6 +220,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       buyNowPrice,
       reservePrice,
       categoryId,
+      newCategoryName: categoryId === 'new' ? newCategoryName : undefined,
       endTime: new Date(endTime).toISOString(),
       weight: weight ? Number(weight) : 0.5,
       length: Number(length) || 10,
@@ -166,12 +229,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       provinceId,
       districtId: districtId || 'Default District',
       imageUrl: imageUrl || 'https://picsum.photos/seed/auction/600/400', // fallback image
-      attributes: Object.entries(attributes)
-        .filter(([_, val]) => val !== undefined && val !== null && val !== '')
-        .map(([keyId, val]) => ({
-          attributeKeyId: keyId,
-          value: String(val)
-        }))
+      attributes: attributesPayload
     };
 
     try {
@@ -200,6 +258,9 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
         setProvinceId('HN');
         setDistrictId('');
         setAttributes({});
+        setNewCategoryName('');
+        setNewCategoryAttributes([]);
+        setCustomAttributes([]);
         setImageUrl('');
         setSelectedFile(null);
         setFilePreview(null);
@@ -343,11 +404,13 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                 className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
                 required
               >
+                <option value="">-- Chọn danh mục --</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
+                <option value="new">+ Tạo danh mục mới</option>
               </select>
             </div>
 
@@ -422,16 +485,87 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* Dynamic Category EAV Attributes Form */}
-            {categories.find(c => c.id === categoryId)?.attributeKeys?.length > 0 && (
-              <div className="md:col-span-2 border border-neutral-200 dark:border-neutral-800 p-4 rounded-2xl bg-neutral-50/50 dark:bg-neutral-950/20 space-y-3 mt-2">
+            {/* Sub-form: Tạo danh mục mới */}
+            {categoryId === 'new' && (
+              <div className="md:col-span-2 border border-neutral-200 dark:border-neutral-800 p-4 rounded-2xl bg-neutral-50/50 dark:bg-neutral-950/20 space-y-4 mt-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Tạo danh mục mới</p>
+                
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-semibold text-neutral-500">Tên danh mục mới</label>
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Ví dụ: Thời trang nam, Sách, Đồ chơi..."
+                    className="px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-semibold text-neutral-500 block">Các thông số đặc tả cho sản phẩm trong danh mục này</label>
+                  {newCategoryAttributes.map((attr, idx) => (
+                    <div key={idx} className="flex gap-2 items-center flex-wrap sm:flex-nowrap border border-neutral-100 dark:border-neutral-800 p-2.5 rounded-xl bg-white dark:bg-neutral-900">
+                      <input
+                        type="text"
+                        value={attr.name}
+                        onChange={(e) => updateNewCatAttr(idx, 'name', e.target.value)}
+                        placeholder="Tên thông số (Ví dụ: Kích cỡ, Tác giả...)"
+                        className="flex-grow px-2 py-1.5 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs focus:outline-none text-neutral-900 dark:text-white"
+                        required
+                      />
+                      <select
+                        value={attr.type}
+                        onChange={(e) => updateNewCatAttr(idx, 'type', e.target.value)}
+                        className="px-2 py-1.5 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs focus:outline-none text-neutral-900 dark:text-white"
+                      >
+                        <option value="TEXT">Văn bản (TEXT)</option>
+                        <option value="NUMBER">Số (NUMBER)</option>
+                        <option value="SELECT">Lọc chọn (SELECT)</option>
+                      </select>
+                      <input
+                        type="text"
+                        value={attr.value}
+                        onChange={(e) => updateNewCatAttr(idx, 'value', e.target.value)}
+                        placeholder="Giá trị sản phẩm"
+                        className="flex-grow px-2 py-1.5 border border-neutral-200 dark:border-neutral-800 rounded-lg text-xs focus:outline-none text-neutral-900 dark:text-white"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeNewCatAttr(idx)}
+                        className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addNewCatAttr}
+                    className="text-[10px] font-bold text-neutral-500 hover:text-neutral-950 dark:hover:text-white flex items-center gap-1.5 cursor-pointer mt-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    + Thêm trường thông số mới
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Form: Thông số danh mục có sẵn + Thuộc tính tự định nghĩa riêng */}
+            {categoryId && categoryId !== 'new' && (
+              <div className="md:col-span-2 border border-neutral-200 dark:border-neutral-800 p-4 rounded-2xl bg-neutral-50/50 dark:bg-neutral-950/20 space-y-4 mt-2">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Thông số cấu hình sản phẩm</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {categories.find(c => c.id === categoryId).attributeKeys.map((key) => (
+                  {categories.find(c => c.id === categoryId)?.attributeKeys?.map((key) => (
                     <div key={key.id} className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-semibold text-neutral-500">{key.name}</label>
                       <input
-                        type={key.type === 'number' ? 'number' : 'text'}
+                        type={key.type === 'NUMBER' ? 'number' : 'text'}
                         value={attributes[key.id] || ''}
                         onChange={(e) => setAttributes(prev => ({ ...prev, [key.id]: e.target.value }))}
                         placeholder={`Nhập ${key.name.toLowerCase()}`}
@@ -439,7 +573,55 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                       />
                     </div>
                   ))}
+                  
+                  {/* Các thông số tự do tự bổ sung */}
+                  {customAttributes.map((attr, idx) => (
+                    <div key={idx} className="flex gap-2 items-end sm:col-span-2 border-t border-neutral-100 dark:border-neutral-800/60 pt-3">
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <label className="text-[10px] font-semibold text-neutral-500">Tên thông số tự chọn</label>
+                        <input
+                          type="text"
+                          value={attr.name}
+                          onChange={(e) => updateCustomAttr(idx, 'name', e.target.value)}
+                          placeholder="Ví dụ: Tình trạng pin, Phụ kiện..."
+                          className="px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
+                          required
+                        />
+                      </div>
+                      <div className="flex-1 flex flex-col gap-1.5">
+                        <label className="text-[10px] font-semibold text-neutral-500">Giá trị</label>
+                        <input
+                          type="text"
+                          value={attr.value}
+                          onChange={(e) => updateCustomAttr(idx, 'value', e.target.value)}
+                          placeholder="Ví dụ: 99%, Cáp sạc..."
+                          className="px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
+                          required
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeCustomAttr(idx)}
+                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer mb-0.5"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={addCustomAttr}
+                  className="text-[10px] font-bold text-neutral-500 hover:text-neutral-950 dark:hover:text-white flex items-center gap-1.5 cursor-pointer mt-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  + Thêm thông số riêng (Custom attribute)
+                </button>
               </div>
             )}
           </div>

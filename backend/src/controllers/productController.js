@@ -1,5 +1,6 @@
 import prisma from '../models/db.js';
 import ApiError from '../utils/ApiError.js';
+import { slugify } from '../utils/slugify.js';
 
 // GET /api/products - Get all products in the database (with query optimization)
 export const getProducts = async (req, res, next) => {
@@ -344,11 +345,13 @@ export const createProduct = async (req, res, next) => {
     const {
       title,
       description,
+      imageUrl,
       startPrice,
       buyNowPrice,
       reservePrice,
       stepPrice,
       categoryId,
+      newCategoryName,
       endTime,
       weight,
       length,
@@ -359,33 +362,93 @@ export const createProduct = async (req, res, next) => {
       attributes, // expects array or object map
     } = req.body;
 
-    // Parse attributes correctly
-    let parsedAttributes = [];
-    if (attributes) {
-      if (Array.isArray(attributes)) {
-        parsedAttributes = attributes.filter(a => a.attributeKeyId && a.value !== undefined && a.value !== null && a.value !== '');
-      } else if (typeof attributes === 'object') {
-        parsedAttributes = Object.entries(attributes)
-          .filter(([_, val]) => val !== undefined && val !== null && val !== '')
-          .map(([keyId, val]) => ({
-            attributeKeyId: keyId,
-            value: String(val)
-          }));
-      }
-    }
-
     // Gán currentPrice bằng đúng với startPrice, sellerId ép cứng từ session
     const product = await prisma.$transaction(async (tx) => {
+      let actualCategoryId = categoryId;
+      
+      // Nếu là tạo danh mục mới
+      if (categoryId === 'new' && newCategoryName) {
+        let slug = slugify(newCategoryName);
+        
+        // Kiểm tra trùng lặp slug
+        let existingCategory = await tx.category.findUnique({
+          where: { slug }
+        });
+        
+        if (existingCategory) {
+          let suffix = 1;
+          let checkSlug = `${slug}-${suffix}`;
+          while (await tx.category.findUnique({ where: { slug: checkSlug } })) {
+            suffix++;
+            checkSlug = `${slug}-${suffix}`;
+          }
+          slug = checkSlug;
+        }
+
+        const newCategory = await tx.category.create({
+          data: {
+            name: newCategoryName.trim(),
+            slug
+          }
+        });
+        actualCategoryId = newCategory.id;
+      }
+
+      // Xử lý các attributes động (cả có sẵn và tạo mới tên khoá)
+      const parsedAttributes = [];
+      if (attributes) {
+        const attributeList = Array.isArray(attributes)
+          ? attributes
+          : typeof attributes === 'object'
+            ? Object.entries(attributes).map(([keyId, val]) => ({ attributeKeyId: keyId, value: val }))
+            : [];
+
+        for (const attr of attributeList) {
+          if (attr.value === undefined || attr.value === null || String(attr.value).trim() === '') continue;
+
+          let keyId = attr.attributeKeyId;
+          
+          // Nếu thuộc tính động tự do (chỉ có tên khoá attributeKeyName mà chưa có ID)
+          if (!keyId && attr.attributeKeyName) {
+            let key = await tx.attributeKey.findFirst({
+              where: {
+                categoryId: actualCategoryId,
+                name: { equals: attr.attributeKeyName.trim(), mode: 'insensitive' }
+              }
+            });
+            
+            if (!key) {
+              key = await tx.attributeKey.create({
+                data: {
+                  categoryId: actualCategoryId,
+                  name: attr.attributeKeyName.trim(),
+                  type: attr.attributeKeyType || 'TEXT'
+                }
+              });
+            }
+            keyId = key.id;
+          }
+
+          if (keyId) {
+            parsedAttributes.push({
+              attributeKeyId: keyId,
+              value: String(attr.value).trim()
+            });
+          }
+        }
+      }
+
       const prod = await tx.product.create({
         data: {
           title,
           description,
+          imageUrl: imageUrl || undefined,
           startPrice: Number(startPrice),
           currentPrice: Number(startPrice),
           buyNowPrice: buyNowPrice ? Number(buyNowPrice) : null,
           reservePrice: reservePrice ? Number(reservePrice) : null,
           stepPrice: stepPrice ? Number(stepPrice) : undefined,
-          categoryId,
+          categoryId: actualCategoryId,
           endTime: new Date(endTime),
           weight: weight ? Number(weight) : undefined,
           length: length ? Number(length) : undefined,
