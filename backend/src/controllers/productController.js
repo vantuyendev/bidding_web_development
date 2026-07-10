@@ -521,3 +521,43 @@ export const createProduct = async (req, res, next) => {
     return next(error);
   }
 };
+
+// GET /api/products/:id/bids - Get bid history for a product
+export const getProductBids = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const bids = await prisma.bid.findMany({
+      where: { productId: id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        bidTime: 'desc'
+      }
+    });
+
+    const formattedBids = bids.map(bid => ({
+      ...bid,
+      bidAmount: Number(bid.bidAmount),
+      maxAutoBidAmount: bid.maxAutoBidAmount ? Number(bid.maxAutoBidAmount) : null,
+      user: {
+        id: bid.user.id,
+        email: bid.user.email
+      }
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: formattedBids
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+

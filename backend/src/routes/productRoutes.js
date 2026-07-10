@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProductDetail, getProducts, getCategoryFilters, searchProducts, createProduct } from '../controllers/productController.js';
+import { getProductDetail, getProducts, getCategoryFilters, searchProducts, createProduct, getProductBids } from '../controllers/productController.js';
 import { requireAuth } from '../middlewares/authMiddleware.js';
 import { streamProductEvents } from '../controllers/streamController.js';
 
@@ -32,6 +32,9 @@ router.get('/search', searchProducts);
 
 // GET /api/products/:id - Fetch product details
 router.get('/:id', getProductDetail);
+
+// GET /api/products/:id/bids - Fetch product bids history
+router.get('/:id/bids', getProductBids);
 
 // GET /api/products/:id/live - Connect to SSE event stream for real-time product updates
 router.get('/:id/live', streamProductEvents);
