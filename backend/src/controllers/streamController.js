@@ -49,6 +49,7 @@ export const streamProductEvents = (req, res) => {
 };
 
 // Helper function to trigger events to all active SSE streams for a specific product
-export const triggerProductUpdate = (productId, currentPrice, endTime, status) => {
-  productEvents.emit(`update-${productId}`, { currentPrice, endTime, status });
+export const triggerProductUpdate = (productId, currentPrice, endTime, status, bid) => {
+  productEvents.emit(`update-${productId}`, { currentPrice, endTime, status, bid });
 };
+

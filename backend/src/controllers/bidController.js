@@ -316,10 +316,27 @@ export const placeBid = async (req, res, next) => {
 
     // Broadcast SSE update event for bids
     for (const bid of result.bidsCreated) {
+      const bidUser = await prisma.user.findUnique({
+        where: { id: bid.userId },
+        select: { id: true, email: true }
+      });
+      
+      const formattedBidForSse = {
+        id: bid.id,
+        productId: bid.productId,
+        userId: bid.userId,
+        bidAmount: Number(bid.bidAmount),
+        bidTime: bid.bidTime.toISOString(),
+        isAutoBid: bid.isAutoBid,
+        user: bidUser
+      };
+
       triggerProductUpdate(
         productId,
         Number(bid.bidAmount),
-        result.endTime.toISOString()
+        result.endTime.toISOString(),
+        undefined,
+        formattedBidForSse
       );
     }
 
@@ -498,11 +515,27 @@ export const buyNow = async (req, res, next) => {
     });
 
     // Broadcast SSE update event
+    const bidUser = await prisma.user.findUnique({
+      where: { id: result.bid.userId },
+      select: { id: true, email: true }
+    });
+
+    const formattedBidForSse = {
+      id: result.bid.id,
+      productId: result.bid.productId,
+      userId: result.bid.userId,
+      bidAmount: Number(result.bid.bidAmount),
+      bidTime: result.bid.bidTime.toISOString(),
+      isAutoBid: result.bid.isAutoBid,
+      user: bidUser
+    };
+
     triggerProductUpdate(
       productId,
       Number(result.currentPrice),
       result.endTime.toISOString(),
-      result.status
+      result.status,
+      formattedBidForSse
     );
 
     // Trigger user notifications via SSE
