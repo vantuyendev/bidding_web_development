@@ -17,6 +17,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import watchlistRoutes from './routes/watchlistRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { requireAuth } from './middlewares/authMiddleware.js';
 import { errorHandler } from './middlewares/errorMiddleware.js';
 import { logger } from './utils/logger.js';
@@ -131,6 +132,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
 app.use('/api/reviews', requireAuth, reviewRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Mounting Centralized Error Handler Middleware (MUST be registered after all route definitions)
 app.use(errorHandler);

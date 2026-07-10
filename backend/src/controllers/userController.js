@@ -104,7 +104,7 @@ export const verifySeller = async (req, res) => {
   }
 };
 
-// Deposit funds from external balance to Aura Bid wallet balance
+// Tạo yêu cầu nạp tiền — admin sẽ xác nhận sau khi user chuyển khoản
 export const depositFunds = async (req, res) => {
   const userId = req.session?.userId;
   if (!userId) {
@@ -117,123 +117,157 @@ export const depositFunds = async (req, res) => {
   if (depositAmount.lte(0)) {
     return res.status(400).json({ success: false, error: 'Số tiền nạp phải lớn hơn 0.' });
   }
+  if (depositAmount.gt(500000000)) {
+    return res.status(400).json({ success: false, error: 'Số tiền nạp tối đa mỗi lần là 500 triệu đồng.' });
+  }
 
   try {
-    const updatedUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { balance: true, walletBalance: true, frozenBalance: true }
-      });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, isBanned: true }
+    });
+    if (!user) return res.status(404).json({ success: false, error: 'Người dùng không tồn tại.' });
+    if (user.isBanned) return res.status(403).json({ success: false, error: 'Tài khoản của bạn đã bị khóa.' });
 
-      if (!user) throw new Error('Người dùng không tồn tại.');
+    // Tạo mã tham chiếu để user ghi vào nội dung chuyển khoản
+    const transferNote = `NAP ${userId.slice(0, 8).toUpperCase()} ${Date.now().toString().slice(-6)}`;
 
-      const bankBalance = new Prisma.Decimal(user.balance);
-      if (bankBalance.lt(depositAmount)) {
-        throw new Error('Số dư tài khoản ngân hàng liên kết không đủ.');
+    const walletRequest = await prisma.walletRequest.create({
+      data: {
+        userId,
+        type: 'DEPOSIT',
+        amount: depositAmount,
+        status: 'PENDING',
+        transferNote
       }
-
-      // Decrement external bank balance and increment wallet balance
-      const updated = await tx.user.update({
-        where: { id: userId },
-        data: {
-          balance: bankBalance.minus(depositAmount),
-          walletBalance: new Prisma.Decimal(user.walletBalance).plus(depositAmount)
-        }
-      });
-
-      // Create transaction log
-      await tx.transaction.create({
-        data: {
-          userId,
-          amount: depositAmount,
-          type: 'DEPOSIT',
-          status: 'COMPLETED'
-        }
-      });
-
-      return updated;
     });
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
-      message: `Nạp tiền thành công: +${depositAmount.toLocaleString('vi-VN')} đ vào ví.`,
+      message: 'Yêu cầu nạp tiền đã được tạo. Vui lòng chuyển khoản và chờ Admin xác nhận.',
       data: {
-        balance: Number(updatedUser.balance),
-        walletBalance: Number(updatedUser.walletBalance),
-        frozenBalance: Number(updatedUser.frozenBalance)
+        id: walletRequest.id,
+        amount: Number(walletRequest.amount),
+        transferNote,
+        adminBankInfo: {
+          bankName: process.env.ADMIN_BANK_NAME || 'Vietcombank',
+          bankAccount: process.env.ADMIN_BANK_ACCOUNT || '1234567890',
+          bankOwner: process.env.ADMIN_BANK_OWNER || 'NGUYEN VAN A'
+        }
       }
     });
   } catch (error) {
     return res.status(400).json({
       success: false,
-      error: error.message || 'Đã xảy ra lỗi khi nạp tiền.'
+      error: error.message || 'Đã xảy ra lỗi khi tạo yêu cầu nạp tiền.'
     });
   }
 };
 
-// Withdraw funds from Aura Bid wallet balance to external bank balance
+// Tạo yêu cầu rút tiền — admin sẽ chuyển khoản sau khi xác nhận
 export const withdrawFunds = async (req, res) => {
   const userId = req.session?.userId;
   if (!userId) {
     return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
   }
 
-  const { amount } = req.body;
+  const { amount, bankName, bankAccount, bankOwner } = req.body;
   const withdrawAmount = new Prisma.Decimal(amount || 0);
 
   if (withdrawAmount.lte(0)) {
     return res.status(400).json({ success: false, error: 'Số tiền rút phải lớn hơn 0.' });
   }
+  if (!bankName || !bankAccount || !bankOwner) {
+    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp thông tin ngân hàng nhận tiền.' });
+  }
 
   try {
-    const updatedUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { balance: true, walletBalance: true, frozenBalance: true }
-      });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, walletBalance: true, isBanned: true }
+    });
+    if (!user) return res.status(404).json({ success: false, error: 'Người dùng không tồn tại.' });
+    if (user.isBanned) return res.status(403).json({ success: false, error: 'Tài khoản của bạn đã bị khóa.' });
 
-      if (!user) throw new Error('Người dùng không tồn tại.');
+    const walletBal = new Prisma.Decimal(user.walletBalance);
+    if (walletBal.lt(withdrawAmount)) {
+      return res.status(400).json({ success: false, error: 'Số dư ví không đủ để thực hiện rút tiền.' });
+    }
 
-      const walletBal = new Prisma.Decimal(user.walletBalance);
-      if (walletBal.lt(withdrawAmount)) {
-        throw new Error('Số dư ví khả dụng không đủ để thực hiện rút tiền.');
+    // Kiểm tra xem có yêu cầu rút tiền đang chờ xử lý không
+    const pendingWithdraw = await prisma.walletRequest.findFirst({
+      where: { userId, type: 'WITHDRAW', status: 'PENDING' }
+    });
+    if (pendingWithdraw) {
+      return res.status(400).json({ success: false, error: 'Bạn đã có một yêu cầu rút tiền đang chờ xử lý.' });
+    }
+
+    const walletRequest = await prisma.walletRequest.create({
+      data: {
+        userId,
+        type: 'WITHDRAW',
+        amount: withdrawAmount,
+        status: 'PENDING',
+        bankName: bankName.trim(),
+        bankAccount: bankAccount.trim(),
+        bankOwner: bankOwner.trim()
       }
-
-      // Decrement wallet balance and increment external bank balance
-      const updated = await tx.user.update({
-        where: { id: userId },
-        data: {
-          walletBalance: walletBal.minus(withdrawAmount),
-          balance: new Prisma.Decimal(user.balance).plus(withdrawAmount)
-        }
-      });
-
-      // Create transaction log
-      await tx.transaction.create({
-        data: {
-          userId,
-          amount: withdrawAmount,
-          type: 'WITHDRAW',
-          status: 'COMPLETED'
-        }
-      });
-
-      return updated;
     });
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
-      message: `Rút tiền thành công: -${withdrawAmount.toLocaleString('vi-VN')} đ khỏi ví.`,
+      message: 'Yêu cầu rút tiền đã được gửi. Admin sẽ chuyển khoản trong vòng 24 giờ làm việc.',
       data: {
-        balance: Number(updatedUser.balance),
-        walletBalance: Number(updatedUser.walletBalance),
-        frozenBalance: Number(updatedUser.frozenBalance)
+        id: walletRequest.id,
+        amount: Number(walletRequest.amount),
+        bankName: walletRequest.bankName,
+        bankAccount: walletRequest.bankAccount,
+        status: 'PENDING'
       }
     });
   } catch (error) {
     return res.status(400).json({
       success: false,
-      error: error.message || 'Đã xảy ra lỗi khi rút tiền.'
+      error: error.message || 'Đã xảy ra lỗi khi tạo yêu cầu rút tiền.'
+    });
+  }
+};
+
+// GET /api/users/wallet-requests — Lấy danh sách yêu cầu nạp/rút của user
+export const getUserWalletRequests = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+  }
+
+  try {
+    const { type, status, page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, parseInt(limit) || 20);
+
+    const where = { userId };
+    if (type && ['DEPOSIT', 'WITHDRAW'].includes(type)) where.type = type;
+    if (status && ['PENDING', 'APPROVED', 'REJECTED'].includes(status)) where.status = status;
+
+    const [requests, total] = await Promise.all([
+      prisma.walletRequest.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum
+      }),
+      prisma.walletRequest.count({ where })
+    ]);
+
+    return res.json({
+      success: true,
+      data: requests.map(r => ({ ...r, amount: Number(r.amount) })),
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi lấy danh sách yêu cầu.'
     });
   }
 };

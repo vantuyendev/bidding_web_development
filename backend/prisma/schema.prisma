@@ -25,6 +25,11 @@ model User {
   kycStatus        KycStatus    @default(NONE) @map("kyc_status")
   avatarUrl        String?      @map("avatar_url")
   phoneNumber      String?      @map("phone_number")
+  // Ban system
+  isBanned         Boolean      @default(false) @map("is_banned")
+  banReason        String?      @map("ban_reason")
+  bannedAt         DateTime?    @map("banned_at")
+
   bids            Bid[]
   transactions    Transaction[]
   disputeTickets  DisputeTicket[]  @relation("UserDisputeTickets")
@@ -39,6 +44,8 @@ model User {
   supportTickets  SupportTicket[]
   supportMessages SupportMessage[]
   orderMessages   OrderMessage[] @relation("UserOrderMessages")
+  walletRequests  WalletRequest[] @relation("UserWalletRequests")
+  resolvedRequests WalletRequest[] @relation("AdminResolvedRequests")
 
   @@map("users")
 }
@@ -56,7 +63,15 @@ model Product {
   autoExtension Boolean            @default(true) @map("auto_extension")
   startTime     DateTime           @default(now()) @map("start_time")
   endTime       DateTime           @map("end_time")
-  status        ProductStatus      @default(ACTIVE)
+  status        ProductStatus      @default(DRAFT)
+  // Approval system
+  approvalStatus ProductApprovalStatus @default(PENDING_REVIEW) @map("approval_status")
+  rejectionReason String?          @map("rejection_reason")
+  rejectedAt    DateTime?          @map("rejected_at")
+  editCount     Int                @default(0) @map("edit_count")
+  // Soft delete for ended auctions
+  deletedAt     DateTime?          @map("deleted_at")
+
   categoryId    String             @map("category_id")
   weight        Float              @default(0.5)
   length        Int                @default(10)
@@ -83,10 +98,12 @@ model Product {
   orderMessages OrderMessage[]     @relation("ProductOrderMessages")
 
   @@index([status])
+  @@index([approvalStatus])
   @@index([categoryId])
   @@index([sellerId])
   @@index([winnerId])
   @@index([endTime])
+  @@index([deletedAt])
   @@map("products")
 }
 
@@ -160,6 +177,31 @@ model Transaction {
   @@index([userId])
   @@index([productId])
   @@map("transactions")
+}
+
+// Yêu cầu nạp/rút tiền — thay thế hệ thống liên kết ngân hàng
+model WalletRequest {
+  id            String             @id @default(uuid())
+  userId        String             @map("user_id")
+  type          WalletRequestType
+  amount        Decimal            @db.Decimal(12, 2)
+  status        WalletRequestStatus @default(PENDING)
+  bankName      String?            @map("bank_name")      // Ngân hàng của user (cho WITHDRAW)
+  bankAccount   String?            @map("bank_account")   // Số TK user (cho WITHDRAW)
+  bankOwner     String?            @map("bank_owner")     // Tên chủ TK user (cho WITHDRAW)
+  transferNote  String?            @map("transfer_note")  // Nội dung chuyển khoản reference
+  adminNote     String?            @map("admin_note")     // Ghi chú của admin khi xử lý
+  createdAt     DateTime           @default(now()) @map("created_at")
+  resolvedAt    DateTime?          @map("resolved_at")
+  resolvedById  String?            @map("resolved_by_id")
+
+  user          User               @relation("UserWalletRequests", fields: [userId], references: [id], onDelete: Cascade)
+  resolvedBy    User?              @relation("AdminResolvedRequests", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@map("wallet_requests")
 }
 
 model DisputeTicket {
@@ -303,6 +345,12 @@ enum ProductStatus {
   CANCELLED
 }
 
+enum ProductApprovalStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum BidStatus {
   SUCCESS
   OUTBID
@@ -318,6 +366,7 @@ enum TransactionType {
   PAYMENT
   DISPUTE_PAY_BUYER_DEDUCT
   DISPUTE_PAY_SELLER_ADD
+  REFUND
 }
 
 enum TransactionStatus {
@@ -335,6 +384,22 @@ enum NotificationType {
   OUTBID
   WON
   SYSTEM
+  AUCTION_CANCELLED
+  PRODUCT_APPROVED
+  PRODUCT_REJECTED
+  WALLET_REQUEST_APPROVED
+  WALLET_REQUEST_REJECTED
+}
+
+enum WalletRequestType {
+  DEPOSIT
+  WITHDRAW
+}
+
+enum WalletRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model OrderMessage {
@@ -351,5 +416,3 @@ model OrderMessage {
   @@index([senderId])
   @@map("order_messages")
 }
-
-

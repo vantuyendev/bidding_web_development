@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProductDetail, getProducts, getCategoryFilters, searchProducts, createProduct, getProductBids } from '../controllers/productController.js';
+import { getProductDetail, getProducts, getCategoryFilters, searchProducts, createProduct, getProductBids, updateProduct, getSellerProducts } from '../controllers/productController.js';
 import { requireAuth } from '../middlewares/authMiddleware.js';
 import { streamProductEvents } from '../controllers/streamController.js';
 
@@ -30,8 +30,14 @@ router.get('/filters', async (req, res) => {
 // GET /api/products/search - Search products and apply dynamic EAV filters
 router.get('/search', searchProducts);
 
+// GET /api/products/seller - Fetch seller's own products (including DRAFT/PENDING)
+router.get('/seller', requireAuth, getSellerProducts);
+
 // GET /api/products/:id - Fetch product details
 router.get('/:id', getProductDetail);
+
+// PUT /api/products/:id - Update product (seller only, pending/rejected state)
+router.put('/:id', requireAuth, updateProduct);
 
 // GET /api/products/:id/bids - Fetch product bids history
 router.get('/:id/bids', getProductBids);

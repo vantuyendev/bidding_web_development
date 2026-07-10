@@ -12,7 +12,13 @@ export const getMe = async (req, res) => {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: {
+        id: true, email: true, name: true,
+        balance: true, walletBalance: true, frozenBalance: true,
+        isBanned: true, banReason: true,
+        isVerifiedSeller: true, kycStatus: true
+      }
     });
 
     if (!user) {
@@ -23,12 +29,21 @@ export const getMe = async (req, res) => {
       });
     }
 
+    // Không cho phép user bị ban truy cập các tính năng
+    // (họ vẫn có thể xem thông tin nhưng sẽ bị chặn ở route cụ thể)
     return res.status(200).json({
       success: true,
       data: {
         id: user.id,
         email: user.email,
-        balance: Number(user.balance)
+        name: user.name,
+        balance: Number(user.balance),
+        walletBalance: Number(user.walletBalance),
+        frozenBalance: Number(user.frozenBalance),
+        isBanned: user.isBanned,
+        banReason: user.banReason,
+        isVerifiedSeller: user.isVerifiedSeller,
+        kycStatus: user.kycStatus
       }
     });
   } catch (error) {
@@ -104,13 +119,27 @@ export const login = async (req, res) => {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email },
+      select: {
+        id: true, email: true, name: true,
+        balance: true, walletBalance: true, frozenBalance: true,
+        isBanned: true, banReason: true,
+        isVerifiedSeller: true, kycStatus: true
+      }
     });
 
     if (!user) {
       return res.status(404).json({
         success: false,
         error: 'Tài khoản không tồn tại. Vui lòng đăng ký.'
+      });
+    }
+
+    // Chặn đăng nhập nếu tài khoản bị ban
+    if (user.isBanned) {
+      return res.status(403).json({
+        success: false,
+        error: `Tài khoản của bạn đã bị khóa${user.banReason ? ': ' + user.banReason : '.'}. Vui lòng liên hệ Admin để biết thêm.`
       });
     }
 
@@ -123,7 +152,13 @@ export const login = async (req, res) => {
       data: {
         id: user.id,
         email: user.email,
-        balance: Number(user.balance)
+        name: user.name,
+        balance: Number(user.balance),
+        walletBalance: Number(user.walletBalance),
+        frozenBalance: Number(user.frozenBalance),
+        isBanned: user.isBanned,
+        isVerifiedSeller: user.isVerifiedSeller,
+        kycStatus: user.kycStatus
       }
     });
   } catch (error) {

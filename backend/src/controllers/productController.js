@@ -6,6 +6,11 @@ import { slugify } from '../utils/slugify.js';
 export const getProducts = async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
+      where: {
+        approvalStatus: 'APPROVED',
+        status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED'] },
+        deletedAt: null
+      },
       orderBy: { startTime: 'desc' },
       select: {
         id: true,
@@ -18,6 +23,7 @@ export const getProducts = async (req, res, next) => {
         startTime: true,
         endTime: true,
         status: true,
+        approvalStatus: true,
         categoryId: true,
         sellerId: true,
         category: {
@@ -378,6 +384,7 @@ export const createProduct = async (req, res, next) => {
       stepPrice,
       categoryId,
       newCategoryName,
+      startTime, // NEW: seller-chosen start time
       endTime,
       weight,
       length,
@@ -387,6 +394,17 @@ export const createProduct = async (req, res, next) => {
       districtId,
       attributes, // expects array or object map
     } = req.body;
+
+    // Validate endTime: max 48 hours from startTime
+    const chosenStart = startTime ? new Date(startTime) : new Date();
+    const chosenEnd = new Date(endTime);
+    const maxEndTime = new Date(chosenStart.getTime() + 48 * 60 * 60 * 1000);
+    if (chosenEnd > maxEndTime) {
+      throw new ApiError(400, 'Thời gian kết thúc đấu giá không được vượt quá 48 giờ kể từ thời điểm bắt đầu.');
+    }
+    if (chosenEnd <= chosenStart) {
+      throw new ApiError(400, 'Thời gian kết thúc phải sau thời điểm bắt đầu.');
+    }
 
     // Gán currentPrice bằng đúng với startPrice, sellerId ép cứng từ session
     const product = await prisma.$transaction(async (tx) => {
@@ -475,6 +493,8 @@ export const createProduct = async (req, res, next) => {
           reservePrice: reservePrice ? Number(reservePrice) : null,
           stepPrice: stepPrice ? Number(stepPrice) : undefined,
           categoryId: actualCategoryId,
+          // startTime: seller can choose start time; default is now
+          startTime: startTime ? new Date(startTime) : new Date(),
           endTime: new Date(endTime),
           weight: weight ? Number(weight) : undefined,
           length: length ? Number(length) : undefined,
@@ -483,6 +503,9 @@ export const createProduct = async (req, res, next) => {
           provinceId: provinceId || undefined,
           districtId: districtId || undefined,
           sellerId: userId,
+          // New: Products start as DRAFT and PENDING_REVIEW until admin approves
+          status: 'DRAFT',
+          approvalStatus: 'PENDING_REVIEW',
           attributes: parsedAttributes.length > 0 ? {
             create: parsedAttributes
           } : undefined
@@ -520,6 +543,173 @@ export const createProduct = async (req, res, next) => {
     return res.status(201).json({
       success: true,
       data: formattedProduct,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// GET /api/products/seller — Danh sách sản phẩm của seller (bao gồm DRAFT và lịch sử)
+export const getSellerProducts = async (req, res, next) => {
+  const userId = req.session?.userId;
+  if (!userId) return next(new ApiError(401, 'Bạn cần đăng nhập.'));
+
+  try {
+    const { includeHistory } = req.query;
+    const where = { sellerId: userId };
+    // Lịch sử (ended/completed) chỉ hiển thị khi includeHistory=true
+    if (includeHistory !== 'true') {
+      where.deletedAt = null;
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { id: true, name: true } },
+        _count: { select: { bids: true } }
+      },
+      orderBy: { startTime: 'desc' }
+    });
+
+    return res.json({
+      success: true,
+      data: products.map(p => ({
+        ...p,
+        startPrice: Number(p.startPrice),
+        currentPrice: Number(p.currentPrice),
+        buyNowPrice: p.buyNowPrice ? Number(p.buyNowPrice) : null,
+        bidCount: p._count.bids
+      }))
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// PUT /api/products/:id — Chỉnh sửa sản phẩm (chỉ seller, chỉ khi PENDING_REVIEW/REJECTED, max 2 lần)
+export const updateProduct = async (req, res, next) => {
+  const userId = req.session?.userId;
+  if (!userId) return next(new ApiError(401, 'Bạn cần đăng nhập.'));
+
+  const { id: productId } = req.params;
+
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { attributes: true }
+    });
+
+    if (!product) throw new ApiError(404, 'Không tìm thấy sản phẩm.');
+    if (product.sellerId !== userId) throw new ApiError(403, 'Bạn không có quyền chỉnh sửa sản phẩm này.');
+
+    // Chỉ cho phép sửa khi sản phẩm đang PENDING_REVIEW hoặc bị REJECTED
+    if (!['PENDING_REVIEW', 'REJECTED'].includes(product.approvalStatus)) {
+      throw new ApiError(400, 'Chỉ có thể chỉnh sửa sản phẩm đang chờ duyệt hoặc bị từ chối.');
+    }
+
+    // Kiểm tra giới hạn chỉnh sửa (tối đa 2 lần)
+    if (product.editCount >= 2) {
+      throw new ApiError(400, 'Bạn đã đạt giới hạn chỉnh sửa (tối đa 2 lần). Sản phẩm sẽ bị xóa nếu không được duyệt.');
+    }
+
+    const {
+      title, description, imageUrl,
+      // startPrice KHÔNG được chỉnh sửa
+      buyNowPrice, reservePrice, stepPrice,
+      categoryId, startTime, endTime,
+      weight, length, width, height,
+      provinceId, districtId, attributes
+    } = req.body;
+
+    // Validate endTime nếu có thay đổi
+    if (endTime) {
+      const chosenStart = startTime ? new Date(startTime) : (product.startTime || new Date());
+      const chosenEnd = new Date(endTime);
+      const maxEndTime = new Date(chosenStart.getTime() + 48 * 60 * 60 * 1000);
+      if (chosenEnd > maxEndTime) {
+        throw new ApiError(400, 'Thời gian kết thúc đấu giá không được vượt quá 48 giờ kể từ thời điểm bắt đầu.');
+      }
+    }
+
+    const updatedProduct = await prisma.$transaction(async (tx) => {
+      // Xóa attributes cũ nếu có attributes mới
+      if (attributes) {
+        await tx.productAttribute.deleteMany({ where: { productId } });
+      }
+
+      // Tạo danh sách attributes mới
+      const parsedAttributes = [];
+      if (attributes) {
+        const attributeList = Array.isArray(attributes)
+          ? attributes
+          : typeof attributes === 'object'
+            ? Object.entries(attributes).map(([keyId, val]) => ({ attributeKeyId: keyId, value: val }))
+            : [];
+
+        for (const attr of attributeList) {
+          if (!attr.value || String(attr.value).trim() === '') continue;
+          if (attr.attributeKeyId) {
+            parsedAttributes.push({
+              productId,
+              attributeKeyId: attr.attributeKeyId,
+              value: String(attr.value).trim()
+            });
+          }
+        }
+
+        if (parsedAttributes.length > 0) {
+          await tx.productAttribute.createMany({ data: parsedAttributes });
+        }
+      }
+
+      const prod = await tx.product.update({
+        where: { id: productId },
+        data: {
+          ...(title && { title }),
+          ...(description !== undefined && { description }),
+          ...(imageUrl !== undefined && { imageUrl }),
+          ...(buyNowPrice !== undefined && { buyNowPrice: buyNowPrice ? Number(buyNowPrice) : null }),
+          ...(reservePrice !== undefined && { reservePrice: reservePrice ? Number(reservePrice) : null }),
+          ...(stepPrice && { stepPrice: Number(stepPrice) }),
+          ...(categoryId && { categoryId }),
+          ...(startTime && { startTime: new Date(startTime) }),
+          ...(endTime && { endTime: new Date(endTime) }),
+          ...(weight && { weight: Number(weight) }),
+          ...(length && { length: Number(length) }),
+          ...(width && { width: Number(width) }),
+          ...(height && { height: Number(height) }),
+          ...(provinceId && { provinceId }),
+          ...(districtId && { districtId }),
+          // Tăng editCount và chuyển lại PENDING_REVIEW nếu trước đó bị REJECTED
+          editCount: { increment: 1 },
+          approvalStatus: 'PENDING_REVIEW',
+          rejectionReason: null,
+          rejectedAt: null
+        }
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'UPDATE_PRODUCT',
+          target: productId,
+          details: JSON.stringify({ editCount: prod.editCount, title: prod.title })
+        }
+      });
+
+      return prod;
+    });
+
+    return res.json({
+      success: true,
+      message: `Đã cập nhật sản phẩm. Sản phẩm đang chờ Admin duyệt lại (lần chỉnh sửa ${updatedProduct.editCount}/2).`,
+      data: {
+        ...updatedProduct,
+        startPrice: Number(updatedProduct.startPrice),
+        currentPrice: Number(updatedProduct.currentPrice),
+        editCount: updatedProduct.editCount,
+        approvalStatus: updatedProduct.approvalStatus
+      }
     });
   } catch (error) {
     return next(error);
@@ -564,4 +754,3 @@ export const getProductBids = async (req, res, next) => {
     return next(error);
   }
 };
-

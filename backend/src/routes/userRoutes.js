@@ -5,6 +5,7 @@ import {
   verifySeller, 
   depositFunds, 
   withdrawFunds,
+  getUserWalletRequests,
   submitKyc,
   adminGetPendingKyc,
   adminApproveKyc,
@@ -19,23 +20,23 @@ router.get('/profile', requireAuth, getUserProfile);
 // POST /verify-seller - Set current user as a verified seller (protected)
 router.post('/verify-seller', requireAuth, verifySeller);
 
-// POST /deposit - Deposit funds to wallet (protected)
+// POST /deposit - Create deposit request (protected)
 router.post('/deposit', requireAuth, depositFunds);
 
-// POST /withdraw - Withdraw funds from wallet (protected)
+// POST /withdraw - Create withdraw request (protected)
 router.post('/withdraw', requireAuth, withdrawFunds);
+
+// GET /wallet-requests - Get user's wallet request history (protected)
+router.get('/wallet-requests', requireAuth, getUserWalletRequests);
 
 // POST /submit-kyc - Submit KYC application for seller upgrade (protected)
 router.post('/submit-kyc', requireAuth, submitKyc);
 
-// GET /admin/kyc-pending - Retrieve list of users awaiting KYC (protected, admin only in controller)
+// Legacy admin KYC routes (kept for backwards compatibility, also available at /api/admin/*)
 router.get('/admin/kyc-pending', requireAuth, adminGetPendingKyc);
-
-// POST /admin/approve-kyc - Approve or reject KYC application (protected, admin only in controller)
 router.post('/admin/approve-kyc', requireAuth, adminApproveKyc);
 
 // GET /:id - Fetch public profile and reviews of a user (seller)
 router.get('/:id', getPublicUserProfile);
 
 export default router;
-
