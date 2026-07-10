@@ -31,9 +31,9 @@ export const createReview = async (req, res) => {
         throw new Error('Sản phẩm không tồn tại.');
       }
 
-      // 2. Verify status is ENDED
-      if (product.status !== 'ENDED') {
-        throw new Error('Chỉ có thể đánh giá sản phẩm sau khi phiên đấu giá đã kết thúc.');
+      // 2. Verify status is COMPLETED
+      if (product.status !== 'COMPLETED') {
+        throw new Error('Chỉ có thể đánh giá đối tác sau khi đã hoàn thành nhận hàng.');
       }
 
       // 3. Find highest bid to identify the winner (Buyer)

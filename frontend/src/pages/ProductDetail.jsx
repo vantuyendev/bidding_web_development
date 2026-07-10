@@ -100,7 +100,14 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab]         = useState('details');
   const [lightboxOpen, setLightboxOpen]   = useState(false);
 
+  // Order chat states
+  const [chatMessages, setChatMessages]   = useState([]);
+  const [chatInput, setChatInput]         = useState('');
+  const [chatSubmitting, setChatSubmitting] = useState(false);
+  const [chatError, setChatError]         = useState('');
+
   const bidPanelRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   const provinces = [
     'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng',
@@ -181,6 +188,13 @@ export default function ProductDetail() {
       es.onmessage = (ev) => {
         try {
           const data = JSON.parse(ev.data);
+          if (data.chatMessage) {
+            setChatMessages(prev => {
+              if (prev.some(m => m.id === data.chatMessage.id)) return prev;
+              return [...prev, data.chatMessage];
+            });
+            return;
+          }
           setProduct(prev => {
             if (!prev) return null;
             const newPrice = Number(data.currentPrice);
@@ -214,6 +228,36 @@ export default function ProductDetail() {
       clearTimeout(timer);
     };
   }, [id, refreshUser]);
+
+  // Fetch chat history for won/sold orders
+  useEffect(() => {
+    if (!id || !user || !product) return;
+    const isWinner = user.id === product.winnerId;
+    const isSeller = user.id === product.sellerId;
+    const isOrderState = ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'DISPUTED'].includes(product.status);
+
+    if (!isWinner && !isSeller || !isOrderState) return;
+
+    async function loadChat() {
+      try {
+        const res = await fetch(getApiUrl(`/api/orders/${id}/messages`), { credentials: 'include' });
+        const d = await res.json();
+        if (d.success) {
+          setChatMessages(d.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to load chat history:', err);
+      }
+    }
+    loadChat();
+  }, [id, user, product?.status, product?.winnerId, product?.sellerId]);
+
+  // Scroll to bottom when new messages arrive or tab changes to chat
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages, activeTab]);
 
   /* ── Checkout shipping estimate ── */
   useEffect(() => {
@@ -438,6 +482,36 @@ export default function ProductDetail() {
     else alert(d.error || 'Failed to confirm receipt.');
   };
 
+  const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || chatSubmitting) return;
+
+    setChatSubmitting(true);
+    setChatError('');
+    try {
+      const res = await fetch(getApiUrl(`/api/orders/${id}/messages`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: chatInput.trim() }),
+        credentials: 'include'
+      });
+      const d = await res.json();
+      if (d.success && d.data) {
+        setChatInput('');
+        setChatMessages(prev => {
+          if (prev.some(m => m.id === d.data.id)) return prev;
+          return [...prev, d.data];
+        });
+      } else {
+        setChatError(d.error || 'Gửi tin nhắn thất bại.');
+      }
+    } catch {
+      setChatError('Lỗi kết nối máy chủ.');
+    } finally {
+      setChatSubmitting(false);
+    }
+  };
+
   /* ── Derived state ── */
   if (loading) return <DetailSkeleton />;
   if (error || !product) return <DetailError error={error} />;
@@ -519,29 +593,36 @@ export default function ProductDetail() {
             {/* ── Details Tabs ── */}
             <div style={{ background: 'white', border: '1px solid hsl(0,0%,89%)', borderRadius: 4 }}>
               {/* Tab header */}
-              <div style={{ display: 'flex', borderBottom: '1px solid hsl(0,0%,89%)' }}>
-                {[
-                  { key: 'details', label: 'Description' },
-                  { key: 'attributes', label: 'Details' },
-                  { key: 'shipping', label: 'Shipping' },
-                  { key: 'history', label: `Bids (${bids.length})` },
-                ].map(t => (
-                  <button
-                    key={t.key}
-                    id={`detail-tab-${t.key}`}
-                    onClick={() => setActiveTab(t.key)}
-                    style={{
-                      padding: '12px 16px', fontSize: 13, fontWeight: 600,
-                      fontFamily: 'var(--font-display)', cursor: 'pointer',
-                      background: 'none', border: 'none',
-                      borderBottom: activeTab === t.key ? '2px solid hsl(196,100%,36%)' : '2px solid transparent',
-                      color: activeTab === t.key ? 'hsl(196,100%,36%)' : 'hsl(12,8%,50%)',
-                      marginBottom: -1, transition: 'all 0.15s', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {t.label}
-                  </button>
-                ))}
+              <div style={{ display: 'flex', borderBottom: '1px solid hsl(0,0%,89%)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                {(() => {
+                  const tabsList = [
+                    { key: 'details', label: 'Description' },
+                    { key: 'attributes', label: 'Details' },
+                    { key: 'shipping', label: 'Shipping' },
+                    { key: 'history', label: `Bids (${bids.length})` },
+                  ];
+                  const isOrderState = ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'DISPUTED'].includes(product.status);
+                  if ((isWinner || isSeller) && isOrderState) {
+                    tabsList.push({ key: 'chat', label: `💬 Trò chuyện (${chatMessages.length})` });
+                  }
+                  return tabsList.map(t => (
+                    <button
+                      key={t.key}
+                      id={`detail-tab-${t.key}`}
+                      onClick={() => setActiveTab(t.key)}
+                      style={{
+                        padding: '12px 16px', fontSize: 13, fontWeight: 600,
+                        fontFamily: 'var(--font-display)', cursor: 'pointer',
+                        background: 'none', border: 'none',
+                        borderBottom: activeTab === t.key ? '2px solid hsl(196,100%,36%)' : '2px solid transparent',
+                        color: activeTab === t.key ? 'hsl(196,100%,36%)' : 'hsl(12,8%,50%)',
+                        marginBottom: -1, transition: 'all 0.15s', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t.label}
+                    </button>
+                  ));
+                })()}
               </div>
 
               <div style={{ padding: '16px 20px' }}>
@@ -637,6 +718,148 @@ export default function ProductDetail() {
                             ))}
                           </tbody>
                         </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Chat Room */}
+                {activeTab === 'chat' && (
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>💬</span> Trò chuyện trao đổi đơn hàng
+                    </h3>
+                    <p style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginBottom: 16 }}>
+                      Kênh trao đổi trực tiếp giữa Người bán và Người mua về việc nhận hàng và thanh toán.
+                    </p>
+
+                    {/* Messages Container */}
+                    <div 
+                      ref={chatContainerRef}
+                      style={{ 
+                        border: '1px solid hsl(0,0%,90%)', 
+                        borderRadius: 8, 
+                        background: 'hsl(40,20%,99%)', 
+                        height: 350, 
+                        overflowY: 'auto', 
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        marginBottom: 14
+                      }}
+                    >
+                      {chatMessages.length === 0 ? (
+                        <div style={{ margin: 'auto', fontSize: 12, color: 'hsl(12,8%,60%)', textAlign: 'center' }}>
+                          Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!
+                        </div>
+                      ) : (
+                        chatMessages.map(msg => {
+                          const isMe = msg.senderId === user?.id;
+                          return (
+                            <div 
+                              key={msg.id} 
+                              style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                alignSelf: isMe ? 'flex-end' : 'flex-start',
+                                maxWidth: '75%'
+                              }}
+                            >
+                              <div style={{ 
+                                fontSize: 10, 
+                                color: 'hsl(12,8%,55%)', 
+                                marginBottom: 2, 
+                                alignSelf: isMe ? 'flex-end' : 'flex-start',
+                                fontWeight: 650
+                              }}>
+                                {isMe ? 'Bạn' : (msg.sender?.name || msg.sender?.email || 'Đối tác')}
+                              </div>
+                              <div style={{ 
+                                padding: '10px 14px', 
+                                borderRadius: 12, 
+                                borderTopRightRadius: isMe ? 2 : 12,
+                                borderTopLeftRadius: isMe ? 12 : 2,
+                                background: isMe ? 'hsl(196,100%,36%)' : 'white', 
+                                color: isMe ? 'white' : 'hsl(12,14%,11%)',
+                                border: isMe ? 'none' : '1px solid hsl(0,0%,88%)',
+                                fontSize: 12.5,
+                                lineHeight: 1.5,
+                                wordBreak: 'break-word',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                              }}>
+                                {msg.message}
+                              </div>
+                              <div style={{ 
+                                fontSize: 9, 
+                                color: 'hsl(12,8%,65%)', 
+                                marginTop: 2, 
+                                alignSelf: isMe ? 'flex-end' : 'flex-start' 
+                              }}>
+                                {fmtDate(msg.createdAt)}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Chat Input / Locked warning */}
+                    {['COMPLETED', 'CANCELLED', 'UNSOLD'].includes(product.status) ? (
+                      <div style={{ 
+                        padding: '12px 16px', 
+                        background: 'hsl(40,20%,95%)', 
+                        color: 'hsl(12,8%,40%)', 
+                        borderRadius: 8, 
+                        border: '1px solid hsl(0,0%,88%)',
+                        fontSize: 12, 
+                        fontWeight: 600,
+                        textAlign: 'center'
+                      }}>
+                        🔒 Giao dịch đã hoàn tất hoặc bị hủy. Khung chat đã khóa (chế độ chỉ đọc).
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSendChatMessage} style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <input
+                            type="text"
+                            value={chatInput}
+                            onChange={e => setChatInput(e.target.value)}
+                            placeholder="Nhập tin nhắn trao đổi..."
+                            style={{ 
+                              width: '100%', 
+                              padding: '10px 12px', 
+                              border: '2px solid hsl(0,0%,88%)', 
+                              borderRadius: 6, 
+                              fontSize: 12.5,
+                              outline: 'none'
+                            }}
+                            disabled={chatSubmitting}
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={chatSubmitting || !chatInput.trim()}
+                          style={{
+                            background: 'hsl(196,100%,36%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0 20px',
+                            borderRadius: 6,
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            opacity: (chatSubmitting || !chatInput.trim()) ? 0.6 : 1,
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          {chatSubmitting ? 'Đang gửi...' : 'Gửi'}
+                        </button>
+                      </form>
+                    )}
+                    {chatError && (
+                      <div style={{ fontSize: 11, color: 'hsl(3,83%,40%)', marginTop: 6, fontWeight: 650 }}>
+                        ⚠️ {chatError}
                       </div>
                     )}
                   </div>
@@ -896,8 +1119,33 @@ export default function ProductDetail() {
                     </button>
                   )}
                   {isWinner && product.status === 'COMPLETED' && (
-                    <div style={{ fontSize: 13, color: 'hsl(152,72%,40%)', fontWeight: 700, textAlign: 'center', padding: 8 }}>
-                      ✓ Transaction Complete
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                      <div style={{ fontSize: 13, color: 'hsl(152,72%,40%)', fontWeight: 700, textAlign: 'center', padding: 8 }}>
+                        ✓ Giao dịch hoàn tất
+                      </div>
+                      {!product.review ? (
+                        <button
+                          id="review-seller-btn-direct"
+                          onClick={() => setReviewModalOpen(true)}
+                          className="bid-btn-primary"
+                          style={{
+                            background: 'hsl(35, 95%, 45%)',
+                            borderColor: 'hsl(35, 95%, 45%)',
+                            color: 'white',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6
+                          }}
+                        >
+                          ⭐ Đánh giá người bán
+                        </button>
+                      ) : (
+                        <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', textAlign: 'center', background: 'hsl(0,0%,95%)', padding: '6px 8px', borderRadius: 4 }}>
+                          Bạn đã gửi đánh giá cho giao dịch này.
+                        </div>
+                      )}
                     </div>
                   )}
                   {isSeller && product.status === 'PAID' && (
@@ -1202,7 +1450,7 @@ export default function ProductDetail() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <h5 className="font-bold text-neutral-900 dark:text-white select-none">Đánh giá nhận được ({sellerData.reviews?.length || 0})</h5>
-                {user && product && (product.status === 'ENDED' || new Date(product.endTime).getTime() <= Date.now()) && product.winnerId === user.id && !product.review && (
+                {user && product && product.status === 'COMPLETED' && product.winnerId === user.id && !product.review && (
                   <button
                     onClick={() => {
                       setSellerModalOpen(false);

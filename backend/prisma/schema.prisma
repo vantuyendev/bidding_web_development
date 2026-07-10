@@ -38,6 +38,7 @@ model User {
   auditLogs       AuditLog[]
   supportTickets  SupportTicket[]
   supportMessages SupportMessage[]
+  orderMessages   OrderMessage[] @relation("UserOrderMessages")
 
   @@map("users")
 }
@@ -79,6 +80,7 @@ model Product {
   review        Review?
   watchlist     Watchlist[]        @relation("ProductWatchlist")
   transactions  Transaction[]
+  orderMessages OrderMessage[]     @relation("ProductOrderMessages")
 
   @@index([status])
   @@index([categoryId])
@@ -334,4 +336,20 @@ enum NotificationType {
   WON
   SYSTEM
 }
+
+model OrderMessage {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  senderId  String   @map("sender_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product   Product  @relation("ProductOrderMessages", fields: [productId], references: [id], onDelete: Cascade)
+  sender    User     @relation("UserOrderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([senderId])
+  @@map("order_messages")
+}
+
 
