@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getApiUrl } from '../api';
 import HeroBanner from '../components/HeroBanner';
-import CategoryShelf from '../components/CategoryShelf';
 import ProductCard from '../components/ProductCard';
 import { SkeletonGrid } from '../components/ui/SkeletonCard';
 
@@ -181,8 +180,7 @@ export default function HomePage() {
       {/* ── Hero ── */}
       <HeroBanner featuredItems={featuredItems} categories={categories} />
 
-      {/* ── Category Shelf ── */}
-      <CategoryShelf categories={categories} onSelect={handleCategorySelect} />
+
 
       {/* ── Ending Soon Section ── */}
       {!loading && endingSoonItems.length > 0 && (

@@ -39,8 +39,16 @@ async function main() {
   // Create Mock Categories
   const categoriesData = [
     { id: 'cat-dien-thoai', name: 'Điện thoại', slug: 'dien-thoai' },
+    { id: 'cat-laptop', name: 'Laptop & Máy tính', slug: 'laptop-may-tinh' },
     { id: 'cat-dong-ho', name: 'Đồng hồ', slug: 'dong-ho' },
-    { id: 'cat-mo-hinh-anime', name: 'Mô hình Anime', slug: 'mo-hinh-anime' }
+    { id: 'cat-mo-hinh-anime', name: 'Mô hình Anime', slug: 'mo-hinh-anime' },
+    { id: 'cat-thiet-bi-am-thanh', name: 'Thiết bị âm thanh', slug: 'thiet-bi-am-thanh' },
+    { id: 'cat-may-anh', name: 'Máy ảnh', slug: 'may-anh' },
+    { id: 'cat-sach', name: 'Sách & Truyện tranh', slug: 'sach-truyen-tranh' },
+    { id: 'cat-nhac-cu', name: 'Nhạc cụ', slug: 'nhac-cu' },
+    { id: 'cat-do-co', name: 'Đồ cổ & Sưu tầm', slug: 'do-co' },
+    { id: 'cat-trang-suc-da-quy', name: 'Trang sức & Đá quý', slug: 'trang-suc-da-quy' },
+    { id: 'cat-xe-dap-the-thao', name: 'Xe đạp & Thể thao', slug: 'xe-dap-the-thao' }
   ];
 
   for (const cat of categoriesData) {
@@ -57,13 +65,46 @@ async function main() {
     // Điện thoại
     { id: 'key-dt-brand', categoryId: 'cat-dien-thoai', name: 'Hãng sản xuất', type: 'SELECT' },
     { id: 'key-dt-ram', categoryId: 'cat-dien-thoai', name: 'Dung lượng RAM', type: 'SELECT' },
+    // Laptop & Máy tính
+    { id: 'key-lt-brand', categoryId: 'cat-laptop', name: 'Hãng sản xuất', type: 'SELECT' },
+    { id: 'key-lt-ram', categoryId: 'cat-laptop', name: 'Dung lượng RAM', type: 'SELECT' },
+    { id: 'key-lt-cpu', categoryId: 'cat-laptop', name: 'Bộ vi xử lý (CPU)', type: 'SELECT' },
+    { id: 'key-lt-storage', categoryId: 'cat-laptop', name: 'Loại ổ cứng', type: 'SELECT' },
     // Đồng hồ
     { id: 'key-dh-brand', categoryId: 'cat-dong-ho', name: 'Hãng sản xuất', type: 'SELECT' },
     { id: 'key-dh-origin', categoryId: 'cat-dong-ho', name: 'Xuất xứ', type: 'TEXT' },
     // Mô hình Anime
     { id: 'key-an-scale', categoryId: 'cat-mo-hinh-anime', name: 'Tỷ lệ', type: 'TEXT' },
     { id: 'key-an-brand', categoryId: 'cat-mo-hinh-anime', name: 'Hãng sản xuất', type: 'SELECT' },
-    { id: 'key-an-box', categoryId: 'cat-mo-hinh-anime', name: 'Tình trạng Box', type: 'TEXT' }
+    { id: 'key-an-box', categoryId: 'cat-mo-hinh-anime', name: 'Tình trạng Box', type: 'TEXT' },
+    // Thiết bị âm thanh
+    { id: 'key-at-brand', categoryId: 'cat-thiet-bi-am-thanh', name: 'Hãng sản xuất', type: 'SELECT' },
+    { id: 'key-at-conn', categoryId: 'cat-thiet-bi-am-thanh', name: 'Loại kết nối', type: 'SELECT' },
+    { id: 'key-at-feat', categoryId: 'cat-thiet-bi-am-thanh', name: 'Tính năng', type: 'TEXT' },
+    // Máy ảnh
+    { id: 'key-ma-brand', categoryId: 'cat-may-anh', name: 'Hãng sản xuất', type: 'SELECT' },
+    { id: 'key-ma-res', categoryId: 'cat-may-anh', name: 'Độ phân giải', type: 'TEXT' },
+    { id: 'key-ma-lens', categoryId: 'cat-may-anh', name: 'Kèm ống kính', type: 'SELECT' },
+    // Sách & Truyện tranh
+    { id: 'key-s-pub', categoryId: 'cat-sach', name: 'Nhà xuất bản', type: 'TEXT' },
+    { id: 'key-s-auth', categoryId: 'cat-sach', name: 'Tác giả', type: 'TEXT' },
+    { id: 'key-s-format', categoryId: 'cat-sach', name: 'Hình thức', type: 'SELECT' },
+    // Nhạc cụ
+    { id: 'key-nc-brand', categoryId: 'cat-nhac-cu', name: 'Thương hiệu', type: 'SELECT' },
+    { id: 'key-nc-type', categoryId: 'cat-nhac-cu', name: 'Loại nhạc cụ', type: 'SELECT' },
+    { id: 'key-nc-origin', categoryId: 'cat-nhac-cu', name: 'Xuất xứ', type: 'TEXT' },
+    // Đồ cổ & Sưu tầm
+    { id: 'key-dc-period', categoryId: 'cat-do-co', name: 'Thời kỳ', type: 'TEXT' },
+    { id: 'key-dc-material', categoryId: 'cat-do-co', name: 'Chất liệu', type: 'TEXT' },
+    { id: 'key-dc-status', categoryId: 'cat-do-co', name: 'Tình trạng', type: 'TEXT' },
+    // Trang sức & Đá quý
+    { id: 'key-ts-metal', categoryId: 'cat-trang-suc-da-quy', name: 'Chất liệu kim loại', type: 'SELECT' },
+    { id: 'key-ts-gem', categoryId: 'cat-trang-suc-da-quy', name: 'Loại đá quý', type: 'SELECT' },
+    { id: 'key-ts-weight', categoryId: 'cat-trang-suc-da-quy', name: 'Trọng lượng', type: 'TEXT' },
+    // Xe đạp & Thể thao
+    { id: 'key-xd-brand', categoryId: 'cat-xe-dap-the-thao', name: 'Thương hiệu', type: 'SELECT' },
+    { id: 'key-xd-sport', categoryId: 'cat-xe-dap-the-thao', name: 'Loại thể thao', type: 'SELECT' },
+    { id: 'key-xd-size', categoryId: 'cat-xe-dap-the-thao', name: 'Kích cỡ', type: 'TEXT' }
   ];
 
   for (const key of attributeKeysData) {
@@ -106,10 +147,12 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 10 * 60 * 1000), // active for 10 minutes
       status: 'ACTIVE',
-      categoryId: 'cat-dien-thoai',
+      categoryId: 'cat-laptop',
       attributes: [
-        { attributeKeyId: 'key-dt-brand', value: 'Apple' },
-        { attributeKeyId: 'key-dt-ram', value: '18GB' }
+        { attributeKeyId: 'key-lt-brand', value: 'Apple' },
+        { attributeKeyId: 'key-lt-ram', value: '18GB' },
+        { attributeKeyId: 'key-lt-cpu', value: 'M3 Pro' },
+        { attributeKeyId: 'key-lt-storage', value: '512GB SSD' }
       ]
     },
     {
@@ -123,9 +166,12 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() - 5 * 60 * 1000), // already ended
       status: 'ENDED',
-      categoryId: 'cat-dien-thoai',
+      categoryId: 'cat-laptop',
       attributes: [
-        { attributeKeyId: 'key-dt-brand', value: 'Sony' }
+        { attributeKeyId: 'key-lt-brand', value: 'Sony' },
+        { attributeKeyId: 'key-lt-ram', value: '16GB' },
+        { attributeKeyId: 'key-lt-cpu', value: 'Custom Zen 2' },
+        { attributeKeyId: 'key-lt-storage', value: '825GB SSD' }
       ]
     },
     {
@@ -156,9 +202,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 4 * 60 * 60 * 1000), // active for 4 hours
       status: 'ACTIVE',
-      categoryId: 'cat-dien-thoai',
+      categoryId: 'cat-thiet-bi-am-thanh',
       attributes: [
-        { attributeKeyId: 'key-dt-brand', value: 'Sony' }
+        { attributeKeyId: 'key-at-brand', value: 'Sony' },
+        { attributeKeyId: 'key-at-conn', value: 'Bluetooth' },
+        { attributeKeyId: 'key-at-feat', value: 'Chống ồn chủ động (ANC)' }
       ]
     },
     {
@@ -172,10 +220,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 3 * 60 * 60 * 1000), // active for 3 hours
       status: 'ACTIVE',
-      categoryId: 'cat-mo-hinh-anime',
+      categoryId: 'cat-do-co',
       attributes: [
-        { attributeKeyId: 'key-an-scale', value: '1/1' },
-        { attributeKeyId: 'key-an-box', value: 'No Box' }
+        { attributeKeyId: 'key-dc-period', value: 'Hiện đại' },
+        { attributeKeyId: 'key-dc-material', value: 'Sơn dầu trên vải toan' },
+        { attributeKeyId: 'key-dc-status', value: 'Nguyên bản hoàn hảo' }
       ]
     },
     {
@@ -189,10 +238,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 5 * 60 * 60 * 1000), // active for 5 hours
       status: 'ACTIVE',
-      categoryId: 'cat-mo-hinh-anime',
+      categoryId: 'cat-do-co',
       attributes: [
-        { attributeKeyId: 'key-an-scale', value: '1/1' },
-        { attributeKeyId: 'key-an-box', value: 'No Box' }
+        { attributeKeyId: 'key-dc-period', value: 'Cổ (trên 50 năm)' },
+        { attributeKeyId: 'key-dc-material', value: 'Gỗ trầm hương tự nhiên' },
+        { attributeKeyId: 'key-dc-status', value: 'Nguyên bản tốt' }
       ]
     },
     {
@@ -206,10 +256,11 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 30 * 60 * 1000), // active for 30 mins
       status: 'ACTIVE',
-      categoryId: 'cat-dong-ho',
+      categoryId: 'cat-do-co',
       attributes: [
-        { attributeKeyId: 'key-dh-brand', value: 'Bát Tràng' },
-        { attributeKeyId: 'key-dh-origin', value: 'Việt Nam' }
+        { attributeKeyId: 'key-dc-period', value: 'Đương đại' },
+        { attributeKeyId: 'key-dc-material', value: 'Gốm sứ' },
+        { attributeKeyId: 'key-dc-status', value: 'Mới nguyên bản' }
       ]
     },
     {
@@ -240,9 +291,102 @@ async function main() {
       startTime: now,
       endTime: new Date(now.getTime() + 24 * 60 * 60 * 1000), // active for 24 hours
       status: 'ACTIVE',
-      categoryId: 'cat-dien-thoai',
+      categoryId: 'cat-laptop',
       attributes: [
-        { attributeKeyId: 'key-dt-brand', value: 'Angry Miao' }
+        { attributeKeyId: 'key-lt-brand', value: 'Angry Miao' },
+        { attributeKeyId: 'key-lt-ram', value: 'N/A' },
+        { attributeKeyId: 'key-lt-cpu', value: 'N/A' },
+        { attributeKeyId: 'key-lt-storage', value: 'N/A' }
+      ]
+    },
+    {
+      id: 'canon-eos-r5',
+      title: 'Máy ảnh Mirrorless Canon EOS R5',
+      description: 'Máy ảnh Full-frame Mirrorless chuyên nghiệp của Canon với cảm biến 45MP, quay video 8K và chống rung 5 trục.',
+      imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&auto=format&fit=crop&q=60',
+      startPrice: 65000000.00,
+      currentPrice: 65000000.00,
+      buyNowPrice: 72000000.00,
+      startTime: now,
+      endTime: new Date(now.getTime() + 12 * 60 * 60 * 1000),
+      status: 'ACTIVE',
+      categoryId: 'cat-may-anh',
+      attributes: [
+        { attributeKeyId: 'key-ma-brand', value: 'Canon' },
+        { attributeKeyId: 'key-ma-res', value: '45 Megapixels' },
+        { attributeKeyId: 'key-ma-lens', value: 'Không kèm lens (Body Only)' }
+      ]
+    },
+    {
+      id: 'one-piece-limited',
+      title: 'Bộ Truyện Tranh One Piece Bản Giới Hạn',
+      description: 'Trọn bộ 100 tập truyện One Piece phiên bản bìa cứng đặc biệt giới hạn, kèm boxset thiết kế độc quyền và chữ ký tác giả.',
+      imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=60',
+      startPrice: 5000000.00,
+      currentPrice: 5000000.00,
+      buyNowPrice: 8000000.00,
+      startTime: now,
+      endTime: new Date(now.getTime() + 6 * 60 * 60 * 1000),
+      status: 'ACTIVE',
+      categoryId: 'cat-sach',
+      attributes: [
+        { attributeKeyId: 'key-s-pub', value: 'NXB Kim Đồng' },
+        { attributeKeyId: 'key-s-auth', value: 'Eiichiro Oda' },
+        { attributeKeyId: 'key-s-format', value: 'Bìa cứng' }
+      ]
+    },
+    {
+      id: 'fender-stratocaster',
+      title: 'Đàn Guitar Điện Fender Custom Shop Stratocaster',
+      description: 'Đàn guitar điện Fender chính hãng sản xuất tại Mỹ năm 1996, màu Sunburst huyền thoại, âm thanh ấm áp đặc trưng.',
+      imageUrl: 'https://images.unsplash.com/photo-1550985616-10810253b84d?w=500&auto=format&fit=crop&q=60',
+      startPrice: 35000000.00,
+      currentPrice: 35000000.00,
+      buyNowPrice: 42000000.00,
+      startTime: now,
+      endTime: new Date(now.getTime() + 18 * 60 * 60 * 1000),
+      status: 'ACTIVE',
+      categoryId: 'cat-nhac-cu',
+      attributes: [
+        { attributeKeyId: 'key-nc-brand', value: 'Fender' },
+        { attributeKeyId: 'key-nc-type', value: 'Đàn guitar điện' },
+        { attributeKeyId: 'key-nc-origin', value: 'Mỹ (USA)' }
+      ]
+    },
+    {
+      id: 'diamond-ring-18k',
+      title: 'Nhẫn Kim Cương Tự Nhiên Vàng 18K',
+      description: 'Nhẫn cưới đính hôn vàng 18K với viên kim cương chủ tự nhiên 1.5 carat, độ sạch VVS1, nước D hoàn hảo kèm chứng thư GIA.',
+      imageUrl: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&auto=format&fit=crop&q=60',
+      startPrice: 120000000.00,
+      currentPrice: 120000000.00,
+      buyNowPrice: 140000000.00,
+      startTime: now,
+      endTime: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      status: 'ACTIVE',
+      categoryId: 'cat-trang-suc-da-quy',
+      attributes: [
+        { attributeKeyId: 'key-ts-metal', value: 'Vàng 18K' },
+        { attributeKeyId: 'key-ts-gem', value: 'Kim cương tự nhiên' },
+        { attributeKeyId: 'key-ts-weight', value: '1.5 carat' }
+      ]
+    },
+    {
+      id: 'giant-mountain-bike',
+      title: 'Xe Đạp Địa Hình Giant Anthem Advanced Pro',
+      description: 'Xe đạp leo núi cao cấp với khung Carbon siêu nhẹ, bộ truyền động Shimano XT 12 tốc độ và phuộc Fox Float Kashima.',
+      imageUrl: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=500&auto=format&fit=crop&q=60',
+      startPrice: 48000000.00,
+      currentPrice: 48000000.00,
+      buyNowPrice: 55000000.00,
+      startTime: now,
+      endTime: new Date(now.getTime() + 8 * 60 * 60 * 1000),
+      status: 'ACTIVE',
+      categoryId: 'cat-xe-dap-the-thao',
+      attributes: [
+        { attributeKeyId: 'key-xd-brand', value: 'Giant' },
+        { attributeKeyId: 'key-xd-sport', value: 'Xe đạp địa hình' },
+        { attributeKeyId: 'key-xd-size', value: 'Size M' }
       ]
     }
   ];

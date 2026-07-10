@@ -23,6 +23,86 @@ const QUICK_LINKS = [
   { label: 'Price Results', href: '/?tab=ended', icon: '📊' },
 ];
 
+const CATEGORY_SUBCATEGORIES = {
+  'dien-thoai': [
+    { label: 'iPhone / Apple', query: 'iPhone' },
+    { label: 'Samsung Galaxy', query: 'Samsung' },
+    { label: 'Xiaomi & Redmi', query: 'Xiaomi' },
+    { label: 'Điện thoại cổ', query: 'Cổ' },
+    { label: 'Phụ kiện điện thoại', query: 'Phụ kiện' }
+  ],
+  'laptop-may-tinh': [
+    { label: 'MacBook / Apple', query: 'MacBook' },
+    { label: 'Laptop Gaming', query: 'Gaming' },
+    { label: 'Laptop Văn phòng', query: 'Văn phòng' },
+    { label: 'Linh kiện PC', query: 'Linh kiện' },
+    { label: 'Bàn phím cơ', query: 'Bàn phím' }
+  ],
+  'dong-ho': [
+    { label: 'Đồng hồ cơ cổ', query: 'Cổ' },
+    { label: 'Đồng hồ thông minh', query: 'Smartwatch' },
+    { label: 'Đồng hồ Thụy Sỹ', query: 'Thụy Sỹ' },
+    { label: 'Đồng hồ Nhật Bản', query: 'Nhật' },
+    { label: 'Đồng hồ treo tường', query: 'Treo tường' }
+  ],
+  'mo-hinh-anime': [
+    { label: 'Action Figures', query: 'Figure' },
+    { label: 'Nendoroid / Chibi', query: 'Nendoroid' },
+    { label: 'Scale Figures', query: 'Scale' },
+    { label: 'Gundam / Gunpla', query: 'Gundam' },
+    { label: 'Mô hình 1/6', query: '1/6' }
+  ],
+  'thiet-bi-am-thanh': [
+    { label: 'Tai nghe chụp tai', query: 'Tai nghe' },
+    { label: 'Loa Bluetooth', query: 'Loa' },
+    { label: 'Micro thu âm', query: 'Micro' },
+    { label: 'Amply & DAC', query: 'Amply' },
+    { label: 'Loa kiểm âm', query: 'Kiểm âm' }
+  ],
+  'may-anh': [
+    { label: 'Máy ảnh DSLR', query: 'DSLR' },
+    { label: 'Máy ảnh Mirrorless', query: 'Mirrorless' },
+    { label: 'Ống kính máy ảnh', query: 'Lens' },
+    { label: 'Máy ảnh Film cổ', query: 'Film' },
+    { label: 'Action Cam / Gimbal', query: 'Action' }
+  ],
+  'sach-truyen-tranh': [
+    { label: 'Manga / Comic', query: 'Manga' },
+    { label: 'Sách Văn học', query: 'Văn học' },
+    { label: 'Sách Kinh tế', query: 'Kinh tế' },
+    { label: 'Sách Ngoại văn', query: 'Ngoại văn' },
+    { label: 'Tiểu thuyết lịch sử', query: 'Tiểu thuyết' }
+  ],
+  'nhac-cu': [
+    { label: 'Đàn Guitar', query: 'Guitar' },
+    { label: 'Đàn Piano', query: 'Piano' },
+    { label: 'Keyboard / Organ', query: 'Organ' },
+    { label: 'Trống & Bộ gõ', query: 'Trống' },
+    { label: 'Phụ kiện nhạc cụ', query: 'Phụ kiện' }
+  ],
+  'do-co': [
+    { label: 'Gốm sứ cổ', query: 'Gốm' },
+    { label: 'Tiền cổ', query: 'Tiền cổ' },
+    { label: 'Tranh sơn dầu', query: 'Tranh' },
+    { label: 'Đồ gỗ mỹ nghệ', query: 'Gỗ' },
+    { label: 'Kỷ vật xưa', query: 'Kỷ vật' }
+  ],
+  'trang-suc-da-quy': [
+    { label: 'Nhẫn kim cương', query: 'Kim cương' },
+    { label: 'Vòng tay vàng', query: 'Vàng' },
+    { label: 'Đá phong thủy', query: 'Đá' },
+    { label: 'Dây chuyền bạc', query: 'Bạc' },
+    { label: 'Ngọc trai', query: 'Ngọc trai' }
+  ],
+  'xe-dap-the-thao': [
+    { label: 'Xe đạp địa hình', query: 'Địa hình' },
+    { label: 'Xe đạp đua (Road)', query: 'Road' },
+    { label: 'Giày chạy bộ', query: 'Giày' },
+    { label: 'Vợt cầu lông', query: 'Vợt' },
+    { label: 'Phụ kiện thể thao', query: 'Thể thao' }
+  ]
+};
+
 export default function Navbar() {
   const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
@@ -551,7 +631,7 @@ export default function Navbar() {
             </Link>
 
             {/* Dynamic category tabs */}
-            {categories.slice(0, 5).map(cat => (
+            {categories.slice(0, 8).map(cat => (
               <div
                 key={cat.id}
                 style={{ position: 'relative' }}
@@ -570,7 +650,7 @@ export default function Navbar() {
             ))}
 
             {/* Dropdown "Xem thêm" for remaining categories */}
-            {categories.length > 5 && (
+            {categories.length > 8 && (
               <div
                 ref={moreCategoriesRef}
                 style={{ position: 'relative' }}
@@ -604,7 +684,7 @@ export default function Navbar() {
                     pointerEvents: isMoreCategoriesOpen ? 'auto' : 'none',
                   }}
                 >
-                  {categories.slice(5).map(cat => (
+                  {categories.slice(8).map(cat => (
                     <Link
                       key={cat.id}
                       to={`/products?category=${cat.slug}`}
@@ -658,41 +738,115 @@ export default function Navbar() {
               className="mega-menu visible-menu"
               onMouseEnter={() => clearTimeout(megaTimerRef.current)}
               onMouseLeave={closeMegaMenu}
+              style={{
+                backdropFilter: 'blur(20px)',
+                background: 'rgba(255, 255, 255, 0.95)',
+                borderTop: '2px solid hsl(196, 100%, 36%)',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+              }}
             >
-              <div style={{ maxWidth: 1240, margin: '0 auto', padding: '20px 20px' }}>
+              <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 40px' }}>
                 {(() => {
                   const cat = categories.find(c => c.slug === activeMegaMenu);
                   if (!cat) return null;
                   return (
-                    <div className="flex gap-8">
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(12,8%,55%)', marginBottom: 10 }}>
-                          {cat.name}
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          {['All', 'Active Auctions', 'Ending Soon', 'Recently Sold'].map(sub => {
-                            const status = sub === 'Active Auctions' ? 'active' : sub === 'Ending Soon' ? 'active' : sub === 'Recently Sold' ? 'ended' : '';
-                            const sort = sub === 'Ending Soon' ? 'ending' : '';
-                            const params = new URLSearchParams();
-                            params.set('category', cat.slug);
-                            if (status) params.set('status', status);
-                            if (sort) params.set('sort', sort);
-                            return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {/* Category Header Title */}
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'hsl(196, 100%, 30%)', borderBottom: '1px solid hsl(0,0%,92%)', paddingBottom: 8 }}>
+                        {cat.name}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-12" style={{ padding: '4px 0' }}>
+                        {/* Column 1: Popular Searches */}
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(12,8%,55%)', marginBottom: 12 }}>
+                            Tìm kiếm nổi bật
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {(CATEGORY_SUBCATEGORIES[cat.slug] || []).map(sub => (
                               <Link
-                                key={sub}
-                                to={`/products?${params.toString()}`}
+                                key={sub.label}
+                                to={`/products?category=${cat.slug}&q=${encodeURIComponent(sub.query)}`}
                                 onClick={() => setActiveMegaMenu(null)}
                                 style={{
-                                  fontSize: 13, color: 'hsl(12,14%,11%)', textDecoration: 'none',
-                                  padding: '4px 0', fontWeight: 400, transition: 'color 0.15s',
+                                  fontSize: 13,
+                                  color: 'hsl(12,14%,25%)',
+                                  textDecoration: 'none',
+                                  padding: '5px 0',
+                                  fontWeight: 500,
+                                  transition: 'all 0.15s ease',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6
                                 }}
-                                onMouseOver={(e) => { e.currentTarget.style.color = 'hsl(196,100%,36%)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.color = 'hsl(12,14%,11%)'; }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.color = 'hsl(196,100%,36%)';
+                                  e.currentTarget.style.transform = 'translateX(6px)';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.color = 'hsl(12,14%,25%)';
+                                  e.currentTarget.style.transform = 'translateX(0)';
+                                }}
                               >
-                                {sub}
+                                <span style={{ opacity: 0.4, fontSize: 10 }}>✦</span>
+                                {sub.label}
                               </Link>
-                            );
-                          })}
+                            ))}
+                            {(CATEGORY_SUBCATEGORIES[cat.slug] || []).length === 0 && (
+                              <div style={{ fontSize: 13, color: 'hsl(12,8%,65%)', fontStyle: 'italic', padding: '6px 0' }}>
+                                Đang cập nhật danh mục con...
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Column 2: Auction Status Filters */}
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(12,8%,55%)', marginBottom: 12 }}>
+                            Bộ lọc phiên đấu
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {[
+                              { label: 'Tất cả sản phẩm', status: '', sort: '', emoji: '📋' },
+                              { label: 'Đang diễn ra', status: 'active', sort: '', emoji: '🔥' },
+                              { label: 'Sắp kết thúc', status: 'active', sort: 'ending', emoji: '⏰' },
+                              { label: 'Đã kết thúc', status: 'ended', sort: '', emoji: '✅' },
+                            ].map(opt => {
+                              const params = new URLSearchParams();
+                              params.set('category', cat.slug);
+                              if (opt.status) params.set('status', opt.status);
+                              if (opt.sort) params.set('sort', opt.sort);
+                              return (
+                                <Link
+                                  key={opt.label}
+                                  to={`/products?${params.toString()}`}
+                                  onClick={() => setActiveMegaMenu(null)}
+                                  style={{
+                                    fontSize: 13,
+                                    color: 'hsl(12,14%,25%)',
+                                    textDecoration: 'none',
+                                    padding: '5px 0',
+                                    fontWeight: 500,
+                                    transition: 'all 0.15s ease',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6
+                                  }}
+                                  onMouseOver={(e) => {
+                                    e.currentTarget.style.color = 'hsl(196,100%,36%)';
+                                    e.currentTarget.style.transform = 'translateX(6px)';
+                                  }}
+                                  onMouseOut={(e) => {
+                                    e.currentTarget.style.color = 'hsl(12,14%,25%)';
+                                    e.currentTarget.style.transform = 'translateX(0)';
+                                  }}
+                                >
+                                  <span style={{ fontSize: 12 }}>{opt.emoji}</span>
+                                  {opt.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
