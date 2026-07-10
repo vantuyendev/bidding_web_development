@@ -53,13 +53,19 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Fetch categories for nav
-  useEffect(() => {
+  const fetchCategories = useCallback(() => {
     fetch(getApiUrl('/api/categories'))
       .then(r => r.json())
       .then(d => { if (d.success) setCategories(d.data); })
       .catch(() => {});
   }, []);
+
+  // Fetch categories for nav
+  useEffect(() => {
+    fetchCategories();
+    window.addEventListener('product-created', fetchCategories);
+    return () => window.removeEventListener('product-created', fetchCategories);
+  }, [fetchCategories]);
 
   // Notifications via SSE
   const fetchNotifications = useCallback(async () => {

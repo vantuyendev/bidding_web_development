@@ -18,7 +18,25 @@ export const getProducts = async (req, res, next) => {
         startTime: true,
         endTime: true,
         status: true,
-        categoryId: true
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
+        seller: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        _count: {
+          select: {
+            bids: true
+          }
+        }
       }
     });
 
@@ -28,6 +46,10 @@ export const getProducts = async (req, res, next) => {
       startPrice: Number(product.startPrice),
       currentPrice: Number(product.currentPrice),
       buyNowPrice: product.buyNowPrice ? Number(product.buyNowPrice) : null,
+      bidCount: product._count?.bids ?? 0,
+      sellerName: product.seller?.name || product.seller?.email || null,
+      categoryName: product.category?.name || null,
+      categorySlug: product.category?.slug || null
     }));
 
     return res.status(200).json({
