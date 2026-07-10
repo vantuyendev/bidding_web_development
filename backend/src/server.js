@@ -103,6 +103,11 @@ app.use('/api/bids/place', strictLimiter);
 
 // Configure Cookie Session middleware for authentication with banking-grade security
 const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'secret-key-123')) {
+  console.warn('⚠️ WARNING: SESSION_SECRET is not set or using default value in production! Please configure a strong secret key.');
+}
+
 app.use(cookieSession({
   name: 'auction_session',
   keys: [process.env.SESSION_SECRET || 'secret-key-123'],

@@ -29,5 +29,5 @@ export const getSseUrl = (productId) => {
     const pathPrefix = hasApiInBase ? '' : '/api';
     return `${cleanBaseUrl}${pathPrefix}/products/${productId}/live`;
   }
-  return `http://localhost:5000/api/products/${productId}/live`;
+  return `/api/products/${productId}/live`;
 };
