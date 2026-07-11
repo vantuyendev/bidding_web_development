@@ -30,7 +30,7 @@ export default function DisputeManagement() {
   };
 
   useEffect(() => {
-    if (user && user.email?.toLowerCase().includes('admin')) {
+    if (user && user.isAdmin === true) {
       fetchDisputes();
     }
   }, [user]);
@@ -39,7 +39,7 @@ export default function DisputeManagement() {
     return <div className="text-center py-10 text-xs text-neutral-400 animate-pulse">Đang kiểm tra quyền truy cập...</div>;
   }
 
-  if (!user || !user.email?.toLowerCase().includes('admin')) {
+  if (!user || user.isAdmin !== true) {
     return <Navigate to="/" replace />;
   }
 

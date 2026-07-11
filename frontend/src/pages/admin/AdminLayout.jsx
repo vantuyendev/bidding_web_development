@@ -50,6 +50,12 @@ export default function AdminLayout() {
           <NavLink to="/admin/disputes" className={() => navLinkClass('/admin/disputes')}>
             <span>⚖️</span> Tranh chấp & Khiếu nại
           </NavLink>
+          <NavLink to="/admin/categories" className={() => navLinkClass('/admin/categories')}>
+            <span>📁</span> Quản lý Danh mục
+          </NavLink>
+          <NavLink to="/admin/audit-logs" className={() => navLinkClass('/admin/audit-logs')}>
+            <span>📜</span> Nhật ký Hoạt động
+          </NavLink>
           
           <div className="hidden md:block my-3 border-t border-neutral-200 dark:border-neutral-800" />
           <NavLink to="/profile" className={() => navLinkClass('/profile')}>

@@ -328,7 +328,7 @@ export default function DisputeDetail() {
               messages.map((msg) => {
                 const isMsgBuyer = msg.senderId === ticket.openedById;
                 const isMsgSeller = msg.senderId === ticket.product?.sellerId;
-                const isMsgAdmin = msg.sender?.email?.toLowerCase().includes('admin');
+                const isMsgAdmin = msg.sender?.isAdmin === true;
 
                 // Determine display name
                 let senderLabel = 'Thành viên';

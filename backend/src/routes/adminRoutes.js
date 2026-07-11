@@ -9,7 +9,8 @@ import {
   adminGetWalletRequests,
   adminConfirmWalletRequest,
   adminGetPendingProducts,
-  adminApproveProduct
+  adminApproveProduct,
+  adminGetAuditLogs
 } from '../controllers/adminController.js';
 import {
   adminGetPendingKyc,
@@ -44,5 +45,8 @@ router.post('/wallet-requests/:id/confirm', adminConfirmWalletRequest);
 // Product approval
 router.get('/products', adminGetPendingProducts);
 router.post('/products/:id/approve', adminApproveProduct);
+
+// Audit logs
+router.get('/audit-logs', adminGetAuditLogs);
 
 export default router;

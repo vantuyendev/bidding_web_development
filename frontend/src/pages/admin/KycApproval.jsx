@@ -51,7 +51,7 @@ export default function KycApproval() {
   };
 
   useEffect(() => {
-    if (user && user.email?.toLowerCase().includes('admin')) {
+    if (user && user.isAdmin === true) {
       fetchPendingKyc();
     }
   }, [user]);
@@ -60,7 +60,7 @@ export default function KycApproval() {
     return <div className="text-center py-10 text-xs text-neutral-400 animate-pulse">Đang kiểm tra quyền truy cập...</div>;
   }
 
-  if (!user || !user.email?.toLowerCase().includes('admin')) {
+  if (!user || user.isAdmin !== true) {
     return <Navigate to="/" replace />;
   }
 

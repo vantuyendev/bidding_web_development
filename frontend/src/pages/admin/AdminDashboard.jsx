@@ -86,6 +86,10 @@ export default function AdminDashboard() {
     }
   ];
 
+  const formatCurrency = (val) => {
+    return Number(val).toLocaleString('vi-VN') + ' đ';
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn text-left text-xs">
       <div className="flex justify-between items-center">
@@ -124,6 +128,28 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* Advanced Financial & Operations Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="p-5 border border-neutral-200/50 dark:border-neutral-800/80 rounded-2xl bg-white dark:bg-neutral-900 shadow-sm flex flex-col justify-between">
+          <p className="font-bold text-neutral-500">💰 Tổng Nạp Đã Duyệt</p>
+          <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-2">
+            {formatCurrency(stats.totalDepositsApproved)}
+          </p>
+        </div>
+        <div className="p-5 border border-neutral-200/50 dark:border-neutral-800/80 rounded-2xl bg-white dark:bg-neutral-900 shadow-sm flex flex-col justify-between">
+          <p className="font-bold text-neutral-500">💸 Tổng Rút Đã Duyệt</p>
+          <p className="text-lg font-black text-rose-650 dark:text-rose-400 mt-2">
+            {formatCurrency(stats.totalWithdrawsApproved)}
+          </p>
+        </div>
+        <div className="p-5 border border-neutral-200/50 dark:border-neutral-800/80 rounded-2xl bg-white dark:bg-neutral-900 shadow-sm flex flex-col justify-between">
+          <p className="font-bold text-neutral-500">🏷️ Lượt đặt giá đang hoạt động</p>
+          <p className="text-lg font-black text-amber-600 dark:text-amber-400 mt-2">
+            {stats.activeBids} lượt bid
+          </p>
+        </div>
+      </div>
+
       {/* Action shortcuts / Quick notice */}
       <div className="p-6 border border-neutral-200/60 dark:border-neutral-800/80 rounded-3xl bg-neutral-50/50 dark:bg-neutral-900/30">
         <h4 className="font-bold text-neutral-900 dark:text-white mb-4">🔔 Nhiệm vụ quản trị ưu tiên</h4>
@@ -151,6 +177,38 @@ export default function AdminDashboard() {
               🎉 Tuyệt vời! Không có yêu cầu nào đang tồn đọng.
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Recent Activities Section */}
+      <div className="p-6 border border-neutral-200/60 dark:border-neutral-800/80 rounded-3xl bg-white dark:bg-neutral-900 shadow-sm">
+        <h4 className="font-bold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+          <span>📜</span> Nhật ký hoạt động gần đây
+        </h4>
+        {stats.recentLogs && stats.recentLogs.length > 0 ? (
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800/50">
+            {stats.recentLogs.map((log) => (
+              <div key={log.id} className="py-3 flex justify-between items-start text-[11px] hover:bg-neutral-50/20">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-neutral-800 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded font-mono text-[9px]">
+                      {log.action}
+                    </span>
+                    <span className="text-neutral-400">{log.user?.email || 'System'}</span>
+                  </div>
+                  <p className="text-neutral-500 italic max-w-lg truncate">{log.details ? log.details : 'N/A'}</p>
+                </div>
+                <span className="text-neutral-400 whitespace-nowrap">
+                  {new Date(log.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-neutral-400 italic py-4">Chưa ghi nhận hoạt động nào.</p>
+        )}
+        <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800/50 text-right">
+          <Link to="/admin/audit-logs" className="font-bold text-amber-600 hover:underline">Xem tất cả nhật ký →</Link>
         </div>
       </div>
     </div>

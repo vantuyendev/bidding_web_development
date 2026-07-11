@@ -17,7 +17,8 @@ export const getMe = async (req, res) => {
         id: true, email: true, name: true,
         balance: true, walletBalance: true, frozenBalance: true,
         isBanned: true, banReason: true,
-        isVerifiedSeller: true, kycStatus: true
+        isVerifiedSeller: true, kycStatus: true,
+        isAdmin: true
       }
     });
 
@@ -43,7 +44,8 @@ export const getMe = async (req, res) => {
         isBanned: user.isBanned,
         banReason: user.banReason,
         isVerifiedSeller: user.isVerifiedSeller,
-        kycStatus: user.kycStatus
+        kycStatus: user.kycStatus,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {
@@ -124,7 +126,8 @@ export const login = async (req, res) => {
         id: true, email: true, name: true,
         balance: true, walletBalance: true, frozenBalance: true,
         isBanned: true, banReason: true,
-        isVerifiedSeller: true, kycStatus: true
+        isVerifiedSeller: true, kycStatus: true,
+        isAdmin: true
       }
     });
 
@@ -158,7 +161,8 @@ export const login = async (req, res) => {
         frozenBalance: Number(user.frozenBalance),
         isBanned: user.isBanned,
         isVerifiedSeller: user.isVerifiedSeller,
-        kycStatus: user.kycStatus
+        kycStatus: user.kycStatus,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {

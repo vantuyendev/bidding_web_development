@@ -288,7 +288,8 @@ export const getDisputeDetail = async (req, res) => {
         openedBy: {
           select: {
             id: true,
-            email: true
+            email: true,
+            isAdmin: true
           }
         }
       }
@@ -380,7 +381,8 @@ export const getDisputeMessages = async (req, res) => {
         sender: {
           select: {
             id: true,
-            email: true
+            email: true,
+            isAdmin: true
           }
         }
       }
@@ -468,7 +470,8 @@ export const createDisputeMessage = async (req, res) => {
         sender: {
           select: {
             id: true,
-            email: true
+            email: true,
+            isAdmin: true
           }
         }
       }
@@ -524,7 +527,8 @@ export const getDisputesList = async (req, res) => {
           openedBy: {
             select: {
               id: true,
-              email: true
+              email: true,
+              isAdmin: true
             }
           }
         }
@@ -550,7 +554,8 @@ export const getDisputesList = async (req, res) => {
           openedBy: {
             select: {
               id: true,
-              email: true
+              email: true,
+              isAdmin: true
             }
           }
         }

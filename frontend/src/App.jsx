@@ -30,6 +30,8 @@ import AdminWalletRequests from './pages/admin/AdminWalletRequests';
 import AdminProductApproval from './pages/admin/AdminProductApproval';
 import KycApproval from './pages/admin/KycApproval';
 import DisputeManagement from './pages/admin/DisputeManagement';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 
 export default function App() {
   return (
@@ -72,6 +74,8 @@ export default function App() {
                     <Route path="products" element={<AdminProductApproval />} />
                     <Route path="kyc" element={<KycApproval />} />
                     <Route path="disputes" element={<DisputeManagement />} />
+                    <Route path="categories" element={<AdminCategories />} />
+                    <Route path="audit-logs" element={<AdminAuditLogs />} />
                   </Route>
                 </Route>
               </Route>

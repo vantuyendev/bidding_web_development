@@ -607,7 +607,9 @@ export const adminGetStats = async (req, res) => {
     const [
       totalUsers, bannedUsers, pendingKyc,
       activeAuctions, pendingProducts,
-      pendingDeposits, pendingWithdraws
+      pendingDeposits, pendingWithdraws,
+      depositSumResult, withdrawSumResult,
+      activeBids, recentLogs
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { isBanned: true } }),
@@ -615,8 +617,27 @@ export const adminGetStats = async (req, res) => {
       prisma.product.count({ where: { status: 'ACTIVE', deletedAt: null } }),
       prisma.product.count({ where: { approvalStatus: 'PENDING_REVIEW', deletedAt: null } }),
       prisma.walletRequest.count({ where: { type: 'DEPOSIT', status: 'PENDING' } }),
-      prisma.walletRequest.count({ where: { type: 'WITHDRAW', status: 'PENDING' } })
+      prisma.walletRequest.count({ where: { type: 'WITHDRAW', status: 'PENDING' } }),
+      prisma.walletRequest.aggregate({
+        where: { type: 'DEPOSIT', status: 'APPROVED' },
+        _sum: { amount: true }
+      }),
+      prisma.walletRequest.aggregate({
+        where: { type: 'WITHDRAW', status: 'APPROVED' },
+        _sum: { amount: true }
+      }),
+      prisma.bid.count({
+        where: { product: { status: 'ACTIVE', deletedAt: null } }
+      }),
+      prisma.auditLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: { user: { select: { email: true } } }
+      })
     ]);
+
+    const totalDepositsApproved = Number(depositSumResult._sum.amount || 0);
+    const totalWithdrawsApproved = Number(withdrawSumResult._sum.amount || 0);
 
     return res.json({
       success: true,
@@ -624,7 +645,11 @@ export const adminGetStats = async (req, res) => {
         totalUsers, bannedUsers, pendingKyc,
         activeAuctions, pendingProducts,
         pendingDeposits, pendingWithdraws,
-        totalPending: pendingDeposits + pendingWithdraws + pendingProducts + pendingKyc
+        totalPending: pendingDeposits + pendingWithdraws + pendingProducts + pendingKyc,
+        totalDepositsApproved,
+        totalWithdrawsApproved,
+        activeBids,
+        recentLogs
       }
     });
   } catch (err) {
@@ -632,3 +657,51 @@ export const adminGetStats = async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 };
+
+// GET /api/admin/audit-logs — Danh sách nhật ký hệ thống
+export const adminGetAuditLogs = async (req, res) => {
+  const adminId = req.session?.userId;
+  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+
+  try {
+    await checkAdmin(adminId);
+
+    const { page = 1, limit = 20, search = '' } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, parseInt(limit) || 20);
+    const skip = (pageNum - 1) * limitNum;
+
+    const where = {};
+    if (search) {
+      where.OR = [
+        { action: { contains: search, mode: 'insensitive' } },
+        { target: { contains: search, mode: 'insensitive' } },
+        { details: { contains: search, mode: 'insensitive' } },
+        { user: { email: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        include: {
+          user: { select: { id: true, email: true, name: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum
+      }),
+      prisma.auditLog.count({ where })
+    ]);
+
+    return res.json({
+      success: true,
+      data: logs,
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (err) {
+    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+

@@ -1,6 +1,6 @@
 import express from 'express';
 import prisma from '../models/db.js';
-import { requireAuth } from '../middlewares/authMiddleware.js';
+import { requireAuth, requireAdmin } from '../middlewares/authMiddleware.js';
 import { slugify } from '../utils/slugify.js';
 
 const router = express.Router();
@@ -26,8 +26,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/categories - Create a new category dynamically (Authenticated users)
-router.post('/', requireAuth, async (req, res) => {
+// POST /api/categories - Create a new category dynamically (Admin only)
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
   const { name, attributeKeys } = req.body;
 
   if (!name || name.trim() === "") {
@@ -86,6 +86,38 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(500).json({
       success: false,
       error: error.message || "Đã xảy ra lỗi khi tạo danh mục mới."
+    });
+  }
+});
+
+// DELETE /api/categories/:id - Delete a category (Admin only)
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id }
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        error: "Không tìm thấy danh mục cần xóa."
+      });
+    }
+
+    await prisma.category.delete({
+      where: { id }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Đã xóa danh mục "${category.name}" thành công.`
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Đã xảy ra lỗi khi xóa danh mục."
     });
   }
 });
