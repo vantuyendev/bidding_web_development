@@ -3,14 +3,15 @@ import { Prisma } from '@prisma/client';
 import { releaseEscrow } from '../services/walletService.js';
 import { logger } from '../utils/logger.js';
 
-// Helper: Kiểm tra quyền admin (email chứa 'admin')
+// Helper: Kiểm tra quyền admin (sử dụng thuộc tính isAdmin trong DB)
 async function checkAdmin(adminId) {
   const admin = await prisma.user.findUnique({ where: { id: adminId } });
-  if (!admin || !admin.email.toLowerCase().includes('admin')) {
+  if (!admin || !admin.isAdmin) {
     throw new Error('FORBIDDEN');
   }
   return admin;
 }
+
 
 // ─────────────────────────────────────────────
 // USER MANAGEMENT

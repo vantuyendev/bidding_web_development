@@ -322,7 +322,7 @@ export const adminGetPendingKyc = async (req, res) => {
 
   try {
     const adminUser = await prisma.user.findUnique({ where: { id: adminId } });
-    if (!adminUser || !adminUser.email.toLowerCase().includes('admin')) {
+    if (!adminUser || !adminUser.isAdmin) {
       return res.status(403).json({ success: false, error: 'Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện.' });
     }
 
@@ -368,7 +368,7 @@ export const adminApproveKyc = async (req, res) => {
 
   try {
     const adminUser = await prisma.user.findUnique({ where: { id: adminId } });
-    if (!adminUser || !adminUser.email.toLowerCase().includes('admin')) {
+    if (!adminUser || !adminUser.isAdmin) {
       return res.status(403).json({ success: false, error: 'Quyền truy cập bị từ chối.' });
     }
 

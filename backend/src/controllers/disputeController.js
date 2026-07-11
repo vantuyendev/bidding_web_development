@@ -119,7 +119,7 @@ export const adminResolveTicket = async (req, res) => {
       const adminUser = await tx.user.findUnique({
         where: { id: adminId }
       });
-      if (!adminUser || !adminUser.email.toLowerCase().includes("admin")) {
+      if (!adminUser || !adminUser.isAdmin) {
         throw new Error("Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện phán quyết.");
       }
 
@@ -305,7 +305,7 @@ export const getDisputeDetail = async (req, res) => {
       where: { id: userId }
     });
 
-    const isAdmin = user && user.email.toLowerCase().includes("admin");
+    const isAdmin = user && user.isAdmin;
     const isBuyer = ticket.openedById === userId;
     const isSeller = ticket.product.sellerId === userId;
 
@@ -362,7 +362,7 @@ export const getDisputeMessages = async (req, res) => {
       where: { id: userId }
     });
 
-    const isAdmin = user && user.email.toLowerCase().includes("admin");
+    const isAdmin = user && user.isAdmin;
     const isBuyer = ticket.openedById === userId;
     const isSeller = ticket.product.sellerId === userId;
 
@@ -447,7 +447,7 @@ export const createDisputeMessage = async (req, res) => {
       where: { id: userId }
     });
 
-    const isAdmin = user && user.email.toLowerCase().includes("admin");
+    const isAdmin = user && user.isAdmin;
     const isBuyer = ticket.openedById === userId;
     const isSeller = ticket.product.sellerId === userId;
 
@@ -506,7 +506,7 @@ export const getDisputesList = async (req, res) => {
       where: { id: userId }
     });
 
-    const isAdmin = user && user.email.toLowerCase().includes("admin");
+    const isAdmin = user && user.isAdmin;
 
     let tickets;
     if (isAdmin) {

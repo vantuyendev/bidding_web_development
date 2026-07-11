@@ -159,7 +159,7 @@ export default function DisputeDetail() {
   };
 
   // Determine user role
-  const isAdmin = currentUser?.email?.toLowerCase().includes('admin');
+  const isAdmin = currentUser?.isAdmin === true;
 
   // Determine status color classes
   const getStatusBadge = (status) => {
