@@ -20,6 +20,8 @@ import SellerListings from './pages/dashboard/SellerListings';
 import Watchlist from './pages/dashboard/Watchlist';
 import KycSubmission from './pages/dashboard/KycSubmission';
 import UserDisputes from './pages/dashboard/UserDisputes';
+import WonAuctions from './pages/dashboard/WonAuctions';
+import NotificationsPage from './pages/dashboard/NotificationsPage';
 
 // Admin pages
 import AdminLayout from './pages/admin/AdminLayout';
@@ -57,9 +59,11 @@ export default function App() {
                 <Route path="/profile" element={<UserProfile />}>
                   <Route index element={<UserSettings />} />
                   <Route path="wallet" element={<WalletDashboard />} />
+                  <Route path="won-auctions" element={<WonAuctions />} />
                   <Route path="bids" element={<BidHistory />} />
                   <Route path="listings" element={<SellerListings />} />
                   <Route path="watchlist" element={<Watchlist />} />
+                  <Route path="notifications" element={<NotificationsPage />} />
                   <Route path="kyc" element={<KycSubmission />} />
                   <Route path="disputes" element={<UserDisputes />} />
                 </Route>

@@ -118,6 +118,9 @@ export default function UserProfile() {
           <NavLink to="/profile/wallet" className={() => navLinkClass('/profile/wallet')}>
             <span>💳</span> Ví & Giao dịch
           </NavLink>
+          <NavLink to="/profile/won-auctions" className={() => navLinkClass('/profile/won-auctions')}>
+            <span>🏆</span> Đấu giá đã thắng
+          </NavLink>
           <NavLink to="/profile/bids" className={() => navLinkClass('/profile/bids')}>
             <span>⚖️</span> Lịch sử Đấu giá
           </NavLink>
@@ -126,6 +129,9 @@ export default function UserProfile() {
           </NavLink>
           <NavLink to="/profile/watchlist" className={() => navLinkClass('/profile/watchlist')}>
             <span>❤️</span> Yêu thích
+          </NavLink>
+          <NavLink to="/profile/notifications" className={() => navLinkClass('/profile/notifications')}>
+            <span>🔔</span> Thông báo
           </NavLink>
           <NavLink to="/profile/disputes" className={() => navLinkClass('/profile/disputes')}>
             <span>⚖️</span> Khiếu nại của tôi

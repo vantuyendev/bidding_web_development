@@ -272,6 +272,159 @@ export const getUserWalletRequests = async (req, res) => {
   }
 };
 
+// DELETE /api/users/wallet-requests/:id — Hủy yêu cầu nạp/rút tiền đang chờ duyệt (PENDING)
+export const cancelWalletRequest = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+  }
+
+  const { id: requestId } = req.params;
+
+  try {
+    const walletReq = await prisma.walletRequest.findUnique({
+      where: { id: requestId }
+    });
+
+    if (!walletReq) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy yêu cầu.' });
+    }
+
+    if (walletReq.userId !== userId) {
+      return res.status(403).json({ success: false, error: 'Bạn không có quyền hủy yêu cầu này.' });
+    }
+
+    if (walletReq.status !== 'PENDING') {
+      return res.status(400).json({ success: false, error: 'Chỉ có thể hủy yêu cầu đang ở trạng thái chờ duyệt.' });
+    }
+
+    const updated = await prisma.walletRequest.update({
+      where: { id: requestId },
+      data: { status: 'CANCELLED', resolvedAt: new Date() }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Đã hủy yêu cầu thành công.',
+      data: {
+        id: updated.id,
+        status: updated.status
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi hủy yêu cầu.'
+    });
+  }
+};
+
+// GET /api/users/won-auctions — Lấy danh sách sản phẩm thắng đấu giá của user
+export const getWonAuctions = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+  }
+
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, parseInt(limit) || 20);
+
+    const where = {
+      winnerId: userId,
+      deletedAt: null
+    };
+
+    // Filter by product status if provided (e.g., PENDING_PAYMENT, PAID, SHIPPED, COMPLETED)
+    if (status && ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED'].includes(status)) {
+      where.status = status;
+    } else {
+      // Default: only return won products in these states
+      where.status = {
+        in: ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED']
+      };
+    }
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          seller: { select: { id: true, email: true, name: true } },
+          category: { select: { id: true, name: true } }
+        },
+        orderBy: { endTime: 'desc' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum
+      }),
+      prisma.product.count({ where })
+    ]);
+
+    return res.json({
+      success: true,
+      data: products.map(p => ({
+        ...p,
+        startPrice: Number(p.startPrice),
+        currentPrice: Number(p.currentPrice),
+        buyNowPrice: p.buyNowPrice ? Number(p.buyNowPrice) : null,
+        shippingFee: p.shippingFee ? Number(p.shippingFee) : null
+      })),
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi lấy danh sách sản phẩm trúng đấu giá.'
+    });
+  }
+};
+
+// GET /api/users/transactions — Lấy lịch sử giao dịch ví của user
+export const getUserTransactionHistory = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+  }
+
+  try {
+    const { type, page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, parseInt(limit) || 20);
+
+    const where = { userId };
+    if (type && ['DEPOSIT', 'WITHDRAW', 'HOLD_ESCROW', 'RELEASE_ESCROW', 'PAYMENT', 'DISPUTE_PAY_BUYER_DEDUCT', 'DISPUTE_PAY_SELLER_ADD', 'REFUND'].includes(type)) {
+      where.type = type;
+    }
+
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        include: {
+          product: { select: { id: true, title: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum
+      }),
+      prisma.transaction.count({ where })
+    ]);
+
+    return res.json({
+      success: true,
+      data: transactions.map(t => ({
+        ...t,
+        amount: Number(t.amount)
+      })),
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Đã xảy ra lỗi khi lấy lịch sử giao dịch.'
+    });
+  }
+};
+
 // Submit KYC Seller request
 export const submitKyc = async (req, res) => {
   const userId = req.session?.userId;
@@ -360,10 +513,14 @@ export const adminApproveKyc = async (req, res) => {
     return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
   }
 
-  const { targetUserId, action } = req.body; // action: 'APPROVE' or 'REJECT'
+  const { targetUserId, action, rejectionReason } = req.body; // action: 'APPROVE' or 'REJECT'
 
   if (!targetUserId || !['APPROVE', 'REJECT'].includes(action)) {
     return res.status(400).json({ success: false, error: 'Thiếu thông tin targetUserId hoặc action hợp lệ.' });
+  }
+
+  if (action === 'REJECT' && !rejectionReason) {
+    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp lý do từ chối hồ sơ KYC.' });
   }
 
   try {
@@ -380,9 +537,44 @@ export const adminApproveKyc = async (req, res) => {
     const kycStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
     const isVerifiedSeller = action === 'APPROVE';
 
-    const updatedUser = await prisma.user.update({
-      where: { id: targetUserId },
-      data: { kycStatus, isVerifiedSeller }
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: targetUserId },
+        data: {
+          kycStatus,
+          isVerifiedSeller,
+          kycRejectionReason: action === 'REJECT' ? rejectionReason : null
+        }
+      });
+
+      // Gửi notification cho user
+      await tx.notification.create({
+        data: {
+          userId: targetUserId,
+          title: action === 'APPROVE'
+            ? 'Hồ sơ KYC đã được phê duyệt'
+            : 'Hồ sơ KYC đã bị từ chối',
+          message: action === 'APPROVE'
+            ? 'Chúc mừng! Hồ sơ KYC của bạn đã được phê duyệt. Bạn đã trở thành Người bán xác thực.'
+            : `Hồ sơ KYC của bạn đã bị từ chối với lý do: ${rejectionReason}. Vui lòng cập nhật thông tin chính xác và gửi lại.`,
+          type: 'SYSTEM'
+        }
+      });
+
+      // Tạo audit log
+      await tx.auditLog.create({
+        data: {
+          userId: adminId,
+          action: action === 'APPROVE' ? 'ADMIN_APPROVE_KYC' : 'ADMIN_REJECT_KYC',
+          target: targetUserId,
+          details: JSON.stringify({
+            email: targetUser.email,
+            rejectionReason: action === 'REJECT' ? rejectionReason : null
+          })
+        }
+      });
+
+      return user;
     });
 
     return res.status(200).json({
@@ -393,7 +585,8 @@ export const adminApproveKyc = async (req, res) => {
       data: {
         id: updatedUser.id,
         kycStatus: updatedUser.kycStatus,
-        isVerifiedSeller: updatedUser.isVerifiedSeller
+        isVerifiedSeller: updatedUser.isVerifiedSeller,
+        kycRejectionReason: updatedUser.kycRejectionReason
       }
     });
   } catch (error) {

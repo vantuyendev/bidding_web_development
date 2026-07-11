@@ -31,6 +31,11 @@ export default function WalletDashboard(props) {
   const [walletRequests, setWalletRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
 
+  // Transactions history state
+  const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'transactions'
+  const [transactions, setTransactions] = useState([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+
   const formatMoney = (val) => Number(val || 0).toLocaleString('vi-VN') + ' đ';
   
   const formatDate = (dateStr) => {
@@ -55,8 +60,47 @@ export default function WalletDashboard(props) {
     }
   };
 
+  const fetchTransactions = async () => {
+    setTransactionsLoading(true);
+    try {
+      const res = await fetch(getApiUrl('/api/users/transactions'), {
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTransactions(data.data);
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải lịch sử biến động số dư:', err);
+    } finally {
+      setTransactionsLoading(false);
+    }
+  };
+
+  const handleCancelRequest = async (requestId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy yêu cầu này?')) return;
+    try {
+      const res = await fetch(getApiUrl(`/api/users/wallet-requests/${requestId}`), {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message || 'Đã hủy yêu cầu thành công!');
+        fetchWalletRequests();
+        await fetchFullProfile();
+        await refreshUser();
+      } else {
+        alert(data.error || 'Hủy yêu cầu thất bại.');
+      }
+    } catch (err) {
+      alert('Lỗi kết nối máy chủ.');
+    }
+  };
+
   useEffect(() => {
     fetchWalletRequests();
+    fetchTransactions();
   }, [profileData]);
 
   const handleWalletSubmit = async (e) => {
@@ -130,6 +174,8 @@ export default function WalletDashboard(props) {
         return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
       case 'REJECTED':
         return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20';
+      case 'CANCELLED':
+        return 'bg-neutral-500/10 text-neutral-500 dark:text-neutral-400 border border-neutral-500/20';
       default:
         return 'bg-neutral-100 text-neutral-600';
     }
@@ -138,7 +184,29 @@ export default function WalletDashboard(props) {
   const getRequestStatusText = (status) => {
     if (status === 'PENDING') return 'Chờ duyệt';
     if (status === 'APPROVED') return 'Đã duyệt';
+    if (status === 'CANCELLED') return 'Đã hủy';
     return 'Bị từ chối';
+  };
+
+  const getTransactionTypeText = (type) => {
+    switch (type) {
+      case 'DEPOSIT': return '📥 Nạp tiền';
+      case 'WITHDRAW': return '📤 Rút tiền';
+      case 'HOLD_ESCROW': return '🔒 Tạm giữ đấu giá';
+      case 'RELEASE_ESCROW': return '🔓 Hoàn trả / Giải phóng cọc';
+      case 'PAYMENT': return '💸 Thanh toán mua hàng';
+      case 'DISPUTE_PAY_BUYER_DEDUCT': return '⚖️ Hoàn tiền (khiếu nại)';
+      case 'DISPUTE_PAY_SELLER_ADD': return '⚖️ Nhận tiền (khiếu nại)';
+      case 'REFUND': return '🔄 Hoàn trả cọc';
+      default: return type;
+    }
+  };
+
+  const getTransactionTypeColor = (type) => {
+    if (['DEPOSIT', 'RELEASE_ESCROW', 'DISPUTE_PAY_SELLER_ADD', 'REFUND'].includes(type)) {
+      return 'text-emerald-600 dark:text-emerald-400';
+    }
+    return 'text-rose-600 dark:text-rose-400';
   };
 
   if (!profileData) return null;
@@ -209,62 +277,165 @@ export default function WalletDashboard(props) {
         </div>
       </div>
 
-      {/* Wallet Requests History */}
-      <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-        <h3 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">📝 Lịch sử yêu cầu Nạp / Rút ví</h3>
-        
-        {requestsLoading ? (
-          <div className="text-center py-6 text-neutral-400">Đang tải lịch sử yêu cầu...</div>
-        ) : walletRequests.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl text-neutral-400">
-            Chưa có yêu cầu nạp hoặc rút ví nào được tạo.
+      {/* Wallet History Section */}
+      <div className="space-y-6 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+        {/* Tab Header Selector */}
+        <div className="flex border-b border-neutral-100 dark:border-neutral-800 gap-6 select-none">
+          <button
+            type="button"
+            onClick={() => setActiveTab('requests')}
+            className={`pb-3 text-xs font-bold transition-all relative cursor-pointer ${
+              activeTab === 'requests'
+                ? 'text-amber-500 font-extrabold'
+                : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-250'
+            }`}
+          >
+            📥 Yêu cầu Nạp / Rút
+            {activeTab === 'requests' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-full" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('transactions')}
+            className={`pb-3 text-xs font-bold transition-all relative cursor-pointer ${
+              activeTab === 'transactions'
+                ? 'text-amber-500 font-extrabold'
+                : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-250'
+            }`}
+          >
+            🔄 Biến động số dư ví
+            {activeTab === 'transactions' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-full" />
+            )}
+          </button>
+        </div>
+
+        {activeTab === 'requests' ? (
+          /* TAB 1: WALLET REQUESTS LIST */
+          <div className="space-y-4">
+            {requestsLoading ? (
+              <div className="text-center py-6 text-neutral-400 animate-pulse">Đang tải lịch sử yêu cầu...</div>
+            ) : walletRequests.length === 0 ? (
+              <div className="text-center py-10 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl text-neutral-400">
+                Chưa có yêu cầu nạp hoặc rút ví nào được tạo.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-neutral-100 dark:border-neutral-800 text-neutral-400 font-semibold">
+                      <th className="pb-3 pr-4">Thời gian</th>
+                      <th className="pb-3 px-4">Loại yêu cầu</th>
+                      <th className="pb-3 px-4 text-right">Số tiền</th>
+                      <th className="pb-3 px-4 text-center">Trạng thái</th>
+                      <th className="pb-3 px-4">Ghi chú đối soát / Phản hồi</th>
+                      <th className="pb-3 pl-4 text-center">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
+                    {walletRequests.map((req) => (
+                      <tr key={req.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-all duration-300">
+                        <td className="py-3.5 pr-4 text-neutral-500 font-mono">
+                          {formatDate(req.createdAt)}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-bold">
+                              {req.type === 'DEPOSIT' ? '📥 Nạp tiền' : '📤 Rút tiền'}
+                            </span>
+                            {req.type === 'DEPOSIT' && (
+                              <span className="font-mono text-[9px] text-neutral-400">Ref: {req.transferNote}</span>
+                            )}
+                            {req.type === 'WITHDRAW' && (
+                              <span className="text-[9px] text-neutral-400">{req.bankName} - {req.bankAccount}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-extrabold text-neutral-800 dark:text-neutral-200">
+                          {formatMoney(req.amount)}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${getRequestStatusBadge(req.status)}`}>
+                            {getRequestStatusText(req.status)}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-neutral-500 max-w-xs truncate">
+                          {req.adminNote || (req.status === 'PENDING' ? 'Đang chờ Admin xử lý...' : 'N/A')}
+                        </td>
+                        <td className="py-3.5 pl-4 text-center">
+                          {req.status === 'PENDING' && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelRequest(req.id)}
+                              className="px-2 py-1 text-[9px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-500/30 hover:border-transparent rounded-lg transition-all cursor-pointer"
+                            >
+                              Hủy yêu cầu
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-neutral-100 dark:border-neutral-800 text-neutral-400 font-semibold">
-                  <th className="pb-3 pr-4">Thời gian</th>
-                  <th className="pb-3 px-4">Loại yêu cầu</th>
-                  <th className="pb-3 px-4 text-right">Số tiền</th>
-                  <th className="pb-3 px-4 text-center">Trạng thái</th>
-                  <th className="pb-3 pl-4">Ghi chú đối soát / Phản hồi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
-                {walletRequests.map((req) => (
-                  <tr key={req.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-all duration-300">
-                    <td className="py-3.5 pr-4 text-neutral-500 font-mono">
-                      {formatDate(req.createdAt)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-bold">
-                          {req.type === 'DEPOSIT' ? '📥 Nạp tiền' : '📤 Rút tiền'}
-                        </span>
-                        {req.type === 'DEPOSIT' && (
-                          <span className="font-mono text-[9px] text-neutral-400">Ref: {req.transferNote}</span>
-                        )}
-                        {req.type === 'WITHDRAW' && (
-                          <span className="text-[9px] text-neutral-400">{req.bankName} - {req.bankAccount}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-right font-extrabold text-neutral-800 dark:text-neutral-200">
-                      {formatMoney(req.amount)}
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${getRequestStatusBadge(req.status)}`}>
-                        {getRequestStatusText(req.status)}
-                      </span>
-                    </td>
-                    <td className="py-3.5 pl-4 text-neutral-500 max-w-xs truncate">
-                      {req.adminNote || (req.status === 'PENDING' ? 'Đang chờ Admin xử lý giao dịch...' : 'N/A')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          /* TAB 2: TRANSACTIONS LIST */
+          <div className="space-y-4">
+            {transactionsLoading ? (
+              <div className="text-center py-6 text-neutral-400 animate-pulse">Đang tải biến động số dư...</div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center py-10 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl text-neutral-400">
+                Chưa có giao dịch ví nào phát sinh.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-neutral-100 dark:border-neutral-800 text-neutral-400 font-semibold">
+                      <th className="pb-3 pr-4">Thời gian</th>
+                      <th className="pb-3 px-4">Loại giao dịch</th>
+                      <th className="pb-3 px-4 text-right">Số tiền</th>
+                      <th className="pb-3 px-4 text-center">Trạng thái</th>
+                      <th className="pb-3 pl-4">Thông tin sản phẩm</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 dark:divide-neutral-850">
+                    {transactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-950/20 transition-all duration-300">
+                        <td className="py-3.5 pr-4 text-neutral-500 font-mono">
+                          {formatDate(tx.createdAt)}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold">
+                            {getTransactionTypeText(tx.type)}
+                          </span>
+                        </td>
+                        <td className={`py-3.5 px-4 text-right font-extrabold ${getTransactionTypeColor(tx.type)}`}>
+                          {['DEPOSIT', 'RELEASE_ESCROW', 'DISPUTE_PAY_SELLER_ADD', 'REFUND'].includes(tx.type) ? '+' : '-'} {formatMoney(tx.amount)}
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            Thành công
+                          </span>
+                        </td>
+                        <td className="py-3.5 pl-4 text-neutral-500 max-w-xs truncate">
+                          {tx.product ? (
+                            <Link to={`/products/${tx.productId}`} className="hover:text-amber-500 no-underline font-semibold">
+                              {tx.product.title}
+                            </Link>
+                          ) : (
+                            'N/A'
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

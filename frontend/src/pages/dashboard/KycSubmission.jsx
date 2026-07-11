@@ -8,13 +8,22 @@ export default function KycSubmission(props) {
   const context = useOutletContext() || {};
   const profileData = props.profileData || context.profileData;
   const fetchFullProfile = props.fetchFullProfile || context.fetchFullProfile;
-  const [idCardNumber, setIdCardNumber] = useState('');
-  const [idCardImageUrl, setIdCardImageUrl] = useState('');
-  const [shopAddress, setShopAddress] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [idCardNumber, setIdCardNumber] = useState(profileData?.idCardNumber || '');
+  const [idCardImageUrl, setIdCardImageUrl] = useState(profileData?.idCardImageUrl || '');
+  const [shopAddress, setShopAddress] = useState(profileData?.shopAddress || '');
+  const [phoneNumber, setPhoneNumber] = useState(profileData?.phoneNumber || '');
   const [kycSubmitError, setKycSubmitError] = useState('');
   const [kycSubmitSuccess, setKycSubmitSuccess] = useState('');
   const [kycSubmitting, setKycSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (profileData) {
+      setIdCardNumber(profileData.idCardNumber || '');
+      setIdCardImageUrl(profileData.idCardImageUrl || '');
+      setShopAddress(profileData.shopAddress || '');
+      setPhoneNumber(profileData.phoneNumber || '');
+    }
+  }, [profileData]);
 
   const handleSubmitKyc = async (e) => {
     e.preventDefault();
@@ -74,6 +83,11 @@ export default function KycSubmission(props) {
           <p className="font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2">
             <span>⚠️</span> Hồ sơ xác thực đã bị từ chối
           </p>
+          {profileData.kycRejectionReason && (
+            <p className="font-semibold text-rose-700 dark:text-rose-400">
+              Lý do từ chối: {profileData.kycRejectionReason}
+            </p>
+          )}
           <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
             Vui lòng cung cấp lại thông tin cá nhân chính xác hơn để chúng tôi tiến hành kiểm duyệt lại.
           </p>

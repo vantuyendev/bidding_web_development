@@ -5,6 +5,38 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 
+const KycCountdown = ({ rejectedAt }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const limit = new Date(rejectedAt).getTime() + 6 * 60 * 60 * 1000;
+      const diff = limit - Date.now();
+
+      if (diff <= 0) {
+        setTimeLeft('Đã hết hạn chỉnh sửa');
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeLeft(`Còn lại: ${hours}g ${minutes}p ${seconds}s`);
+    };
+
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, [rejectedAt]);
+
+  return (
+    <span className="font-mono bg-rose-500/20 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded-md font-extrabold text-[10px] ml-1.5">
+      {timeLeft}
+    </span>
+  );
+};
+
 export default function SellerListings(props) {
   const context = useOutletContext() || {};
   const profileData = props.profileData || context.profileData;
@@ -253,9 +285,12 @@ export default function SellerListings(props) {
                 {/* Show rejection reason warning */}
                 {prod.approvalStatus === 'REJECTED' && prod.rejectionReason && (
                   <div className="p-3.5 bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 rounded-xl leading-normal">
-                    <p className="font-bold text-[10px] uppercase tracking-wider mb-1">⚠️ Lý do bị Admin từ chối duyệt:</p>
+                    <p className="font-bold text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <span>⚠️ Lý do bị Admin từ chối duyệt:</span>
+                      {prod.rejectedAt && <KycCountdown rejectedAt={prod.rejectedAt} />}
+                    </p>
                     <p className="italic">"{prod.rejectionReason}"</p>
-                    <p className="text-[9px] text-neutral-400 mt-1.5 font-semibold">Vui lòng chỉnh sửa lại trong vòng 6 giờ kể từ thời điểm bị từ chối để tránh bị xóa vĩnh viễn.</p>
+                    <p className="text-[9px] text-neutral-400 mt-1.5 font-semibold">Vui lòng chỉnh sửa lại trong thời gian quy định để tránh bị xóa vĩnh viễn.</p>
                   </div>
                 )}
 

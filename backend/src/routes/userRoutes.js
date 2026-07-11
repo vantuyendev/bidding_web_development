@@ -7,9 +7,10 @@ import {
   withdrawFunds,
   getUserWalletRequests,
   submitKyc,
-  adminGetPendingKyc,
-  adminApproveKyc,
-  getPublicUserProfile
+  getPublicUserProfile,
+  cancelWalletRequest,
+  getWonAuctions,
+  getUserTransactionHistory
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -29,12 +30,17 @@ router.post('/withdraw', requireAuth, withdrawFunds);
 // GET /wallet-requests - Get user's wallet request history (protected)
 router.get('/wallet-requests', requireAuth, getUserWalletRequests);
 
+// DELETE /wallet-requests/:id - Cancel a pending wallet request (protected)
+router.delete('/wallet-requests/:id', requireAuth, cancelWalletRequest);
+
+// GET /won-auctions - Get user's won auctions (protected)
+router.get('/won-auctions', requireAuth, getWonAuctions);
+
+// GET /transactions - Get user's transaction history (protected)
+router.get('/transactions', requireAuth, getUserTransactionHistory);
+
 // POST /submit-kyc - Submit KYC application for seller upgrade (protected)
 router.post('/submit-kyc', requireAuth, submitKyc);
-
-// Legacy admin KYC routes (kept for backwards compatibility, also available at /api/admin/*)
-router.get('/admin/kyc-pending', requireAuth, adminGetPendingKyc);
-router.post('/admin/approve-kyc', requireAuth, adminApproveKyc);
 
 // GET /:id - Fetch public profile and reviews of a user (seller)
 router.get('/:id', getPublicUserProfile);

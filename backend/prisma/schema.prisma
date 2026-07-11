@@ -31,6 +31,7 @@ model User {
   bannedAt         DateTime?    @map("banned_at")
   // Admin role — chỉ được gán thủ công hoặc qua seed script
   isAdmin          Boolean      @default(false) @map("is_admin")
+  kycRejectionReason String?      @map("kyc_rejection_reason")
 
   bids            Bid[]
   transactions    Transaction[]
@@ -402,6 +403,7 @@ enum WalletRequestStatus {
   PENDING
   APPROVED
   REJECTED
+  CANCELLED
 }
 
 model OrderMessage {
