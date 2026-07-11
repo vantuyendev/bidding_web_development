@@ -8,7 +8,8 @@ export const getProducts = async (req, res, next) => {
     const products = await prisma.product.findMany({
       where: {
         approvalStatus: 'APPROVED',
-        status: { in: ['ACTIVE', 'PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED'] },
+        status: 'ACTIVE',
+        endTime: { gt: new Date() },
         deletedAt: null
       },
       orderBy: { startTime: 'desc' },
@@ -208,6 +209,14 @@ export const searchProducts = async (req, res, next) => {
     const { q, query, categorySlug, categoryId, page = 1, limit = 10 } = req.query;
 
     const andConditions = [];
+
+    // Only return approved and active products that haven't ended yet
+    andConditions.push({
+      approvalStatus: 'APPROVED',
+      status: 'ACTIVE',
+      endTime: { gt: new Date() },
+      deletedAt: null
+    });
 
     // 1. Text Search (title / description)
     const searchText = query || q;
