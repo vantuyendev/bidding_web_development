@@ -28,7 +28,7 @@ CREATE TABLE "users" (
     "email" TEXT NOT NULL,
     "password_hash" TEXT NOT NULL,
     "name" TEXT,
-    "balance" DECIMAL(12,2) NOT NULL DEFAULT 10000000.00,
+    "balance" DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     "wallet_balance" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "frozen_balance" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "reputation_score" DOUBLE PRECISION NOT NULL DEFAULT 5.0,

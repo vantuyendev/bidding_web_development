@@ -13,7 +13,7 @@ model User {
   email           String        @unique
   passwordHash    String        @map("password_hash")
   name            String?       // Tên hiển thị của người dùng
-  balance         Decimal       @default(10000000.00) @db.Decimal(12, 2)
+  balance         Decimal       @default(0.00) @db.Decimal(12, 2)
   walletBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("wallet_balance")
   frozenBalance   Decimal       @default(0) @db.Decimal(12, 2) @map("frozen_balance")
   reputationScore Float         @default(5.0) @map("reputation_score")
