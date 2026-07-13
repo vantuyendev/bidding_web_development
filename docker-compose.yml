@@ -10,8 +10,11 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:5000
-    restart: always
-
+    volumes:
+      - .:/workspace:cached
+    working_dir: /workspace
+    command: sleep infinity
+    restart: unless-stopped
   # Cấu hình cho Backend
   backend:
     build:
@@ -21,10 +24,13 @@ services:
       - "5000:5000"
     environment:
       - DATABASE_URL=postgresql://chatapp_user:secret_password@postgres_db:5432/auction_db
-      - NODE_ENV=production
+      - NODE_ENV=development
+    volumes:
+      - .:/workspace:cached
+    working_dir: /workspace/backend
     depends_on:
       - postgres_db
-    restart: always
+    restart: unless-stopped
 
   # Database chạy thử nghiệm ở local (Tùy chọn)
   postgres_db:
@@ -37,7 +43,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+
+
+
