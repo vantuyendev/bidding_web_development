@@ -32,6 +32,4 @@ frontend_backup/
 # Agent skills
 .agents/
 skills-lock.json
-
 .mcp.json
-console.log
