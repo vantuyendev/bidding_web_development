@@ -97,7 +97,13 @@ export const register = async (req, res) => {
       data: {
         id: user.id,
         email: user.email,
-        balance: Number(user.balance)
+        balance: Number(user.balance),
+        walletBalance: Number(user.walletBalance),
+        frozenBalance: Number(user.frozenBalance),
+        isBanned: user.isBanned,
+        isVerifiedSeller: user.isVerifiedSeller,
+        kycStatus: user.kycStatus,
+        isAdmin: user.isAdmin
       }
     });
   } catch (error) {

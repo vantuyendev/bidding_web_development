@@ -88,7 +88,7 @@ export default function Header() {
                   Số dư ví
                 </span>
                 <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                  {user.balance.toLocaleString('vi-VN')} đ
+                  {Number(user.walletBalance ?? 0).toLocaleString('vi-VN')} đ
                 </span>
               </div>
 
@@ -99,7 +99,7 @@ export default function Header() {
                     {user.email}
                   </span>
                   <span className="sm:hidden text-[10px] font-bold text-amber-500">
-                    {user.balance.toLocaleString('vi-VN')}đ
+                    {Number(user.walletBalance ?? 0).toLocaleString('vi-VN')}đ
                   </span>
                 </div>
                 <button

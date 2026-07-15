@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, Link } from 'react-router-dom';
 import { getApiUrl } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';

@@ -538,7 +538,7 @@ export default function Navbar() {
                     <div style={{ padding: '10px 16px', borderBottom: '1px solid hsl(0,0%,93%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 11, color: 'hsl(12,8%,55%)' }}>Wallet balance</span>
                       <span style={{ fontSize: 13, fontWeight: 800, color: 'hsl(12,14%,11%)', fontFamily: 'var(--font-display)' }}>
-                        {Number(user.balance ?? 0).toLocaleString('vi-VN')} đ
+                        {Number(user.walletBalance ?? 0).toLocaleString('vi-VN')} đ
                       </span>
                     </div>
 

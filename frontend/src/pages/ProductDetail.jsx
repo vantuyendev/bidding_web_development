@@ -576,7 +576,7 @@ export default function ProductDetail() {
   if (loading) return <DetailSkeleton />;
   if (error || !product) return <DetailError error={error} />;
 
-  const isEnded = ['ENDED', 'COMPLETED', 'PAID', 'SHIPPED', 'CANCELLED', 'UNSOLD'].includes(product.status)
+  const isEnded = ['ENDED', 'PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'DISPUTED', 'CANCELLED', 'UNSOLD'].includes(product.status)
     || new Date(product.endTime).getTime() <= Date.now();
   const isActive = !isEnded && product.status === 'ACTIVE' && (!product.startTime || new Date(product.startTime).getTime() <= Date.now());
   const isUpcoming = !isEnded && !isActive && new Date(product.startTime).getTime() > Date.now();
@@ -1340,7 +1340,7 @@ export default function ProductDetail() {
               {/* Winner / Seller actions */}
               {isEnded && (
                 <div style={{ padding: '16px 20px' }}>
-                  {isWinner && product.status === 'ENDED' && (
+                  {isWinner && product.status === 'PENDING_PAYMENT' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <button id="checkout-btn" onClick={() => setCheckoutModalOpen(true)} className="bid-btn-primary">
                         Complete Purchase
