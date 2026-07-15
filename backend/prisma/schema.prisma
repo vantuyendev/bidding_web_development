@@ -47,6 +47,7 @@ model User {
   supportTickets  SupportTicket[]
   supportMessages SupportMessage[]
   orderMessages   OrderMessage[] @relation("UserOrderMessages")
+  qnaMessages     ProductQnaMessage[] @relation("UserQnaMessages")
   walletRequests  WalletRequest[] @relation("UserWalletRequests")
   resolvedRequests WalletRequest[] @relation("AdminResolvedRequests")
 
@@ -99,6 +100,7 @@ model Product {
   watchlist     Watchlist[]        @relation("ProductWatchlist")
   transactions  Transaction[]
   orderMessages OrderMessage[]     @relation("ProductOrderMessages")
+  qnaMessages   ProductQnaMessage[] @relation("ProductQnaMessages")
 
   @@index([status])
   @@index([approvalStatus])
@@ -419,4 +421,19 @@ model OrderMessage {
   @@index([productId])
   @@index([senderId])
   @@map("order_messages")
+}
+
+model ProductQnaMessage {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  senderId  String   @map("sender_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product   Product  @relation("ProductQnaMessages", fields: [productId], references: [id], onDelete: Cascade)
+  sender    User     @relation("UserQnaMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([senderId])
+  @@map("product_qna_messages")
 }

@@ -106,6 +106,12 @@ export default function ProductDetail() {
   const [chatSubmitting, setChatSubmitting] = useState(false);
   const [chatError, setChatError]         = useState('');
 
+  // Q&A states
+  const [qnaMessages, setQnaMessages]     = useState([]);
+  const [qnaInput, setqnaInput]           = useState('');
+  const [qnaSubmitting, setqnaSubmitting] = useState(false);
+  const [qnaError, setqnaError]           = useState('');
+
   const bidPanelRef = useRef(null);
   const chatContainerRef = useRef(null);
 
@@ -195,6 +201,13 @@ export default function ProductDetail() {
             });
             return;
           }
+          if (data.qnaMessage) {
+            setQnaMessages(prev => {
+              if (prev.some(m => m.id === data.qnaMessage.id)) return prev;
+              return [...prev, data.qnaMessage];
+            });
+            return;
+          }
           setProduct(prev => {
             if (!prev) return null;
             const newPrice = Number(data.currentPrice);
@@ -251,6 +264,23 @@ export default function ProductDetail() {
     }
     loadChat();
   }, [id, user, product?.status, product?.winnerId, product?.sellerId]);
+
+  // Fetch Q&A history
+  useEffect(() => {
+    if (!id) return;
+    async function loadQna() {
+      try {
+        const res = await fetch(getApiUrl(`/api/products/${id}/qna`), { credentials: 'include' });
+        const d = await res.json();
+        if (d.success) {
+          setQnaMessages(d.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to load Q&A history:', err);
+      }
+    }
+    loadQna();
+  }, [id]);
 
   // Scroll to bottom when new messages arrive or tab changes to chat
   useEffect(() => {
@@ -512,6 +542,36 @@ export default function ProductDetail() {
     }
   };
 
+  const handleSendQnaMessage = async (e) => {
+    e.preventDefault();
+    if (!qnaInput.trim() || qnaSubmitting) return;
+
+    setqnaSubmitting(true);
+    setqnaError('');
+    try {
+      const res = await fetch(getApiUrl(`/api/products/${id}/qna`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: qnaInput.trim() }),
+        credentials: 'include'
+      });
+      const d = await res.json();
+      if (d.success && d.data) {
+        setqnaInput('');
+        setQnaMessages(prev => {
+          if (prev.some(m => m.id === d.data.id)) return prev;
+          return [...prev, d.data];
+        });
+      } else {
+        setqnaError(d.error || 'Gửi câu hỏi thất bại.');
+      }
+    } catch {
+      setqnaError('Lỗi kết nối máy chủ.');
+    } finally {
+      setqnaSubmitting(false);
+    }
+  };
+
   /* ── Derived state ── */
   if (loading) return <DetailSkeleton />;
   if (error || !product) return <DetailError error={error} />;
@@ -601,6 +661,9 @@ export default function ProductDetail() {
                     { key: 'shipping', label: 'Shipping' },
                     { key: 'history', label: `Bids (${bids.length})` },
                   ];
+                  if (['ACTIVE', 'DRAFT'].includes(product.status)) {
+                    tabsList.push({ key: 'qna', label: `❓ Hỏi đáp (${qnaMessages.length})` });
+                  }
                   const isOrderState = ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'DISPUTED'].includes(product.status);
                   if ((isWinner || isSeller) && isOrderState) {
                     tabsList.push({ key: 'chat', label: `💬 Trò chuyện (${chatMessages.length})` });
@@ -860,6 +923,180 @@ export default function ProductDetail() {
                     {chatError && (
                       <div style={{ fontSize: 11, color: 'hsl(3,83%,40%)', marginTop: 6, fontWeight: 650 }}>
                         ⚠️ {chatError}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Q&A / Hỏi đáp */}
+                {activeTab === 'qna' && (
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>❓</span> Hỏi đáp về sản phẩm
+                    </h3>
+                    <p style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginBottom: 16 }}>
+                      Người mua có thể đặt câu hỏi trực tiếp cho Người bán về tình trạng và thông tin sản phẩm.
+                    </p>
+
+                    {/* Messages Container */}
+                    <div 
+                      style={{ 
+                        border: '1px solid hsl(0,0%,90%)', 
+                        borderRadius: 8, 
+                        background: 'hsl(40,20%,99%)', 
+                        height: 350, 
+                        overflowY: 'auto', 
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        marginBottom: 14
+                      }}
+                    >
+                      {qnaMessages.length === 0 ? (
+                        <div style={{ margin: 'auto', fontSize: 12, color: 'hsl(12,8%,60%)', textAlign: 'center' }}>
+                          Chưa có câu hỏi nào. Hãy đặt câu hỏi đầu tiên!
+                        </div>
+                      ) : (
+                        qnaMessages.map(msg => {
+                          const isMsgSeller = msg.senderId === product.sellerId;
+                          const isMe = msg.senderId === user?.id;
+                          return (
+                            <div 
+                              key={msg.id} 
+                              style={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                alignSelf: isMe ? 'flex-end' : 'flex-start',
+                                maxWidth: '75%'
+                              }}
+                            >
+                              <div style={{ 
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                fontSize: 10, 
+                                color: 'hsl(12,8%,55%)', 
+                                marginBottom: 2, 
+                                alignSelf: isMe ? 'flex-end' : 'flex-start',
+                                fontWeight: 650
+                              }}>
+                                <span>{isMe ? 'Bạn' : (msg.sender?.name || msg.sender?.email || 'Người dùng')}</span>
+                                {isMsgSeller && (
+                                  <span style={{ 
+                                    background: 'hsl(35, 95%, 45%)', 
+                                    color: 'white', 
+                                    fontSize: 8, 
+                                    padding: '1px 5px', 
+                                    borderRadius: 4, 
+                                    fontWeight: 700 
+                                  }}>
+                                    Người bán
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ 
+                                padding: '10px 14px', 
+                                borderRadius: 12, 
+                                borderTopRightRadius: isMe ? 2 : 12,
+                                borderTopLeftRadius: isMe ? 12 : 2,
+                                background: isMe ? 'hsl(196,100%,36%)' : isMsgSeller ? 'hsl(35, 90%, 95%)' : 'white', 
+                                color: isMe ? 'white' : 'hsl(12,14%,11%)',
+                                border: isMe ? 'none' : isMsgSeller ? '1px solid hsl(35, 90%, 85%)' : '1px solid hsl(0,0%,88%)',
+                                fontSize: 12.5,
+                                lineHeight: 1.5,
+                                wordBreak: 'break-word',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                              }}>
+                                {msg.message}
+                              </div>
+                              <div style={{ 
+                                fontSize: 9, 
+                                color: 'hsl(12,8%,65%)', 
+                                marginTop: 2, 
+                                alignSelf: isMe ? 'flex-end' : 'flex-start' 
+                              }}>
+                                {fmtDate(msg.createdAt)}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Q&A Input or Login prompt */}
+                    {!user ? (
+                      <div style={{ 
+                        padding: '16px', 
+                        background: 'hsl(196,100%,97%)', 
+                        borderRadius: 8, 
+                        border: '1px solid hsl(196,100%,90%)',
+                        textAlign: 'center'
+                      }}>
+                        <p style={{ fontSize: 12, color: 'hsl(196,100%,25%)', marginBottom: 10, fontWeight: 600 }}>
+                          Bạn cần đăng nhập để đặt câu hỏi hoặc trả lời.
+                        </p>
+                        <Link
+                          to="/login"
+                          style={{
+                            display: 'inline-block',
+                            background: 'hsl(196,100%,36%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '8px 20px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          Đăng nhập ngay
+                        </Link>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSendQnaMessage} style={{ display: 'flex', gap: 8 }}>
+                        <div style={{ flex: 1, position: 'relative' }}>
+                          <input
+                            type="text"
+                            value={qnaInput}
+                            onChange={e => setqnaInput(e.target.value)}
+                            placeholder="Nhập câu hỏi của bạn hoặc trả lời..."
+                            style={{ 
+                              width: '100%', 
+                              padding: '10px 12px', 
+                              border: '2px solid hsl(0,0%,88%)', 
+                              borderRadius: 6, 
+                              fontSize: 12.5,
+                              outline: 'none'
+                            }}
+                            disabled={qnaSubmitting}
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={qnaSubmitting || !qnaInput.trim()}
+                          style={{
+                            background: 'hsl(196,100%,36%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0 20px',
+                            borderRadius: 6,
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            opacity: (qnaSubmitting || !qnaInput.trim()) ? 0.6 : 1,
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          {qnaSubmitting ? 'Đang gửi...' : 'Gửi'}
+                        </button>
+                      </form>
+                    )}
+                    {qnaError && (
+                      <div style={{ fontSize: 11, color: 'hsl(3,83%,40%)', marginTop: 6, fontWeight: 650 }}>
+                        ⚠️ {qnaError}
                       </div>
                     )}
                   </div>

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProductDetail, getProducts, getCategoryFilters, searchProducts, createProduct, getProductBids, updateProduct, getSellerProducts } from '../controllers/productController.js';
+import { getProductDetail, getProducts, getCategoryFilters, searchProducts, createProduct, getProductBids, updateProduct, getSellerProducts, getProductQna, createProductQna } from '../controllers/productController.js';
 import { requireAuth } from '../middlewares/authMiddleware.js';
 import { streamProductEvents } from '../controllers/streamController.js';
 
@@ -41,6 +41,12 @@ router.put('/:id', requireAuth, updateProduct);
 
 // GET /api/products/:id/bids - Fetch product bids history
 router.get('/:id/bids', getProductBids);
+
+// GET /api/products/:id/qna - Fetch Q&A history
+router.get('/:id/qna', getProductQna);
+
+// POST /api/products/:id/qna - Post a new Q&A message (requires authentication)
+router.post('/:id/qna', requireAuth, createProductQna);
 
 // GET /api/products/:id/live - Connect to SSE event stream for real-time product updates
 router.get('/:id/live', streamProductEvents);

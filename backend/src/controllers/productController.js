@@ -1,6 +1,7 @@
 import prisma from '../models/db.js';
 import ApiError from '../utils/ApiError.js';
 import { slugify } from '../utils/slugify.js';
+import productEvents from '../utils/eventEmitter.js';
 
 // GET /api/products - Get all products in the database (with query optimization)
 export const getProducts = async (req, res, next) => {
@@ -758,6 +759,100 @@ export const getProductBids = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: formattedBids
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// GET /api/products/:id/qna - Get all Q&A messages for a product
+export const getProductQna = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const productExists = await prisma.product.findUnique({
+      where: { id },
+      select: { id: true }
+    });
+
+    if (!productExists) {
+      throw new ApiError(404, "Không tìm thấy sản phẩm.");
+    }
+
+    const messages = await prisma.productQnaMessage.findMany({
+      where: { productId: id },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: messages
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// POST /api/products/:id/qna - Post a new Q&A message
+export const createProductQna = async (req, res, next) => {
+  const { id } = req.params;
+  const { message } = req.body;
+  const userId = req.session?.userId;
+
+  if (!userId) {
+    throw new ApiError(401, "Bạn cần đăng nhập để gửi câu hỏi.");
+  }
+
+  if (!message || message.trim() === '') {
+    throw new ApiError(400, "Nội dung câu hỏi không được để trống.");
+  }
+
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id }
+    });
+
+    if (!product) {
+      throw new ApiError(404, "Không tìm thấy sản phẩm.");
+    }
+
+    // Constraint: only ACTIVE or DRAFT products can receive Q&A
+    if (!['ACTIVE', 'DRAFT'].includes(product.status)) {
+      throw new ApiError(400, "Phiên đấu giá đã kết thúc hoặc không còn hoạt động. Không thể gửi câu hỏi/trả lời.");
+    }
+
+    const newMessage = await prisma.productQnaMessage.create({
+      data: {
+        productId: id,
+        senderId: userId,
+        message: message.trim()
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    // Broadcast update via SSE
+    productEvents.emit(`update-${id}`, { qnaMessage: newMessage });
+
+    return res.status(201).json({
+      success: true,
+      data: newMessage
     });
   } catch (error) {
     return next(error);
