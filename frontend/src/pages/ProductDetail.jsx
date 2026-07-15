@@ -576,7 +576,7 @@ export default function ProductDetail() {
   if (loading) return <DetailSkeleton />;
   if (error || !product) return <DetailError error={error} />;
 
-  const isEnded = ['ENDED', 'PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'DISPUTED', 'CANCELLED', 'UNSOLD'].includes(product.status)
+  const isEnded = ['ENDED', 'COMPLETED', 'PAID', 'SHIPPED', 'CANCELLED', 'UNSOLD', 'PENDING_PAYMENT', 'DISPUTED'].includes(product.status)
     || new Date(product.endTime).getTime() <= Date.now();
   const isActive = !isEnded && product.status === 'ACTIVE' && (!product.startTime || new Date(product.startTime).getTime() <= Date.now());
   const isUpcoming = !isEnded && !isActive && new Date(product.startTime).getTime() > Date.now();
@@ -1340,10 +1340,10 @@ export default function ProductDetail() {
               {/* Winner / Seller actions */}
               {isEnded && (
                 <div style={{ padding: '16px 20px' }}>
-                  {isWinner && product.status === 'PENDING_PAYMENT' && (
+                  {isWinner && ['PENDING_PAYMENT', 'ENDED'].includes(product.status) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <button id="checkout-btn" onClick={() => setCheckoutModalOpen(true)} className="bid-btn-primary">
-                        Complete Purchase
+                        Thanh toán ngay (90% + Phí ship) 💳
                       </button>
                       <button
                         id="open-dispute-btn"
@@ -1361,13 +1361,27 @@ export default function ProductDetail() {
                   )}
                   {isWinner && product.status === 'PAID' && (
                     <div style={{ fontSize: 13, color: 'hsl(152,72%,40%)', fontWeight: 700, textAlign: 'center', padding: 8 }}>
-                      ✓ Payment confirmed — awaiting shipment
+                      ✓ Đã thanh toán (90% + Phí ship) — Chờ người bán giao hàng
                     </div>
                   )}
                   {isWinner && product.status === 'SHIPPED' && (
-                    <button id="confirm-receive-btn" onClick={handleReceive} className="bid-btn-primary">
-                      Confirm Item Received
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <button id="confirm-receive-btn" onClick={handleReceive} className="bid-btn-primary">
+                        Xác nhận đã nhận hàng
+                      </button>
+                      <button
+                        id="open-dispute-btn"
+                        onClick={() => setDisputeModalOpen(true)}
+                        style={{
+                          width: '100%', padding: '10px', border: '1px solid hsl(3,83%,60%)',
+                          borderRadius: 4, background: 'white', color: 'hsl(3,83%,60%)',
+                          fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
+                          letterSpacing: '0.04em', textTransform: 'uppercase', transition: 'all 0.15s',
+                        }}
+                      >
+                        ⚖️ Khiếu nại sản phẩm
+                      </button>
+                    </div>
                   )}
                   {isWinner && product.status === 'COMPLETED' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
@@ -1399,12 +1413,37 @@ export default function ProductDetail() {
                       )}
                     </div>
                   )}
+                  {isSeller && product.status === 'PENDING_PAYMENT' && (
+                    <div style={{ fontSize: 13, color: 'hsl(35, 95%, 45%)', fontWeight: 700, textAlign: 'center', padding: 8 }}>
+                      Chờ người mua thanh toán (90% còn lại + Phí ship)
+                    </div>
+                  )}
                   {isSeller && product.status === 'PAID' && (
                     <button id="confirm-ship-btn" onClick={handleShip} className="bid-btn-primary">
-                      Confirm Shipment
+                      Xác nhận gửi hàng cho đơn vị vận chuyển
                     </button>
                   )}
-                  {!isWinner && !isSeller && (
+                  {isSeller && product.status === 'SHIPPED' && (
+                    <div style={{ fontSize: 13, color: 'hsl(196,100%,36%)', fontWeight: 700, textAlign: 'center', padding: 8 }}>
+                      Đang vận chuyển — Chờ người mua xác nhận đã nhận hàng
+                    </div>
+                  )}
+                  {isSeller && product.status === 'COMPLETED' && (
+                    <div style={{ fontSize: 13, color: 'hsl(152,72%,40%)', fontWeight: 700, textAlign: 'center', padding: 8 }}>
+                      ✓ Đơn hàng hoàn tất. Tiền ký quỹ đã được giải ngân vào ví của bạn.
+                    </div>
+                  )}
+                  {product.status === 'DISPUTED' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+                      <div style={{ fontSize: 13, color: 'hsl(3,83%,40%)', fontWeight: 750, textAlign: 'center', padding: 4 }}>
+                        ⚖️ Đơn hàng đang có tranh chấp / khiếu nại
+                      </div>
+                      <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', textAlign: 'center' }}>
+                        Ban quản trị đang xem xét bằng chứng và xử lý. Vui lòng thảo luận trong mục khiếu nại hoặc qua khung chat bên dưới.
+                      </div>
+                    </div>
+                  )}
+                  {!isWinner && !isSeller && product.status !== 'DISPUTED' && (
                     <div style={{ fontSize: 13, color: 'hsl(12,8%,55%)', textAlign: 'center', padding: 8 }}>
                       This auction has ended.
                     </div>

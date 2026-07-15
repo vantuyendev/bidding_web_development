@@ -37,8 +37,8 @@ export const createDisputeTicket = async (req, res) => {
       }
       const product = products[0];
 
-      if (product.status !== 'ENDED') {
-        throw new Error("Sản phẩm chưa kết thúc đấu giá hoặc đã bị khiếu nại/xử lý.");
+      if (!['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'ENDED'].includes(product.status)) {
+        throw new Error("Sản phẩm chưa kết thúc đấu giá hoặc không ở trạng thái hợp lệ để khiếu nại.");
       }
 
       // Check who won the auction (highest bidder)
@@ -155,11 +155,17 @@ export const adminResolveTicket = async (req, res) => {
         ? new Prisma.Decimal(highestBid.maxAutoBidAmount).mul(0.1)
         : new Prisma.Decimal(highestBid.bidAmount).mul(0.1);
 
+      // Check if winner has checked out (paid remaining 90% and shipping fee)
+      const hasCheckedOut = !!(product.winnerName && product.shippingFee);
+      const escrowAmount = hasCheckedOut
+        ? new Prisma.Decimal(product.currentPrice).plus(new Prisma.Decimal(product.shippingFee))
+        : depositAmount;
+
       if (status === 'RESOLVED_REFUND') {
-        // Refund Buyer: Release buyer's frozen deposit to buyer's wallet balance
-        await releaseEscrow(tx, buyerId, depositAmount, product.id);
+        // Refund Buyer: Release buyer's frozen escrow/deposit to buyer's wallet balance
+        await releaseEscrow(tx, buyerId, escrowAmount, product.id);
       } else if (status === 'RESOLVED_PAY') {
-        // Pay Seller: Release deposit from buyer's frozen balance and transfer to seller
+        // Pay Seller: Release escrow/deposit from buyer's frozen balance and transfer to seller
         const buyer = await tx.user.findUnique({
           where: { id: buyerId }
         });
@@ -168,7 +174,7 @@ export const adminResolveTicket = async (req, res) => {
         }
 
         const buyerFrozen = new Prisma.Decimal(buyer.frozenBalance);
-        if (buyerFrozen.lt(depositAmount)) {
+        if (buyerFrozen.lt(escrowAmount)) {
           throw new Error("Số dư đóng băng của người mua không đủ để thực hiện thanh toán.");
         }
 
@@ -176,7 +182,7 @@ export const adminResolveTicket = async (req, res) => {
         await tx.user.update({
           where: { id: buyerId },
           data: {
-            frozenBalance: buyerFrozen.minus(depositAmount)
+            frozenBalance: buyerFrozen.minus(escrowAmount)
           }
         });
 
@@ -184,7 +190,7 @@ export const adminResolveTicket = async (req, res) => {
         await tx.transaction.create({
           data: {
             userId: buyerId,
-            amount: depositAmount,
+            amount: escrowAmount,
             type: "DISPUTE_PAY_BUYER_DEDUCT",
             status: "COMPLETED"
           }
@@ -214,7 +220,7 @@ export const adminResolveTicket = async (req, res) => {
         await tx.user.update({
           where: { id: sellerId },
           data: {
-            walletBalance: sellerWallet.plus(depositAmount)
+            walletBalance: sellerWallet.plus(escrowAmount)
           }
         });
 
@@ -222,7 +228,7 @@ export const adminResolveTicket = async (req, res) => {
         await tx.transaction.create({
           data: {
             userId: sellerId,
-            amount: depositAmount,
+            amount: escrowAmount,
             type: "DISPUTE_PAY_SELLER_ADD",
             status: "COMPLETED"
           }
