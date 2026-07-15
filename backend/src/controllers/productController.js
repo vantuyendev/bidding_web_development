@@ -9,9 +9,12 @@ export const getProducts = async (req, res, next) => {
     const products = await prisma.product.findMany({
       where: {
         approvalStatus: 'APPROVED',
-        status: 'ACTIVE',
+        deletedAt: null,
         endTime: { gt: new Date() },
-        deletedAt: null
+        OR: [
+          { status: 'ACTIVE' },
+          { status: 'DRAFT', startTime: { gt: new Date() } }
+        ]
       },
       orderBy: { startTime: 'desc' },
       select: {
@@ -211,12 +214,15 @@ export const searchProducts = async (req, res, next) => {
 
     const andConditions = [];
 
-    // Only return approved and active products that haven't ended yet
+    // Only return approved and active/upcoming products that haven't ended yet
     andConditions.push({
       approvalStatus: 'APPROVED',
-      status: 'ACTIVE',
+      deletedAt: null,
       endTime: { gt: new Date() },
-      deletedAt: null
+      OR: [
+        { status: 'ACTIVE' },
+        { status: 'DRAFT', startTime: { gt: new Date() } }
+      ]
     });
 
     // 1. Text Search (title / description)
@@ -409,11 +415,11 @@ export const createProduct = async (req, res, next) => {
     const chosenStart = startTime ? new Date(startTime) : new Date();
     const chosenEnd = new Date(endTime);
     const maxEndTime = new Date(chosenStart.getTime() + 48 * 60 * 60 * 1000);
-    if (chosenEnd > maxEndTime) {
-      throw new ApiError(400, 'Thời gian kết thúc đấu giá không được vượt quá 48 giờ kể từ thời điểm bắt đầu.');
-    }
     if (chosenEnd <= chosenStart) {
       throw new ApiError(400, 'Thời gian kết thúc phải sau thời điểm bắt đầu.');
+    }
+    if (chosenEnd > maxEndTime) {
+      throw new ApiError(400, 'Thời gian kết thúc đấu giá không được vượt quá 48 giờ kể từ thời điểm bắt đầu.');
     }
 
     // Gán currentPrice bằng đúng với startPrice, sellerId ép cứng từ session
@@ -631,11 +637,14 @@ export const updateProduct = async (req, res, next) => {
       provinceId, districtId, attributes
     } = req.body;
 
-    // Validate endTime nếu có thay đổi
-    if (endTime) {
-      const chosenStart = startTime ? new Date(startTime) : (product.startTime || new Date());
-      const chosenEnd = new Date(endTime);
+    // Validate startTime and endTime nếu có thay đổi
+    if (startTime || endTime) {
+      const chosenStart = startTime ? new Date(startTime) : new Date(product.startTime);
+      const chosenEnd = endTime ? new Date(endTime) : new Date(product.endTime);
       const maxEndTime = new Date(chosenStart.getTime() + 48 * 60 * 60 * 1000);
+      if (chosenEnd <= chosenStart) {
+        throw new ApiError(400, 'Thời gian kết thúc phải sau thời điểm bắt đầu.');
+      }
       if (chosenEnd > maxEndTime) {
         throw new ApiError(400, 'Thời gian kết thúc đấu giá không được vượt quá 48 giờ kể từ thời điểm bắt đầu.');
       }

@@ -13,6 +13,7 @@ export default function Badge({ variant = 'timed', className = '', children }) {
     won:       'badge badge-won',
     verified:  'badge badge-verified',
     outbid:    'badge badge-ended',
+    upcoming:  'badge badge-upcoming',
   }[variant] || 'badge badge-timed';
 
   const labels = {
@@ -23,6 +24,7 @@ export default function Badge({ variant = 'timed', className = '', children }) {
     won:       '✓ Won',
     verified:  '✓ Verified',
     outbid:    'Outbid',
+    upcoming:  'Upcoming',
   };
 
   return (

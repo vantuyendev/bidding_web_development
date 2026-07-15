@@ -184,6 +184,12 @@ body {
   color: hsl(12, 8%, 40%);
 }
 
+.badge-upcoming {
+  background-color: hsl(196, 100%, 93%);
+  color: hsl(196, 100%, 30%);
+  border: 1px solid hsl(196, 100%, 80%);
+}
+
 .badge-won {
   background-color: hsl(152, 72%, 40%);
   color: white;

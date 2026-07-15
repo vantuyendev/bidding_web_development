@@ -14,6 +14,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   const [categoryId, setCategoryId] = useState('');
   const [startPriceRaw, setStartPriceRaw] = useState('');
   const [buyNowPriceRaw, setBuyNowPriceRaw] = useState('');
+  const [hasBuyNow, setHasBuyNow] = useState(false);
   const [reservePriceRaw, setReservePriceRaw] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -164,7 +165,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
 
     // Strip commas to get numeric values
     const startPrice = Number(startPriceRaw.replace(/,/g, ''));
-    const buyNowPrice = buyNowPriceRaw ? Number(buyNowPriceRaw.replace(/,/g, '')) : null;
+    const buyNowPrice = (hasBuyNow && buyNowPriceRaw) ? Number(buyNowPriceRaw.replace(/,/g, '')) : null;
     const reservePrice = reservePriceRaw ? Number(reservePriceRaw.replace(/,/g, '')) : null;
 
     if (isNaN(startPrice) || startPrice <= 0) {
@@ -173,8 +174,23 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       return;
     }
 
-    if (buyNowPrice && buyNowPrice <= startPrice) {
+    if (hasBuyNow && (!buyNowPrice || buyNowPrice <= startPrice)) {
       setError('Giá mua đứt phải lớn hơn giá khởi điểm.');
+      setLoading(false);
+      return;
+    }
+
+    // Validate startTime và endTime
+    const chosenStart = startTime ? new Date(startTime) : new Date();
+    const chosenEnd = new Date(endTime);
+    const maxEndTime = new Date(chosenStart.getTime() + 48 * 60 * 60 * 1000);
+    if (chosenEnd <= chosenStart) {
+      setError('Thời gian kết thúc phải sau thời điểm bắt đầu.');
+      setLoading(false);
+      return;
+    }
+    if (chosenEnd > maxEndTime) {
+      setError('Thời gian kết thúc đấu giá không được vượt quá 48 giờ kể từ thời điểm bắt đầu.');
       setLoading(false);
       return;
     }
@@ -258,6 +274,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
         setDescription('');
         setStartPriceRaw('');
         setBuyNowPriceRaw('');
+        setHasBuyNow(false);
         setReservePriceRaw('');
         setWeight('');
         setLength('10');
@@ -663,17 +680,37 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               />
             </div>
 
-            {/* Buy Now Price */}
+            {/* Buy Now Toggle & Price Input */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="buy-now-price" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Giá mua đứt (đ) (Tùy chọn)</label>
-              <input
-                id="buy-now-price"
-                type="text"
-                value={buyNowPriceRaw}
-                onChange={(e) => handlePriceChange(e.target.value, setBuyNowPriceRaw)}
-                placeholder="Ví dụ: 15,000,000"
-                className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
-              />
+              <div className="flex items-center gap-2 mb-1">
+                <input
+                  id="toggle-buynow"
+                  type="checkbox"
+                  checked={hasBuyNow}
+                  onChange={(e) => {
+                    setHasBuyNow(e.target.checked);
+                    if (!e.target.checked) setBuyNowPriceRaw('');
+                  }}
+                  className="rounded border-neutral-300 dark:border-neutral-700 text-neutral-900 focus:ring-neutral-900 dark:focus:ring-white w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="toggle-buynow" className="text-xs font-bold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                  Kích hoạt giá mua đứt (Gõ búa 🔨)
+                </label>
+              </div>
+              {hasBuyNow && (
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="buy-now-price" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Giá mua đứt (đ)</label>
+                  <input
+                    id="buy-now-price"
+                    type="text"
+                    value={buyNowPriceRaw}
+                    onChange={(e) => handlePriceChange(e.target.value, setBuyNowPriceRaw)}
+                    placeholder="Ví dụ: 15,000,000"
+                    className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs font-bold focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
+                    required={hasBuyNow}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Reserve Price */}

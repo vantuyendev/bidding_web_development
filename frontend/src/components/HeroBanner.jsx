@@ -125,9 +125,11 @@ export default function HeroBanner({ featuredItems = [], categories = [] }) {
         const now = Date.now();
         const items = d.data || [];
         const live = items.filter(p =>
-          p.status === 'ACTIVE' && p.endTime && new Date(p.endTime).getTime() > now
+          p.status === 'ACTIVE' &&
+          p.startTime && new Date(p.startTime).getTime() <= now &&
+          p.endTime && new Date(p.endTime).getTime() > now
         ).length;
-        const upcoming = items.filter(p => p.status === 'UPCOMING').length;
+        const upcoming = items.filter(p => p.startTime && new Date(p.startTime).getTime() > now).length;
         setStats(s => ({ ...s, liveCount: live, upcomingCount: upcoming }));
       })
       .catch(() => {});

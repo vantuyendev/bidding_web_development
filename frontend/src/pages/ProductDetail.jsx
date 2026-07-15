@@ -578,12 +578,13 @@ export default function ProductDetail() {
 
   const isEnded = ['ENDED', 'COMPLETED', 'PAID', 'SHIPPED', 'CANCELLED', 'UNSOLD'].includes(product.status)
     || new Date(product.endTime).getTime() <= Date.now();
-  const isActive = !isEnded && product.status === 'ACTIVE';
+  const isActive = !isEnded && product.status === 'ACTIVE' && (!product.startTime || new Date(product.startTime).getTime() <= Date.now());
+  const isUpcoming = !isEnded && !isActive && new Date(product.startTime).getTime() > Date.now();
   const isSeller = user?.id === product.sellerId;
   const isWinner = user?.id === product.winnerId;
   const minNextBid = Number(product.currentPrice) + getStepPrice(product.currentPrice);
 
-  const badgeVariant = isEnded ? 'ended' : isActive ? 'timed' : 'ended';
+  const badgeVariant = isEnded ? 'ended' : isActive ? 'live' : isUpcoming ? 'upcoming' : 'ended';
   const attributes = product.attributes || product.productAttributes || [];
 
   return (
@@ -1207,6 +1208,19 @@ export default function ProductDetail() {
                   </button>
                 )}
               </div>
+
+              {/* Upcoming message */}
+              {isUpcoming && (
+                <div style={{ padding: '20px', textAlign: 'center', background: 'hsl(196,100%,97%)', borderTop: '1px solid hsl(196,100%,85%)' }}>
+                  <div style={{ fontSize: '18px', marginBottom: '8px' }}>📅</div>
+                  <div style={{ fontSize: '13px', fontWeight: 750, color: 'hsl(196,100%,25%)' }}>
+                    Phiên đấu giá chưa bắt đầu
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'hsl(196,100%,35%)', marginTop: '4px' }}>
+                    Bắt đầu vào: {fmtDate(product.startTime)}
+                  </div>
+                </div>
+              )}
 
               {/* Bid Form */}
               {isActive && !isSeller && (

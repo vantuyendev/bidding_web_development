@@ -51,6 +51,7 @@ export default function SellerListings(props) {
   const [editDescription, setEditDescription] = useState('');
   const [editImageUrl, setEditImageUrl] = useState('');
   const [editBuyNowPrice, setEditBuyNowPrice] = useState('');
+  const [editHasBuyNow, setEditHasBuyNow] = useState(false);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
   const [editWeight, setEditWeight] = useState('');
@@ -127,6 +128,7 @@ export default function SellerListings(props) {
     setEditDescription(prod.description || '');
     setEditImageUrl(prod.imageUrl || '');
     setEditBuyNowPrice(prod.buyNowPrice ? String(prod.buyNowPrice) : '');
+    setEditHasBuyNow(!!prod.buyNowPrice);
     
     // Format dates to datetime-local values (YYYY-MM-DDTHH:MM)
     if (prod.startTime) {
@@ -157,11 +159,34 @@ export default function SellerListings(props) {
     setEditError('');
     setEditSubmitting(true);
 
+    const buyNowPrice = (editHasBuyNow && editBuyNowPrice) ? parseFloat(editBuyNowPrice) : null;
+
+    if (editHasBuyNow && (!buyNowPrice || buyNowPrice <= 0)) {
+      setEditError('Vui lòng nhập giá mua đứt hợp lệ.');
+      setEditSubmitting(false);
+      return;
+    }
+
+    // Validate startTime và endTime
+    const chosenStart = editStartTime ? new Date(editStartTime) : new Date(editingProduct.startTime);
+    const chosenEnd = new Date(editEndTime);
+    const maxEndTime = new Date(chosenStart.getTime() + 48 * 60 * 60 * 1000);
+    if (chosenEnd <= chosenStart) {
+      setEditError('Thời gian kết thúc phải sau thời điểm bắt đầu.');
+      setEditSubmitting(false);
+      return;
+    }
+    if (chosenEnd > maxEndTime) {
+      setEditError('Thời gian kết thúc đấu giá không được vượt quá 48 giờ kể từ thời điểm bắt đầu.');
+      setEditSubmitting(false);
+      return;
+    }
+
     const payload = {
       title: editTitle.trim(),
       description: editDescription.trim(),
       imageUrl: editImageUrl.trim(),
-      buyNowPrice: editBuyNowPrice ? parseFloat(editBuyNowPrice) : null,
+      buyNowPrice,
       startTime: editStartTime ? new Date(editStartTime).toISOString() : null,
       endTime: new Date(editEndTime).toISOString(),
       weight: editWeight ? parseFloat(editWeight) : null,
@@ -349,7 +374,7 @@ export default function SellerListings(props) {
               onChange={(e) => setEditImageUrl(e.target.value)}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               {/* Start price is locked */}
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1.5">Giá khởi điểm (Khóa)</label>
@@ -357,13 +382,35 @@ export default function SellerListings(props) {
                   {formatMoney(editingProduct.startPrice)}
                 </div>
               </div>
-              <Input 
-                id="edit-buynow"
-                type="number"
-                label="Giá mua đứt (Tùy chọn)"
-                value={editBuyNowPrice}
-                onChange={(e) => setEditBuyNowPrice(e.target.value)}
-              />
+
+              {/* Edit Buy Now Toggle & Input */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <input
+                    id="edit-toggle-buynow"
+                    type="checkbox"
+                    checked={editHasBuyNow}
+                    onChange={(e) => {
+                      setEditHasBuyNow(e.target.checked);
+                      if (!e.target.checked) setEditBuyNowPrice('');
+                    }}
+                    className="rounded border-neutral-300 dark:border-neutral-700 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label htmlFor="edit-toggle-buynow" className="text-xs font-bold text-neutral-700 dark:text-neutral-300 cursor-pointer select-none">
+                    Kích hoạt giá mua đứt (Gõ búa 🔨)
+                  </label>
+                </div>
+                {editHasBuyNow && (
+                  <Input 
+                    id="edit-buynow"
+                    type="number"
+                    label="Giá mua đứt (đ)"
+                    value={editBuyNowPrice}
+                    onChange={(e) => setEditBuyNowPrice(e.target.value)}
+                    required={editHasBuyNow}
+                  />
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

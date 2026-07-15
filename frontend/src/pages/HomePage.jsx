@@ -33,9 +33,10 @@ const SORT_OPTIONS = [
 ];
 
 const STATUS_TABS = [
-  { value: 'all',    label: 'All Items' },
-  { value: 'active', label: 'Active' },
-  { value: 'ended',  label: 'Ended' },
+  { value: 'all',      label: 'All Items' },
+  { value: 'active',   label: 'Active' },
+  { value: 'upcoming', label: 'Upcoming' },
+  { value: 'ended',    label: 'Ended' },
 ];
 
 export default function HomePage() {
@@ -156,7 +157,9 @@ export default function HomePage() {
     .filter(p => {
       const isEnded = ['ENDED','COMPLETED','PAID','SHIPPED','CANCELLED','UNSOLD'].includes(p.status)
         || (p.endTime && new Date(p.endTime).getTime() <= now);
-      if (activeTab === 'active') return !isEnded;
+      const isUpcoming = p.startTime && new Date(p.startTime).getTime() > now;
+      if (activeTab === 'active') return !isEnded && !isUpcoming;
+      if (activeTab === 'upcoming') return isUpcoming && !isEnded;
       if (activeTab === 'ended')  return isEnded;
       return true;
     })
@@ -169,7 +172,11 @@ export default function HomePage() {
       return 0;
     });
 
-  const activeProducts  = products.filter(p => p.status === 'ACTIVE' && p.endTime && new Date(p.endTime) > now);
+  const activeProducts  = products.filter(p =>
+    p.status === 'ACTIVE' &&
+    p.startTime && new Date(p.startTime).getTime() <= now &&
+    p.endTime && new Date(p.endTime).getTime() > now
+  );
   const featuredItems   = activeProducts.slice(0, 3);
   const endingSoonItems = [...activeProducts].sort((a, b) => new Date(a.endTime) - new Date(b.endTime)).slice(0, 8);
   const trendingItems   = [...activeProducts].sort((a, b) => (b.bidCount || 0) - (a.bidCount || 0)).slice(0, 8);

@@ -19,17 +19,19 @@ export default function ProductCard({ product, watched = false, className = '' }
     startPrice,
     buyNowPrice,
     endTime,
+    startTime,
     status,
     bidCount,
     sellerName,
     categoryName,
   } = product;
 
-  const isLive    = status === 'ACTIVE' && isAuctionLive(endTime);
-  const isEnded   = status === 'ENDED' || status === 'COMPLETED' || status === 'PAID' || status === 'SHIPPED';
-  const hasBuyNow = !!buyNowPrice;
+  const isLive     = status === 'ACTIVE' && isAuctionLive(startTime, endTime);
+  const isUpcoming = startTime && new Date(startTime).getTime() > Date.now();
+  const isEnded    = status === 'ENDED' || status === 'COMPLETED' || status === 'PAID' || status === 'SHIPPED';
+  const hasBuyNow  = !!buyNowPrice;
 
-  const badgeVariant = isEnded ? 'ended' : isLive ? 'live' : hasBuyNow ? 'buy-now' : 'timed';
+  const badgeVariant = isEnded ? 'ended' : isLive ? 'live' : isUpcoming ? 'upcoming' : hasBuyNow ? 'buy-now' : 'timed';
 
   const price = currentPrice ?? startPrice ?? 0;
   const formattedPrice = Number(price).toLocaleString('vi-VN') + ' đ';
@@ -138,7 +140,9 @@ export default function ProductCard({ product, watched = false, className = '' }
   );
 }
 
-function isAuctionLive(endTime) {
+function isAuctionLive(startTime, endTime) {
   if (!endTime) return false;
-  return new Date(endTime).getTime() > Date.now();
+  const now = Date.now();
+  const start = startTime ? new Date(startTime).getTime() : 0;
+  return start <= now && new Date(endTime).getTime() > now;
 }
