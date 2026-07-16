@@ -1,4 +1,5 @@
 import prisma from '../models/db.js';
+import bcrypt from 'bcryptjs';
 
 // Lấy phiên làm việc của người dùng đăng nhập hiện tại
 export const getMe = async (req, res) => {
@@ -79,10 +80,12 @@ export const register = async (req, res) => {
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     const user = await prisma.user.create({
       data: {
         email,
-        passwordHash: '$2b$10$mockpasswordhashplaceholder', // Tính xác thực của mã băm mật khẩu được bỏ qua
+        passwordHash: hashedPassword,
         balance: 0.00,
         walletBalance: 0.00
       }
@@ -108,14 +111,13 @@ export const register = async (req, res) => {
   }
 };
 
-// Controller đăng nhập: tính xác thực của mã băm mật khẩu giả lập được bỏ qua cho tác vụ này
 export const login = async (req, res) => {
-  const { email } = req.body;
+  const { email, password } = req.body;
 
-  if (!email) {
+  if (!email || !password) {
     return res.status(400).json({
       success: false,
-      error: 'Vui lòng cung cấp email.'
+      error: 'Vui lòng cung cấp đầy đủ email và mật khẩu.'
     });
   }
 
@@ -124,6 +126,7 @@ export const login = async (req, res) => {
       where: { email },
       select: {
         id: true, email: true, name: true,
+        passwordHash: true,
         balance: true, walletBalance: true, frozenBalance: true,
         isBanned: true, banReason: true,
         isVerifiedSeller: true, kycStatus: true,
@@ -135,6 +138,14 @@ export const login = async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Tài khoản không tồn tại. Vui lòng đăng ký.'
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        error: 'Mật khẩu không chính xác.'
       });
     }
 

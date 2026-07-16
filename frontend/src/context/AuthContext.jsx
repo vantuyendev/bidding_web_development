@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = async (email) => {
+  const login = async (email, password) => {
     setLoading(true);
     try {
       const res = await fetch(getApiUrl('/api/auth/login'), {
@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (data.success) {

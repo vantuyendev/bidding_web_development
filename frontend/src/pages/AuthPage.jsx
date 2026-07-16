@@ -79,7 +79,7 @@ export default function AuthPage({ defaultMode = 'login' }) {
     try {
       let result;
       if (mode === 'login') {
-        result = await login(email);
+        result = await login(email, password);
       } else {
         result = await register(email, password);
       }

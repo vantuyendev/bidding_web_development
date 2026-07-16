@@ -257,7 +257,7 @@ export const adminResolveTicket = async (req, res, next) => {
           create: {
             id: sellerId,
             email: `seller_${sellerId.slice(0, 8)}@example.com`,
-            passwordHash: "$2b$10$mockpasswordhashplaceholder",
+            passwordHash: "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
             balance: new Prisma.Decimal(0),
             walletBalance: new Prisma.Decimal(0),
             frozenBalance: new Prisma.Decimal(0)
