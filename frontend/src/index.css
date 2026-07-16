@@ -246,9 +246,9 @@ body {
 }
 
 .badge-timed {
-  background-color: hsl(40, 20%, 97%);
-  color: hsl(12, 14%, 11%);
-  border: 1px solid hsl(0, 0%, 89%);
+  background-color: var(--page-bg);
+  color: var(--page-text);
+  border: 1px solid var(--page-border);
 }
 
 .badge-buy-now {
@@ -257,8 +257,8 @@ body {
 }
 
 .badge-ended {
-  background-color: hsl(0, 0%, 89%);
-  color: hsl(12, 8%, 40%);
+  background-color: var(--page-border);
+  color: var(--page-text-muted);
 }
 
 .badge-upcoming {
@@ -285,11 +285,11 @@ body {
 
 /* ── Card System ── */
 .auction-card {
-  background: white;
-  border: 1px solid hsl(0, 0%, 89%);
+  background: var(--page-card-bg);
+  border: 1px solid var(--page-border);
   border-radius: 4px;
   overflow: hidden;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
   cursor: pointer;
   text-decoration: none;
   display: block;
@@ -418,7 +418,7 @@ body {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 600;
-  color: hsl(12, 14%, 11%);
+  color: var(--page-text);
   letter-spacing: 0.01em;
   margin-bottom: 16px;
 }
@@ -428,19 +428,13 @@ body {
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
-  background: white;
-  border-top: 2px solid hsl(196, 100%, 36%);
-  border-bottom: 1px solid hsl(0, 0%, 89%);
-  box-shadow: 0 8px 32px hsla(0, 0%, 0%, 0.10);
+  width: 100%;
   z-index: 100;
-  transform-origin: top center;
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-.mega-menu.hidden-menu {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px);
   pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+              transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .mega-menu.visible-menu {
   opacity: 1;
@@ -453,7 +447,7 @@ body {
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 500;
-  color: hsl(12, 14%, 11%);
+  color: var(--nav-text-primary);
   padding: 10px 14px;
   border-bottom: 2px solid transparent;
   white-space: nowrap;
@@ -472,23 +466,23 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid hsl(0, 0%, 89%);
+  border: 1px solid var(--page-border);
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
-  color: hsl(12, 14%, 11%);
-  background: white;
+  color: var(--page-text);
+  background: var(--page-card-bg);
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
-.filter-chip:hover { border-color: hsl(12, 14%, 11%); background: hsl(40, 20%, 97%); }
-.filter-chip.active { background: hsl(12, 14%, 11%); color: white; border-color: hsl(12, 14%, 11%); }
+.filter-chip:hover { border-color: var(--page-text); background: var(--page-bg); }
+.filter-chip.active { background: var(--page-text); color: var(--page-card-bg); border-color: var(--page-text); }
 
 /* ── Divider ── */
 .divider {
   height: 1px;
-  background: hsl(0, 0%, 89%);
+  background: var(--page-border);
   margin: 20px 0;
 }
 
@@ -512,13 +506,7 @@ body {
   display: block;
 }
 
-/* ── Dark Mode overrides (minimal — mainly for Navbar) ── */
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: hsl(222, 20%, 10%);
-    color: hsl(40, 20%, 92%);
-  }
-}
+/* ── Dark Mode overrides removed (handled dynamically by theme class & CSS variables) ── */
 
 /* ═══════════════════════════════════════════════════════════
    AUTH PAGE — Split-panel Premium Design

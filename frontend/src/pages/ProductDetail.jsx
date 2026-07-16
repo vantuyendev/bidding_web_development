@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { getApiUrl, getSseUrl } from '../api';
 import Badge from '../components/ui/Badge';
 import CountdownBadge from '../components/ui/CountdownBadge';
@@ -50,6 +51,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
+  const { theme } = useTheme();
 
   const [product, setProduct]           = useState(null);
   const [bids, setBids]                 = useState([]);
@@ -588,12 +590,12 @@ export default function ProductDetail() {
   const attributes = product.attributes || product.productAttributes || [];
 
   return (
-    <div style={{ background: 'hsl(40,20%,97%)', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--page-bg)', minHeight: '100vh' }}>
 
       {/* ── Breadcrumb ── */}
-      <div style={{ background: 'white', borderBottom: '1px solid hsl(0,0%,89%)', padding: '8px 0' }}>
+      <div style={{ background: 'var(--page-card-bg)', borderBottom: '1px solid var(--page-border)', padding: '8px 0' }}>
         <div className="page-container">
-          <nav style={{ fontSize: 12, color: 'hsl(12,8%,55%)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <nav style={{ fontSize: 12, color: 'var(--page-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Link to="/" style={{ color: 'hsl(196,100%,36%)', textDecoration: 'none' }}>Home</Link>
             <span>›</span>
             {product.category && (
@@ -604,7 +606,7 @@ export default function ProductDetail() {
                 <span>›</span>
               </>
             )}
-            <span style={{ color: 'hsl(12,14%,11%)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>
+            <span style={{ color: 'var(--page-text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 300 }}>
               {product.title}
             </span>
           </nav>
@@ -619,10 +621,10 @@ export default function ProductDetail() {
           <div className="flex-1 min-w-0 flex flex-col gap-6">
 
             {/* Image Gallery */}
-            <div style={{ background: 'white', border: '1px solid hsl(0,0%,89%)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--page-card-bg)', border: '1px solid var(--page-border)', borderRadius: 4, overflow: 'hidden' }}>
               {/* Main image */}
               <div
-                style={{ position: 'relative', background: 'hsl(40,20%,97%)', cursor: product.imageUrl ? 'zoom-in' : 'default', paddingBottom: '75%' }}
+                style={{ position: 'relative', background: 'var(--page-bg)', cursor: product.imageUrl ? 'zoom-in' : 'default', paddingBottom: '75%' }}
                 onClick={() => product.imageUrl && setLightboxOpen(true)}
               >
                 {product.imageUrl ? (
@@ -652,15 +654,15 @@ export default function ProductDetail() {
             </div>
 
             {/* ── Details Tabs ── */}
-            <div style={{ background: 'white', border: '1px solid hsl(0,0%,89%)', borderRadius: 4 }}>
+            <div style={{ background: 'var(--page-card-bg)', border: '1px solid var(--page-border)', borderRadius: 4 }}>
               {/* Tab header */}
-              <div style={{ display: 'flex', borderBottom: '1px solid hsl(0,0%,89%)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <div style={{ display: 'flex', borderBottom: '1px solid var(--page-border)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                 {(() => {
                   const tabsList = [
-                    { key: 'details', label: 'Description' },
-                    { key: 'attributes', label: 'Details' },
-                    { key: 'shipping', label: 'Shipping' },
-                    { key: 'history', label: `Bids (${bids.length})` },
+                     { key: 'details', label: 'Description' },
+                     { key: 'attributes', label: 'Details' },
+                     { key: 'shipping', label: 'Shipping' },
+                     { key: 'history', label: `Bids (${bids.length})` },
                   ];
                   if (['ACTIVE', 'DRAFT'].includes(product.status)) {
                     tabsList.push({ key: 'qna', label: `❓ Hỏi đáp (${qnaMessages.length})` });
@@ -679,7 +681,7 @@ export default function ProductDetail() {
                         fontFamily: 'var(--font-display)', cursor: 'pointer',
                         background: 'none', border: 'none',
                         borderBottom: activeTab === t.key ? '2px solid hsl(196,100%,36%)' : '2px solid transparent',
-                        color: activeTab === t.key ? 'hsl(196,100%,36%)' : 'hsl(12,8%,50%)',
+                        color: activeTab === t.key ? 'hsl(196,100%,36%)' : 'var(--page-text-muted)',
                         marginBottom: -1, transition: 'all 0.15s', whiteSpace: 'nowrap',
                       }}
                     >
@@ -693,10 +695,10 @@ export default function ProductDetail() {
                 {/* Description */}
                 {activeTab === 'details' && (
                   <div>
-                    <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 12 }}>
+                    <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--page-text)', marginBottom: 12 }}>
                       {product.title}
                     </h1>
-                    <p style={{ fontSize: 13, color: 'hsl(12,8%,40%)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                    <p style={{ fontSize: 13, color: 'var(--page-text-muted)', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
                       {product.description || 'No description provided.'}
                     </p>
                   </div>
@@ -706,23 +708,23 @@ export default function ProductDetail() {
                 {activeTab === 'attributes' && (
                   <div>
                     {attributes.length === 0 ? (
-                      <p style={{ fontSize: 13, color: 'hsl(12,8%,55%)' }}>No additional attributes listed.</p>
+                      <p style={{ fontSize: 13, color: 'var(--page-text-muted)' }}>No additional attributes listed.</p>
                     ) : (
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                         <tbody>
                           {attributes.map((attr, i) => (
-                            <tr key={attr.id ?? i} style={{ borderBottom: '1px solid hsl(0,0%,93%)' }}>
-                              <td style={{ padding: '8px 0', color: 'hsl(12,8%,55%)', fontWeight: 600, width: '40%' }}>
+                            <tr key={attr.id ?? i} style={{ borderBottom: '1px solid var(--page-border)' }}>
+                              <td style={{ padding: '8px 0', color: 'var(--page-text-muted)', fontWeight: 600, width: '40%' }}>
                                 {attr.attributeKey?.name || attr.key || '—'}
                               </td>
-                              <td style={{ padding: '8px 0', color: 'hsl(12,14%,11%)' }}>{attr.value || '—'}</td>
+                              <td style={{ padding: '8px 0', color: 'var(--page-text)' }}>{attr.value || '—'}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     )}
                     {/* Item dimensions */}
-                    <div style={{ marginTop: 16, fontSize: 12, color: 'hsl(12,8%,55%)' }}>
+                    <div style={{ marginTop: 16, fontSize: 12, color: 'var(--page-text-muted)' }}>
                       <strong>Dimensions:</strong> {product.length} × {product.width} × {product.height} cm &nbsp;|&nbsp;
                       <strong>Weight:</strong> {product.weight} kg
                     </div>
@@ -731,18 +733,18 @@ export default function ProductDetail() {
 
                 {/* Shipping info */}
                 {activeTab === 'shipping' && (
-                  <div style={{ fontSize: 13, color: 'hsl(12,8%,40%)', lineHeight: 1.8 }}>
+                  <div style={{ fontSize: 13, color: 'var(--page-text-muted)', lineHeight: 1.8 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                       <div>
-                        <div style={{ fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 4 }}>Seller Location</div>
+                        <div style={{ fontWeight: 700, color: 'var(--page-text)', marginBottom: 4 }}>Seller Location</div>
                         <div>{product.seller?.shopAddress || product.seller?.name || '—'}</div>
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 4 }}>Package</div>
+                        <div style={{ fontWeight: 700, color: 'var(--page-text)', marginBottom: 4 }}>Package</div>
                         <div>{product.weight}kg · {product.length}×{product.width}×{product.height}cm</div>
                       </div>
                     </div>
-                    <div style={{ marginTop: 12, padding: 12, background: 'hsl(196,100%,97%)', borderRadius: 4, fontSize: 12 }}>
+                    <div style={{ marginTop: 12, padding: 12, background: theme === 'dark' ? 'rgba(0,151,186,0.1)' : 'hsl(196,100%,97%)', border: '1px solid var(--page-border)', borderRadius: 4, fontSize: 12 }}>
                       🛡️ All shipments are covered by AuraBid Escrow. Payment is only released to the seller after you confirm receipt.
                     </div>
                   </div>
@@ -752,30 +754,30 @@ export default function ProductDetail() {
                 {activeTab === 'history' && (
                   <div>
                     {bids.length === 0 ? (
-                      <p style={{ fontSize: 13, color: 'hsl(12,8%,55%)', textAlign: 'center', padding: '24px 0' }}>
+                      <p style={{ fontSize: 13, color: 'var(--page-text-muted)', textAlign: 'center', padding: '24px 0' }}>
                         No bids placed yet. Be the first to bid!
                       </p>
                     ) : (
                       <div style={{ maxHeight: 300, overflowY: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                           <thead>
-                            <tr style={{ borderBottom: '2px solid hsl(0,0%,89%)' }}>
-                              <th style={{ textAlign: 'left', padding: '6px 0', color: 'hsl(12,8%,55%)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.08em' }}>Bidder</th>
-                              <th style={{ textAlign: 'right', padding: '6px 0', color: 'hsl(12,8%,55%)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.08em' }}>Amount</th>
-                              <th style={{ textAlign: 'right', padding: '6px 0', color: 'hsl(12,8%,55%)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.08em' }}>Time</th>
+                            <tr style={{ borderBottom: '2px solid var(--page-border)' }}>
+                              <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--page-text-muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.08em' }}>Bidder</th>
+                              <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--page-text-muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.08em' }}>Amount</th>
+                              <th style={{ textAlign: 'right', padding: '6px 0', color: 'var(--page-text-muted)', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.08em' }}>Time</th>
                             </tr>
                           </thead>
                           <tbody>
                             {bids.map((bid, i) => (
-                              <tr key={bid.id ?? i} style={{ borderBottom: '1px solid hsl(0,0%,95%)' }}>
-                                <td style={{ padding: '8px 0', color: 'hsl(12,14%,11%)' }}>
+                              <tr key={bid.id ?? i} style={{ borderBottom: '1px solid var(--page-border)' }}>
+                                <td style={{ padding: '8px 0', color: 'var(--page-text)' }}>
                                   {bid.user?.email ? `${bid.user.email.slice(0, 3)}****` : 'Anonymous'}
                                   {i === 0 && <span style={{ marginLeft: 6, background: 'hsl(196,100%,36%)', color: 'white', fontSize: 9, padding: '1px 5px', borderRadius: 2, fontWeight: 700 }}>HIGH</span>}
                                 </td>
-                                <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 700, fontFamily: 'var(--font-display)', color: i === 0 ? 'hsl(196,100%,36%)' : 'hsl(12,14%,11%)' }}>
+                                <td style={{ textAlign: 'right', padding: '8px 0', fontWeight: 700, fontFamily: 'var(--font-display)', color: i === 0 ? 'hsl(196,100%,36%)' : 'var(--page-text)' }}>
                                   {fmtVND(bid.bidAmount ?? bid.bid_amount)}
                                 </td>
-                                <td style={{ textAlign: 'right', padding: '8px 0', color: 'hsl(12,8%,60%)' }}>
+                                <td style={{ textAlign: 'right', padding: '8px 0', color: 'var(--page-text-muted)' }}>
                                   {fmtDate(bid.bidTime ?? bid.bid_time)}
                                 </td>
                               </tr>
@@ -790,10 +792,10 @@ export default function ProductDetail() {
                 {/* Chat Room */}
                 {activeTab === 'chat' && (
                   <div>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--page-text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>💬</span> Trò chuyện trao đổi đơn hàng
                     </h3>
-                    <p style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginBottom: 16 }}>
+                    <p style={{ fontSize: 11, color: 'var(--page-text-muted)', marginBottom: 16 }}>
                       Kênh trao đổi trực tiếp giữa Người bán và Người mua về việc nhận hàng và thanh toán.
                     </p>
 
@@ -801,9 +803,9 @@ export default function ProductDetail() {
                     <div 
                       ref={chatContainerRef}
                       style={{ 
-                        border: '1px solid hsl(0,0%,90%)', 
+                        border: '1px solid var(--page-border)', 
                         borderRadius: 8, 
-                        background: 'hsl(40,20%,99%)', 
+                        background: 'var(--page-bg)', 
                         height: 350, 
                         overflowY: 'auto', 
                         padding: '16px',
@@ -814,7 +816,7 @@ export default function ProductDetail() {
                       }}
                     >
                       {chatMessages.length === 0 ? (
-                        <div style={{ margin: 'auto', fontSize: 12, color: 'hsl(12,8%,60%)', textAlign: 'center' }}>
+                        <div style={{ margin: 'auto', fontSize: 12, color: 'var(--page-text-muted)', textAlign: 'center' }}>
                           Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!
                         </div>
                       ) : (
@@ -832,7 +834,7 @@ export default function ProductDetail() {
                             >
                               <div style={{ 
                                 fontSize: 10, 
-                                color: 'hsl(12,8%,55%)', 
+                                color: 'var(--page-text-muted)', 
                                 marginBottom: 2, 
                                 alignSelf: isMe ? 'flex-end' : 'flex-start',
                                 fontWeight: 650
@@ -844,9 +846,9 @@ export default function ProductDetail() {
                                 borderRadius: 12, 
                                 borderTopRightRadius: isMe ? 2 : 12,
                                 borderTopLeftRadius: isMe ? 12 : 2,
-                                background: isMe ? 'hsl(196,100%,36%)' : 'white', 
-                                color: isMe ? 'white' : 'hsl(12,14%,11%)',
-                                border: isMe ? 'none' : '1px solid hsl(0,0%,88%)',
+                                background: isMe ? 'hsl(196,100%,36%)' : 'var(--page-card-bg)', 
+                                color: isMe ? 'white' : 'var(--page-text)',
+                                border: isMe ? 'none' : '1px solid var(--page-border)',
                                 fontSize: 12.5,
                                 lineHeight: 1.5,
                                 wordBreak: 'break-word',
@@ -856,7 +858,7 @@ export default function ProductDetail() {
                               </div>
                               <div style={{ 
                                 fontSize: 9, 
-                                color: 'hsl(12,8%,65%)', 
+                                color: 'var(--page-text-muted)', 
                                 marginTop: 2, 
                                 alignSelf: isMe ? 'flex-end' : 'flex-start' 
                               }}>
@@ -872,10 +874,10 @@ export default function ProductDetail() {
                     {['COMPLETED', 'CANCELLED', 'UNSOLD'].includes(product.status) ? (
                       <div style={{ 
                         padding: '12px 16px', 
-                        background: 'hsl(40,20%,95%)', 
-                        color: 'hsl(12,8%,40%)', 
+                        background: 'var(--page-bg)', 
+                        color: 'var(--page-text-muted)', 
                         borderRadius: 8, 
-                        border: '1px solid hsl(0,0%,88%)',
+                        border: '1px solid var(--page-border)',
                         fontSize: 12, 
                         fontWeight: 600,
                         textAlign: 'center'
@@ -893,10 +895,12 @@ export default function ProductDetail() {
                             style={{ 
                               width: '100%', 
                               padding: '10px 12px', 
-                              border: '2px solid hsl(0,0%,88%)', 
+                              border: '2px solid var(--page-border)', 
                               borderRadius: 6, 
                               fontSize: 12.5,
-                              outline: 'none'
+                              outline: 'none',
+                              background: 'var(--page-card-bg)',
+                              color: 'var(--page-text)'
                             }}
                             disabled={chatSubmitting}
                           />
@@ -922,7 +926,7 @@ export default function ProductDetail() {
                       </form>
                     )}
                     {chatError && (
-                      <div style={{ fontSize: 11, color: 'hsl(3,83%,40%)', marginTop: 6, fontWeight: 650 }}>
+                      <div style={{ fontSize: 11, color: theme === 'dark' ? 'hsl(3,83%,75%)' : 'hsl(3,83%,40%)', marginTop: 6, fontWeight: 650 }}>
                         ⚠️ {chatError}
                       </div>
                     )}
@@ -932,19 +936,19 @@ export default function ProductDetail() {
                 {/* Q&A / Hỏi đáp */}
                 {activeTab === 'qna' && (
                   <div>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--page-text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>❓</span> Hỏi đáp về sản phẩm
                     </h3>
-                    <p style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginBottom: 16 }}>
+                    <p style={{ fontSize: 11, color: 'var(--page-text-muted)', marginBottom: 16 }}>
                       Người mua có thể đặt câu hỏi trực tiếp cho Người bán về tình trạng và thông tin sản phẩm.
                     </p>
 
                     {/* Messages Container */}
                     <div 
                       style={{ 
-                        border: '1px solid hsl(0,0%,90%)', 
+                        border: '1px solid var(--page-border)', 
                         borderRadius: 8, 
-                        background: 'hsl(40,20%,99%)', 
+                        background: 'var(--page-bg)', 
                         height: 350, 
                         overflowY: 'auto', 
                         padding: '16px',
@@ -955,7 +959,7 @@ export default function ProductDetail() {
                       }}
                     >
                       {qnaMessages.length === 0 ? (
-                        <div style={{ margin: 'auto', fontSize: 12, color: 'hsl(12,8%,60%)', textAlign: 'center' }}>
+                        <div style={{ margin: 'auto', fontSize: 12, color: 'var(--page-text-muted)', textAlign: 'center' }}>
                           Chưa có câu hỏi nào. Hãy đặt câu hỏi đầu tiên!
                         </div>
                       ) : (
@@ -977,7 +981,7 @@ export default function ProductDetail() {
                                 alignItems: 'center',
                                 gap: 6,
                                 fontSize: 10, 
-                                color: 'hsl(12,8%,55%)', 
+                                color: 'var(--page-text-muted)', 
                                 marginBottom: 2, 
                                 alignSelf: isMe ? 'flex-end' : 'flex-start',
                                 fontWeight: 650
@@ -1001,9 +1005,9 @@ export default function ProductDetail() {
                                 borderRadius: 12, 
                                 borderTopRightRadius: isMe ? 2 : 12,
                                 borderTopLeftRadius: isMe ? 12 : 2,
-                                background: isMe ? 'hsl(196,100%,36%)' : isMsgSeller ? 'hsl(35, 90%, 95%)' : 'white', 
-                                color: isMe ? 'white' : 'hsl(12,14%,11%)',
-                                border: isMe ? 'none' : isMsgSeller ? '1px solid hsl(35, 90%, 85%)' : '1px solid hsl(0,0%,88%)',
+                                background: isMe ? 'hsl(196,100%,36%)' : isMsgSeller ? (theme === 'dark' ? 'rgba(217,119,6,0.15)' : 'hsl(35, 90%, 95%)') : 'var(--page-card-bg)', 
+                                color: isMe ? 'white' : 'var(--page-text)',
+                                border: isMe ? 'none' : isMsgSeller ? (theme === 'dark' ? '1px solid rgba(217,119,6,0.3)' : '1px solid hsl(35, 90%, 85%)') : '1px solid var(--page-border)',
                                 fontSize: 12.5,
                                 lineHeight: 1.5,
                                 wordBreak: 'break-word',
@@ -1013,7 +1017,7 @@ export default function ProductDetail() {
                               </div>
                               <div style={{ 
                                 fontSize: 9, 
-                                color: 'hsl(12,8%,65%)', 
+                                color: 'var(--page-text-muted)', 
                                 marginTop: 2, 
                                 alignSelf: isMe ? 'flex-end' : 'flex-start' 
                               }}>
@@ -1029,12 +1033,12 @@ export default function ProductDetail() {
                     {!user ? (
                       <div style={{ 
                         padding: '16px', 
-                        background: 'hsl(196,100%,97%)', 
+                        background: theme === 'dark' ? 'rgba(0,151,186,0.15)' : 'hsl(196,100%,97%)', 
                         borderRadius: 8, 
-                        border: '1px solid hsl(196,100%,90%)',
+                        border: theme === 'dark' ? '1px solid rgba(0,151,186,0.3)' : '1px solid hsl(196,100%,90%)',
                         textAlign: 'center'
                       }}>
-                        <p style={{ fontSize: 12, color: 'hsl(196,100%,25%)', marginBottom: 10, fontWeight: 600 }}>
+                        <p style={{ fontSize: 12, color: theme === 'dark' ? 'hsl(196,100%,75%)' : 'hsl(196,100%,25%)', marginBottom: 10, fontWeight: 600 }}>
                           Bạn cần đăng nhập để đặt câu hỏi hoặc trả lời.
                         </p>
                         <Link
@@ -1067,10 +1071,12 @@ export default function ProductDetail() {
                             style={{ 
                               width: '100%', 
                               padding: '10px 12px', 
-                              border: '2px solid hsl(0,0%,88%)', 
+                              border: '2px solid var(--page-border)', 
                               borderRadius: 6, 
                               fontSize: 12.5,
-                              outline: 'none'
+                              outline: 'none',
+                              background: 'var(--page-card-bg)',
+                              color: 'var(--page-text)'
                             }}
                             disabled={qnaSubmitting}
                           />
@@ -1096,7 +1102,7 @@ export default function ProductDetail() {
                       </form>
                     )}
                     {qnaError && (
-                      <div style={{ fontSize: 11, color: 'hsl(3,83%,40%)', marginTop: 6, fontWeight: 650 }}>
+                      <div style={{ fontSize: 11, color: theme === 'dark' ? 'hsl(3,83%,75%)' : 'hsl(3,83%,40%)', marginTop: 6, fontWeight: 650 }}>
                         ⚠️ {qnaError}
                       </div>
                     )}
@@ -1122,11 +1128,11 @@ export default function ProductDetail() {
             style={{ width: '100%', maxWidth: 360, flexShrink: 0 }}
             className="lg:sticky lg:top-28 lg:self-start"
           >
-            <div style={{ background: 'white', border: '1px solid hsl(0,0%,89%)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--page-card-bg)', border: '1px solid var(--page-border)', borderRadius: 4, overflow: 'hidden' }}>
 
               {/* Product Title */}
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(0,0%,93%)' }}>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'hsl(12,14%,11%)', lineHeight: 1.4, marginBottom: 8 }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--page-border)' }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--page-text)', lineHeight: 1.4, marginBottom: 8 }}>
                   {product.title}
                 </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1138,33 +1144,33 @@ export default function ProductDetail() {
               </div>
 
               {/* Price */}
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(0,0%,93%)' }}>
-                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(12,8%,55%)', fontWeight: 700, marginBottom: 4 }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--page-border)' }}>
+                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--page-text-muted)', fontWeight: 700, marginBottom: 4 }}>
                   {isEnded ? 'Final Price' : bids.length > 0 ? 'Current Bid' : 'Starting Bid'}
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'hsl(12,14%,11%)', letterSpacing: '-0.02em' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--page-text)', letterSpacing: '-0.02em' }}>
                   {fmtVND(product.currentPrice)}
                 </div>
                 {!isEnded && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between', marginTop: 8 }}>
                     <CountdownBadge endTime={product.endTime} />
-                    <span style={{ fontSize: 11, color: 'hsl(12,8%,55%)' }}>
+                    <span style={{ fontSize: 11, color: 'var(--page-text-muted)' }}>
                       {bids.length} {bids.length === 1 ? 'bid' : 'bids'}
                     </span>
                   </div>
                 )}
                 {!isEnded && !sseConnected && (
-                  <div style={{ marginTop: 8, padding: '6px 10px', background: 'hsl(3,83%,95%)', border: '1px solid hsl(3,83%,85%)', borderRadius: 4, color: 'hsl(3,83%,40%)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }} className="animate-pulse">
+                  <div style={{ marginTop: 8, padding: '6px 10px', background: theme === 'dark' ? 'rgba(239,68,68,0.15)' : 'hsl(3,83%,95%)', border: theme === 'dark' ? '1px solid rgba(239,68,68,0.3)' : '1px solid hsl(3,83%,85%)', borderRadius: 4, color: theme === 'dark' ? 'hsl(3,83%,75%)' : 'hsl(3,83%,40%)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }} className="animate-pulse">
                     <span>🔴</span> Mất kết nối live. Đang thử kết nối lại...
                   </div>
                 )}
                 {isEnded && product.endTime && (
-                  <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginTop: 4 }}>Ended {fmtDate(product.endTime)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--page-text-muted)', marginTop: 4 }}>Ended {fmtDate(product.endTime)}</div>
                 )}
               </div>
 
               {/* Watchlist + Seller */}
-              <div style={{ padding: '12px 20px', borderBottom: '1px solid hsl(0,0%,93%)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--page-border)', display: 'flex', alignItems: 'center', justifycontent: 'space-between', gap: 10 }}>
                 <button
                   id={`watchlist-btn-detail-${id}`}
                   onClick={toggleWatchlist}
@@ -1172,9 +1178,9 @@ export default function ProductDetail() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600,
                     cursor: watchlistLoading ? 'not-allowed' : 'pointer',
-                    border: `1px solid ${inWatchlist ? 'hsl(3,83%,60%)' : 'hsl(0,0%,85%)'}`,
-                    borderRadius: 4, padding: '6px 12px', background: 'white',
-                    color: inWatchlist ? 'hsl(3,83%,60%)' : 'hsl(12,14%,11%)',
+                    border: `1px solid ${inWatchlist ? 'hsl(3,83%,60%)' : 'var(--page-border)'}`,
+                    borderRadius: 4, padding: '6px 12px', background: 'var(--page-card-bg)',
+                    color: inWatchlist ? 'hsl(3,83%,60%)' : 'var(--page-text)',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -1200,7 +1206,7 @@ export default function ProductDetail() {
                     }}
                     title="Click to view seller profile and reviews"
                   >
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'hsl(196,100%,90%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'hsl(196,100%,36%)' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: theme === 'dark' ? 'rgba(0,151,186,0.15)' : 'hsl(196,100%,90%)', display: 'flex', alignItems: 'center', justifycontent: 'center', fontSize: 11, fontWeight: 700, color: 'hsl(196,100%,36%)' }}>
                       {(product.seller.name || product.seller.email || '?')[0].toUpperCase()}
                     </div>
                     <span style={{ textDecoration: 'underline', fontWeight: 650 }}>{product.seller.name || product.seller.email}</span>
@@ -1211,12 +1217,12 @@ export default function ProductDetail() {
 
               {/* Upcoming message */}
               {isUpcoming && (
-                <div style={{ padding: '20px', textAlign: 'center', background: 'hsl(196,100%,97%)', borderTop: '1px solid hsl(196,100%,85%)' }}>
+                <div style={{ padding: '20px', textAlign: 'center', background: theme === 'dark' ? 'rgba(0,151,186,0.15)' : 'hsl(196,100%,97%)', borderTop: '1px solid var(--page-border)' }}>
                   <div style={{ fontSize: '18px', marginBottom: '8px' }}>📅</div>
-                  <div style={{ fontSize: '13px', fontWeight: 750, color: 'hsl(196,100%,25%)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 750, color: theme === 'dark' ? 'hsl(196,100%,75%)' : 'hsl(196,100%,25%)' }}>
                     Phiên đấu giá chưa bắt đầu
                   </div>
-                  <div style={{ fontSize: '11px', color: 'hsl(196,100%,35%)', marginTop: '4px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--page-text-muted)', marginTop: '4px' }}>
                     Bắt đầu vào: {fmtDate(product.startTime)}
                   </div>
                 </div>
@@ -1235,7 +1241,7 @@ export default function ProductDetail() {
                         onClick={() => setIsAutoBid(v => !v)}
                         style={{
                           width: 36, height: 20, borderRadius: 10,
-                          background: isAutoBid ? 'hsl(196,100%,36%)' : 'hsl(0,0%,82%)',
+                          background: isAutoBid ? 'hsl(196,100%,36%)' : 'var(--page-border)',
                           border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
                           flexShrink: 0,
                         }}
@@ -1248,10 +1254,10 @@ export default function ProductDetail() {
                         }} />
                       </button>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: 'hsl(12,14%,11%)' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--page-text)' }}>
                           {isAutoBid ? 'Auto-Bid (Proxy)' : 'Manual Bid'}
                         </div>
-                        <div style={{ fontSize: 10, color: 'hsl(12,8%,55%)' }}>
+                        <div style={{ fontSize: 10, color: 'var(--page-text-muted)' }}>
                           {isAutoBid ? 'System bids for you up to your max' : 'You control each bid manually'}
                         </div>
                       </div>
@@ -1259,7 +1265,7 @@ export default function ProductDetail() {
 
                     {/* Bid amount */}
                     <div style={{ marginBottom: 8 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', display: 'block', marginBottom: 6 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', display: 'block', marginBottom: 6 }}>
                         {isAutoBid ? 'Maximum bid amount' : 'Your bid'}
                       </label>
                       <div style={{ position: 'relative' }}>
@@ -1274,9 +1280,9 @@ export default function ProductDetail() {
                           style={{ paddingRight: 32 }}
                           placeholder={`Min: ${fmtVND(minNextBid)}`}
                         />
-                        <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 700, color: 'hsl(12,8%,60%)' }}>đ</span>
+                        <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 700, color: 'var(--page-text-muted)' }}>đ</span>
                       </div>
-                      <div style={{ fontSize: 10, color: 'hsl(12,8%,60%)', marginTop: 4 }}>
+                      <div style={{ fontSize: 10, color: 'var(--page-text-muted)', marginTop: 4 }}>
                         Minimum: {fmtVND(minNextBid)} (step: {fmtVND(getStepPrice(product.currentPrice))})
                       </div>
                     </div>
@@ -1285,9 +1291,9 @@ export default function ProductDetail() {
                     {message && (
                       <div style={{
                         padding: '10px 12px', borderRadius: 4, marginBottom: 10, fontSize: 12, fontWeight: 600,
-                        background: message.type === 'success' ? 'hsl(152,72%,95%)' : 'hsl(3,83%,95%)',
-                        color: message.type === 'success' ? 'hsl(152,72%,32%)' : 'hsl(3,83%,40%)',
-                        border: `1px solid ${message.type === 'success' ? 'hsl(152,72%,75%)' : 'hsl(3,83%,75%)'}`,
+                        background: message.type === 'success' ? (theme === 'dark' ? 'rgba(16,185,129,0.15)' : 'hsl(152,72%,95%)') : (theme === 'dark' ? 'rgba(239,68,68,0.15)' : 'hsl(3,83%,95%)'),
+                        color: message.type === 'success' ? (theme === 'dark' ? 'hsl(152,72%,75%)' : 'hsl(152,72%,32%)') : (theme === 'dark' ? 'hsl(3,83%,75%)' : 'hsl(3,83%,40%)'),
+                        border: `1px solid ${message.type === 'success' ? (theme === 'dark' ? 'rgba(16,185,129,0.3)' : 'hsl(152,72%,75%)') : (theme === 'dark' ? 'rgba(239,68,68,0.3)' : 'hsl(3,83%,75%)')}`,
                       }}>
                         {message.text}
                       </div>
@@ -1316,19 +1322,19 @@ export default function ProductDetail() {
 
                   {/* Buy Now */}
                   {product.buyNowPrice && (
-                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid hsl(0,0%,93%)' }}>
-                      <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Or buy immediately:</div>
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--page-border)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--page-text-muted)', marginBottom: 6 }}>Or buy immediately:</div>
                       <button
                         id="buy-now-btn"
                         onClick={handleBuyNowClick}
                         style={{
                           width: '100%', padding: '10px', border: '2px solid hsl(196,100%,36%)',
-                          borderRadius: 4, background: 'white', color: 'hsl(196,100%,36%)',
+                          borderRadius: 4, background: theme === 'dark' ? 'transparent' : 'white', color: 'hsl(196,100%,36%)',
                           fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
                           letterSpacing: '0.04em', textTransform: 'uppercase', transition: 'all 0.15s',
                         }}
                         onMouseOver={e => { e.currentTarget.style.background = 'hsl(196,100%,36%)'; e.currentTarget.style.color = 'white'; }}
-                        onMouseOut={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'hsl(196,100%,36%)'; }}
+                        onMouseOut={e => { e.currentTarget.style.background = theme === 'dark' ? 'transparent' : 'white'; e.currentTarget.style.color = 'hsl(196,100%,36%)'; }}
                       >
                         Buy Now — {fmtVND(product.buyNowPrice)}
                       </button>
@@ -1350,7 +1356,7 @@ export default function ProductDetail() {
                         onClick={() => setDisputeModalOpen(true)}
                         style={{
                           width: '100%', padding: '10px', border: '1px solid hsl(3,83%,60%)',
-                          borderRadius: 4, background: 'white', color: 'hsl(3,83%,60%)',
+                          borderRadius: 4, background: theme === 'dark' ? 'transparent' : 'white', color: 'hsl(3,83%,60%)',
                           fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
                           letterSpacing: '0.04em', textTransform: 'uppercase', transition: 'all 0.15s',
                         }}
@@ -1374,7 +1380,7 @@ export default function ProductDetail() {
                         onClick={() => setDisputeModalOpen(true)}
                         style={{
                           width: '100%', padding: '10px', border: '1px solid hsl(3,83%,60%)',
-                          borderRadius: 4, background: 'white', color: 'hsl(3,83%,60%)',
+                          borderRadius: 4, background: theme === 'dark' ? 'transparent' : 'white', color: 'hsl(3,83%,60%)',
                           fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
                           letterSpacing: '0.04em', textTransform: 'uppercase', transition: 'all 0.15s',
                         }}
@@ -1407,7 +1413,7 @@ export default function ProductDetail() {
                           ⭐ Đánh giá người bán
                         </button>
                       ) : (
-                        <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', textAlign: 'center', background: 'hsl(0,0%,95%)', padding: '6px 8px', borderRadius: 4 }}>
+                        <div style={{ fontSize: 11, color: 'var(--page-text-muted)', textAlign: 'center', background: 'var(--page-bg)', padding: '6px 8px', borderRadius: 4 }}>
                           Bạn đã gửi đánh giá cho giao dịch này.
                         </div>
                       )}
@@ -1438,7 +1444,7 @@ export default function ProductDetail() {
                       <div style={{ fontSize: 13, color: 'hsl(3,83%,40%)', fontWeight: 750, textAlign: 'center', padding: 4 }}>
                         ⚖️ Đơn hàng đang có tranh chấp / khiếu nại
                       </div>
-                      <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: 'var(--page-text-muted)', textAlign: 'center' }}>
                         Ban quản trị đang xem xét bằng chứng và xử lý. Vui lòng thảo luận trong phòng giải quyết tranh chấp.
                       </div>
                       {product.disputeTicket?.id && (
@@ -1469,7 +1475,7 @@ export default function ProductDetail() {
                     </div>
                   )}
                   {!isWinner && !isSeller && product.status !== 'DISPUTED' && (
-                    <div style={{ fontSize: 13, color: 'hsl(12,8%,55%)', textAlign: 'center', padding: 8 }}>
+                    <div style={{ fontSize: 13, color: 'var(--page-text-muted)', textAlign: 'center', padding: 8 }}>
                       This auction has ended.
                     </div>
                   )}
@@ -1478,13 +1484,13 @@ export default function ProductDetail() {
 
               {/* Seller-only: Manage auction */}
               {isSeller && isActive && (
-                <div style={{ padding: '12px 20px', borderTop: '1px solid hsl(0,0%,93%)', background: 'hsl(40,20%,98%)' }}>
-                  <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', fontWeight: 600 }}>You are the seller of this item</div>
+                <div style={{ padding: '12px 20px', borderTop: '1px solid var(--page-border)', background: 'var(--page-bg)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--page-text-muted)', fontWeight: 600 }}>You are the seller of this item</div>
                 </div>
               )}
 
               {/* Escrow badge */}
-              <div style={{ padding: '12px 20px', borderTop: '1px solid hsl(0,0%,93%)', background: 'hsl(40,20%,98%)', fontSize: 11, color: 'hsl(12,8%,55%)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '12px 20px', borderTop: '1px solid var(--page-border)', background: 'var(--page-bg)', fontSize: 11, color: 'var(--page-text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 🛡️ AuraBid Escrow Protection &nbsp;·&nbsp; Secure payment
               </div>
             </div>
@@ -1529,15 +1535,15 @@ export default function ProductDetail() {
           style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'hsla(0,0%,0%,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={e => { if (e.target === e.currentTarget) setCheckoutModalOpen(false); }}
         >
-          <div style={{ background: 'white', borderRadius: 8, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px hsla(0,0%,0%,0.25)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid hsl(0,0%,89%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'hsl(12,14%,11%)' }}>Complete Purchase</h2>
-              <button onClick={() => setCheckoutModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'hsl(12,8%,50%)' }}>✕</button>
+          <div style={{ background: 'var(--page-card-bg)', borderRadius: 8, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px hsla(0,0%,0%,0.25)', border: '1px solid var(--page-border)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--page-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--page-text)' }}>Complete Purchase</h2>
+              <button onClick={() => setCheckoutModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--page-text-muted)' }}>✕</button>
             </div>
 
             <form onSubmit={handleCheckoutSubmit} style={{ padding: '20px 24px' }}>
-              <div style={{ fontSize: 13, color: 'hsl(12,8%,40%)', marginBottom: 16 }}>
-                Winning bid: <strong style={{ color: 'hsl(12,14%,11%)' }}>{fmtVND(product.currentPrice)}</strong>
+              <div style={{ fontSize: 13, color: 'var(--page-text-muted)', marginBottom: 16 }}>
+                Winning bid: <strong style={{ color: 'var(--page-text)' }}>{fmtVND(product.currentPrice)}</strong>
               </div>
 
               {[
@@ -1546,7 +1552,7 @@ export default function ProductDetail() {
                 { key: 'address', label: 'Street Address', placeholder: 'Street, ward, district…' },
               ].map(f => (
                 <div key={f.key} style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>{f.label}</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>{f.label}</label>
                   <input
                     id={`checkout-${f.key}`}
                     type="text"
@@ -1554,30 +1560,30 @@ export default function ProductDetail() {
                     onChange={e => setCheckoutForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                     placeholder={f.placeholder}
                     className="bid-input"
-                    style={{ fontSize: 13 }}
+                    style={{ fontSize: 13, background: 'var(--page-card-bg)', color: 'var(--page-text)', border: '2px solid var(--page-border)' }}
                   />
                 </div>
               ))}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Province</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Province</label>
                   <select
                     id="checkout-province"
                     value={checkoutForm.province}
                     onChange={e => setCheckoutForm(prev => ({ ...prev, province: e.target.value, district: '' }))}
-                    style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white' }}
+                    style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)' }}
                   >
                     {provinces.map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>District</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>District</label>
                   <select
                     id="checkout-district"
                     value={checkoutForm.district}
                     onChange={e => setCheckoutForm(prev => ({ ...prev, district: e.target.value }))}
-                    style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white' }}
+                    style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)' }}
                   >
                     <option value="">Select district</option>
                     {(districtMap[checkoutForm.province] || []).map(d => <option key={d}>{d}</option>)}
@@ -1586,13 +1592,13 @@ export default function ProductDetail() {
               </div>
 
               {estShipping != null && (
-                <div style={{ fontSize: 12, color: 'hsl(12,8%,40%)', marginBottom: 14, padding: '8px 12px', background: 'hsl(196,100%,97%)', borderRadius: 4 }}>
+                <div style={{ fontSize: 12, color: 'var(--page-text-muted)', marginBottom: 14, padding: '8px 12px', background: theme === 'dark' ? 'rgba(0,151,186,0.1)' : 'hsl(196,100%,97%)', borderRadius: 4, border: '1px solid var(--page-border)' }}>
                   Estimated shipping fee: <strong>{fmtVND(estShipping)}</strong>
                 </div>
               )}
 
               {checkoutError && (
-                <div style={{ fontSize: 12, color: 'hsl(3,83%,40%)', background: 'hsl(3,83%,95%)', padding: '8px 12px', borderRadius: 4, marginBottom: 14 }}>
+                <div style={{ fontSize: 12, color: theme === 'dark' ? 'hsl(3,83%,75%)' : 'hsl(3,83%,40%)', background: theme === 'dark' ? 'rgba(239,68,68,0.15)' : 'hsl(3,83%,95%)', padding: '8px 12px', borderRadius: 4, marginBottom: 14, border: '1px solid var(--page-border)' }}>
                   {checkoutError}
                 </div>
               )}
@@ -1611,26 +1617,26 @@ export default function ProductDetail() {
           style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'hsla(0,0%,0%,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
           onClick={e => { if (e.target === e.currentTarget) setDisputeModalOpen(false); }}
         >
-          <div style={{ background: 'white', borderRadius: 8, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px hsla(0,0%,0%,0.25)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid hsl(0,0%,89%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'hsl(12,14%,11%)' }}>Khiếu nại sản phẩm</h2>
-              <button onClick={() => setDisputeModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'hsl(12,8%,50%)' }}>✕</button>
+          <div style={{ background: 'var(--page-card-bg)', borderRadius: 8, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px hsla(0,0%,0%,0.25)', border: '1px solid var(--page-border)' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--page-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--page-text)' }}>Khiếu nại sản phẩm</h2>
+              <button onClick={() => setDisputeModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--page-text-muted)' }}>✕</button>
             </div>
 
             <form onSubmit={handleDisputeSubmit} style={{ padding: '20px 24px' }}>
               {disputeError && (
-                <div style={{ fontSize: 12, color: 'hsl(3,83%,40%)', background: 'hsl(3,83%,95%)', padding: '8px 12px', borderRadius: 4, marginBottom: 14 }}>
+                <div style={{ fontSize: 12, color: theme === 'dark' ? 'hsl(3,83%,75%)' : 'hsl(3,83%,40%)', background: theme === 'dark' ? 'rgba(239,68,68,0.15)' : 'hsl(3,83%,95%)', padding: '8px 12px', borderRadius: 4, marginBottom: 14, border: '1px solid var(--page-border)' }}>
                   {disputeError}
                 </div>
               )}
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Lý do khiếu nại</label>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Lý do khiếu nại</label>
                 <select
                   id="dispute-reason"
                   value={disputeForm.reason}
                   onChange={e => setDisputeForm(prev => ({ ...prev, reason: e.target.value }))}
-                  style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white' }}
+                  style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)' }}
                 >
                   <option>Sản phẩm không đúng mô tả</option>
                   <option>Sản phẩm bị hỏng hóc / vỡ nát</option>
@@ -1640,29 +1646,29 @@ export default function ProductDetail() {
               </div>
 
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Mô tả chi tiết lỗi</label>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Mô tả chi tiết lỗi</label>
                 <textarea
                   id="dispute-desc"
                   rows="4"
                   value={disputeForm.description}
                   onChange={e => setDisputeForm(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Vui lòng mô tả chi tiết vấn đề bạn gặp phải với sản phẩm này..."
-                  style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white', resize: 'vertical' }}
+                  style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)', resize: 'vertical' }}
                   required
                 />
               </div>
 
               <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'hsl(12,8%,55%)', marginBottom: 6 }}>Video khui hộp bằng chứng (URL)</label>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Video khui hộp bằng chứng (URL)</label>
                 <input
                   id="dispute-video"
                   type="text"
                   value={disputeForm.videoUrl}
                   onChange={e => setDisputeForm(prev => ({ ...prev, videoUrl: e.target.value }))}
                   placeholder="https://example.com/unboxing-video.mp4"
-                  style={{ width: '100%', border: '2px solid hsl(0,0%,89%)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'white' }}
+                  style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)' }}
                 />
-                <span style={{ fontSize: 10, color: 'hsl(12,8%,60%)', marginTop: 4, display: 'block' }}>Gợi ý: Dán link video bằng chứng để Admin dễ dàng phân xử.</span>
+                <span style={{ fontSize: 10, color: 'var(--page-text-muted)', marginTop: 4, display: 'block' }}>Gợi ý: Dán link video bằng chứng để Admin dễ dàng phân xử.</span>
               </div>
 
               <button id="dispute-submit-btn" type="submit" disabled={disputeSubmitting} className="bid-btn-primary">
@@ -1729,7 +1735,7 @@ export default function ProductDetail() {
         ) : sellerData ? (
           <div className="space-y-4 text-left text-xs">
             <div className="flex items-center gap-4 border-b border-neutral-100 dark:border-neutral-800 pb-4">
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'hsl(196,100%,90%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: 'hsl(196,100%,36%)' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: theme === 'dark' ? 'rgba(0,151,186,0.15)' : 'hsl(196,100%,90%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: 'hsl(196,100%,36%)' }}>
                 {(sellerData.name || sellerData.email || '?')[0].toUpperCase()}
               </div>
               <div>
@@ -1851,7 +1857,7 @@ function DetailError({ error }) {
     <div style={{ textAlign: 'center', padding: '80px 20px' }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Product Not Found</h2>
-      <p style={{ fontSize: 13, color: 'hsl(12,8%,55%)', marginBottom: 20 }}>{error || 'This item may have been removed or the link is invalid.'}</p>
+      <p style={{ fontSize: 13, color: 'var(--page-text-muted)', marginBottom: 20 }}>{error || 'This item may have been removed or the link is invalid.'}</p>
       <Link to="/" style={{ display: 'inline-block', background: 'hsl(196,100%,36%)', color: 'white', padding: '10px 24px', borderRadius: 4, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
         Back to Home
       </Link>

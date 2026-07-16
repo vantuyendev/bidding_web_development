@@ -71,12 +71,12 @@ function CategoryCard({ category, bg, accent, onSelect }) {
 
   return (
     <Link
-      to={`/?category=${category.slug}`}
+      to={`/products?category=${category.slug}`}
       onClick={handleClick}
-      id={`category-card-${category.slug}`}
+      id={`category-shelf-item-${category.id}`}
       aria-label={`Browse ${category.name}`}
-      className="group flex flex-col rounded-lg overflow-hidden border border-[hsl(0,0%,89%)] cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-      style={{ textDecoration: 'none', background: 'white' }}
+      className="group flex flex-col rounded-lg overflow-hidden bg-[var(--page-card-bg)] border border-[var(--page-border)] cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+      style={{ textDecoration: 'none' }}
     >
       {/* Image area */}
       <div
@@ -97,12 +97,12 @@ function CategoryCard({ category, bg, accent, onSelect }) {
       {/* Label */}
       <div
         className="px-3 py-2.5"
-        style={{ borderTop: '1px solid hsl(0,0%,93%)' }}
+        style={{ borderTop: '1px solid var(--page-border)' }}
       >
         <span
           className="font-display text-sm font-500 leading-tight block"
           style={{
-            color: 'hsl(12,14%,11%)',
+            color: 'var(--page-text)',
             fontFamily: 'var(--font-display)',
             fontWeight: 500,
             letterSpacing: '0.02em',
@@ -117,7 +117,7 @@ function CategoryCard({ category, bg, accent, onSelect }) {
         {category.productCount != null && (
           <span
             className="text-[10px] mt-0.5 block"
-            style={{ color: 'hsl(12,8%,55%)' }}
+            style={{ color: 'var(--page-text-muted)' }}
           >
             {category.productCount.toLocaleString()} items
           </span>

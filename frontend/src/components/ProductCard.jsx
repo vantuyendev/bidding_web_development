@@ -83,7 +83,7 @@ export default function ProductCard({ product, watched = false, className = '' }
             </span>
           )}
           {sellerName && (
-            <span className="text-[10px] text-[hsl(12,8%,55%)] truncate ml-auto">
+            <span className="text-[10px] text-[var(--page-text-muted)] truncate ml-auto">
               {sellerName}
             </span>
           )}
@@ -92,7 +92,7 @@ export default function ProductCard({ product, watched = false, className = '' }
         {/* Title */}
         <Link
           to={`/products/${id}`}
-          className="block font-display text-[13px] font-medium text-[hsl(12,14%,11%)] leading-snug hover:text-[hsl(196,100%,36%)] transition-colors"
+          className="block font-display text-[13px] font-medium text-[var(--page-text)] leading-snug hover:text-[hsl(196,100%,36%)] transition-colors"
           style={{
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -114,16 +114,16 @@ export default function ProductCard({ product, watched = false, className = '' }
         {/* Price Info */}
         <div className="flex items-end justify-between gap-2">
           <div className="flex flex-col">
-            <span className="text-[10px] text-[hsl(12,8%,55%)] uppercase tracking-wider">
+            <span className="text-[10px] text-[var(--page-text-muted)] uppercase tracking-wider">
               {isEnded ? 'Sold for' : bidCount > 0 ? 'Current bid' : 'Starting bid'}
             </span>
-            <span className="font-display text-[15px] font-bold text-[hsl(12,14%,11%)] leading-tight">
+            <span className="font-display text-[15px] font-bold text-[var(--page-text)] leading-tight">
               {formattedPrice}
             </span>
           </div>
 
           {bidCount != null && (
-            <span className="text-[10px] text-[hsl(12,8%,55%)]">
+            <span className="text-[10px] text-[var(--page-text-muted)]">
               {bidCount} {bidCount === 1 ? 'bid' : 'bids'}
             </span>
           )}
