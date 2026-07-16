@@ -16,6 +16,10 @@ import {
   adminGetPendingKyc,
   adminApproveKyc
 } from '../controllers/userController.js';
+import {
+  adminGetBankSettings,
+  adminUpdateBankSettings
+} from '../controllers/settingController.js';
 
 const router = express.Router();
 
@@ -45,6 +49,10 @@ router.post('/wallet-requests/:id/confirm', adminConfirmWalletRequest);
 // Phê duyệt sản phẩm
 router.get('/products', adminGetPendingProducts);
 router.post('/products/:id/approve', adminApproveProduct);
+
+// Cấu hình chuyển khoản (nạp tiền)
+router.get('/bank-settings', adminGetBankSettings);
+router.put('/bank-settings', adminUpdateBankSettings);
 
 // Nhật ký hoạt động (Audit logs)
 router.get('/audit-logs', adminGetAuditLogs);

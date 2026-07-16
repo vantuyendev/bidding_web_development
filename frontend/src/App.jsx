@@ -34,6 +34,7 @@ import KycApproval from './pages/admin/KycApproval';
 import DisputeManagement from './pages/admin/DisputeManagement';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminAuditLogs from './pages/admin/AdminAuditLogs';
+import AdminSettings from './pages/admin/AdminSettings';
 
 export default function App() {
   return (
@@ -80,6 +81,7 @@ export default function App() {
                     <Route path="disputes" element={<DisputeManagement />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="audit-logs" element={<AdminAuditLogs />} />
+                    <Route path="settings" element={<AdminSettings />} />
                   </Route>
                 </Route>
               </Route>

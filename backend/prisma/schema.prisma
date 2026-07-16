@@ -438,3 +438,11 @@ model ProductQnaMessage {
   @@index([senderId])
   @@map("product_qna_messages")
 }
+
+model SystemSetting {
+  key   String @id
+  value String @db.Text
+
+  @@map("system_settings")
+}
+

@@ -2,6 +2,7 @@ import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
 import ApiError from '../utils/ApiError.js';
 import { z } from 'zod';
+import { getBankSettings } from './settingController.js';
 
 // Định nghĩa các schema xác thực đầu vào bằng Zod
 const depositSchema = z.object({
@@ -196,6 +197,8 @@ export const depositFunds = async (req, res, next) => {
       }
     });
 
+    const bankInfo = await getBankSettings();
+
     return res.status(201).json({
       success: true,
       message: 'Yêu cầu nạp tiền đã được tạo. Vui lòng chuyển khoản và chờ Admin xác nhận.',
@@ -203,11 +206,7 @@ export const depositFunds = async (req, res, next) => {
         id: walletRequest.id,
         amount: Number(walletRequest.amount),
         transferNote,
-        adminBankInfo: {
-          bankName: process.env.ADMIN_BANK_NAME || 'Vietcombank',
-          bankAccount: process.env.ADMIN_BANK_ACCOUNT || '1234567890',
-          bankOwner: process.env.ADMIN_BANK_OWNER || 'NGUYEN VAN A'
-        }
+        adminBankInfo: bankInfo
       }
     });
   } catch (error) {
@@ -305,14 +304,12 @@ export const getUserWalletRequests = async (req, res, next) => {
       prisma.walletRequest.count({ where })
     ]);
 
+    const bankInfo = await getBankSettings();
+
     return res.json({
       success: true,
       data: requests.map(r => ({ ...r, amount: Number(r.amount) })),
-      adminBankInfo: {
-        bankName: process.env.ADMIN_BANK_NAME || 'Vietcombank',
-        bankAccount: process.env.ADMIN_BANK_ACCOUNT || '1234567890',
-        bankOwner: process.env.ADMIN_BANK_OWNER || 'NGUYEN VAN A'
-      },
+      adminBankInfo: bankInfo,
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (error) {

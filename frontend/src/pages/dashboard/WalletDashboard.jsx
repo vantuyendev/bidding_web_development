@@ -506,7 +506,8 @@ export default function WalletDashboard(props) {
               <div className="p-4 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-500/20">
                 <p className="font-bold text-xs">✓ Tạo yêu cầu thành công!</p>
                 <p className="text-[10px] mt-1 leading-relaxed">
-                  Vui lòng thực hiện chuyển khoản ngân hàng theo thông tin bên dưới. Giao dịch sẽ được cộng vào ví của bạn ngay khi Admin xác thực đã nhận tiền.
+                  {depositInstructions.adminBankInfo?.depositInstructions || 
+                    'Vui lòng thực hiện chuyển khoản ngân hàng theo thông tin bên dưới. Giao dịch sẽ được cộng vào ví của bạn ngay khi Admin xác thực đã nhận tiền.'}
                 </p>
               </div>
 
@@ -516,15 +517,27 @@ export default function WalletDashboard(props) {
                 {/* VietQR Integration */}
                 <div className="flex flex-col items-center justify-center p-3 mb-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/50 dark:border-neutral-800/80">
                   <p className="text-[10px] text-neutral-405 mb-2 font-bold uppercase tracking-wider">Quét mã QR để chuyển khoản nhanh</p>
-                  <img
-                    src={`https://img.vietqr.io/image/${getVietQRBankId(depositInstructions.adminBankInfo?.bankName)}-${depositInstructions.adminBankInfo?.bankAccount}-compact2.png?amount=${depositInstructions.amount}&addInfo=${encodeURIComponent(depositInstructions.transferNote)}&accountName=${encodeURIComponent(depositInstructions.adminBankInfo?.bankOwner || '')}`}
-                    alt="VietQR Transfer"
-                    className="w-44 h-44 object-contain rounded-lg border border-neutral-100 dark:border-neutral-800"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                  <p className="text-[9px] text-neutral-400 mt-2 text-center">Tự động điền Số tài khoản, Số tiền & Nội dung chuyển khoản</p>
+                  {depositInstructions.adminBankInfo?.qrImageUrl ? (
+                    <img
+                      src={depositInstructions.adminBankInfo.qrImageUrl}
+                      alt="Admin Transfer QR Code"
+                      className="w-44 h-44 object-contain rounded-lg border border-neutral-100 dark:border-neutral-800"
+                    />
+                  ) : (
+                    <img
+                      src={`https://img.vietqr.io/image/${getVietQRBankId(depositInstructions.adminBankInfo?.bankName)}-${depositInstructions.adminBankInfo?.bankAccount}-compact2.png?amount=${depositInstructions.amount}&addInfo=${encodeURIComponent(depositInstructions.transferNote)}&accountName=${encodeURIComponent(depositInstructions.adminBankInfo?.bankOwner || '')}`}
+                      alt="VietQR Transfer"
+                      className="w-44 h-44 object-contain rounded-lg border border-neutral-100 dark:border-neutral-800"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <p className="text-[9px] text-neutral-400 mt-2 text-center">
+                    {depositInstructions.adminBankInfo?.qrImageUrl 
+                      ? 'Vui lòng đối chiếu kỹ thông tin trước khi thực hiện giao dịch' 
+                      : 'Tự động điền Số tài khoản, Số tiền & Nội dung chuyển khoản'}
+                  </p>
                 </div>
 
                 <div className="space-y-2.5 text-xs text-neutral-700 dark:text-neutral-300">
