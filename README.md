@@ -28,15 +28,15 @@
 ### Mô hình hoạt động
 
 ```
-┌────────────┐     Đăng sản phẩm     ┌──────────────────┐     Đặt giá thầu     ┌────────────┐
-│  NGƯỜI BÁN │ ──────────────────────▶│  HỆ THỐNG ĐẤU   │◀──────────────────── │  NGƯỜI MUA │
+┌────────────┐     Đăng sản phẩm      ┌──────────────────┐     Đặt giá thầu     ┌────────────┐
+│  NGƯỜI BÁN │ ──────────────────────>│  HỆ THỐNG ĐẤU    │<──────────────────── │  NGƯỜI MUA │
 │  (Seller)  │                        │   GIÁ (BidHub)   │                      │  (Buyer)   │
 └────────────┘                        └──────────────────┘                      └────────────┘
        │                                       │                                       │
        │  Nhận tiền khi giao hàng thành công   │   Đóng băng tiền vào Ví Escrow        │
-       │◀──────────────────────────────────────│──────────────────────────────────────▶│
+       │<──────────────────────────────────────│──────────────────────────────────────>│
        │                                       │                                       │
-       │          Tranh chấp? ──▶ Admin phân xử và hoàn tiền / giải ngân              │
+       │          Tranh chấp? ──> Admin phân xử và hoàn tiền / giải ngân               │
 ```
 
 ---
@@ -87,33 +87,33 @@ Hệ thống tuân theo kiến trúc **Client-Server** phân tách rõ ràng:
                                           │ HTTP / HTTPS
                                           ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                            FRONTEND (React + Vite)                         │
-│  ┌─────────┐  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌─────────────┐  │
-│  │ Pages   │  │Components│  │  Context   │  │   API    │  │    CSS      │  │
-│  │ (trang) │  │(thành    │  │ (trạng     │  │ (gọi    │  │ (giao diện) │  │
-│  │         │  │  phần)   │  │  thái)     │  │  server) │  │             │  │
-│  └─────────┘  └──────────┘  └───────────┘  └──────────┘  └─────────────┘  │
+│                            FRONTEND (React + Vite)                          │
+│  ┌─────────┐  ┌──────────┐  ┌───────────┐  ┌──────────┐  ┌─────────────┐    │
+│  │ Pages   │  │Components│  │  Context  │  │   API    │  │    CSS      │    │
+│  │ (trang) │  │(thành    │  │ (trạng    │  │ (gọi     │  │ (giao diện) │    │
+│  │         │  │  phần)   │  │  thái)    │  │  server) │  │             │    │
+│  └─────────┘  └──────────┘  └───────────┘  └──────────┘  └─────────────┘    │
 └─────────────────────────────────┬───────────────────────────────────────────┘
                                   │ REST API (JSON)
                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        BACKEND (Express.js + Node.js)                      │
+┌───────────────────────────────────────────────────────────────────────────┐
+│                        BACKEND (Express.js + Node.js)                     │
 │  ┌──────────┐  ┌────────────┐  ┌──────────┐  ┌─────────┐  ┌───────────┐   │
-│  │  Routes  │─▶│ Middleware │─▶│Controller│─▶│ Service │─▶│  Prisma   │   │
+│  │  Routes  │─>│ Middleware │─>│Controller│─>│ Service │─>│  Prisma   │   │
 │  │(định     │  │(xác thực,  │  │(xử lý    │  │(nghiệp  │  │  ORM      │   │
 │  │ tuyến)   │  │ bảo mật)   │  │ logic)   │  │ vụ)     │  │           │   │
 │  └──────────┘  └────────────┘  └──────────┘  └─────────┘  └─────┬─────┘   │
-│  ┌──────────┐  ┌────────────┐                                    │         │
-│  │ Workers  │  │   Utils    │                                    │         │
-│  │(tác vụ   │  │(tiện ích   │                                    │         │
-│  │ nền)     │  │ dùng chung)│                                    │         │
-│  └──────────┘  └────────────┘                                    │         │
-└──────────────────────────────────────────────────────────────────┼─────────┘
-                                                                   │ SQL
-                                                                   ▼
+│  ┌──────────┐  ┌────────────┐                                   │         │
+│  │ Workers  │  │   Utils    │                                   │         │
+│  │(tác vụ   │  │(tiện ích   │                                   │         │
+│  │ nền)     │  │ dùng chung)│                                   │         │
+│  └──────────┘  └────────────┘                                   │         │
+└─────────────────────────────────────────────────────────────────┼─────────┘
+                                                                  │ SQL
+                                                                  ▼
                                                     ┌──────────────────────┐
                                                     │   PostgreSQL 16      │
-                                                    │   (Cơ sở dữ liệu)   │
+                                                    │   (Cơ sở dữ liệu)    │
                                                     └──────────────────────┘
 ```
 
@@ -404,32 +404,32 @@ Hệ thống sử dụng **19 bảng dữ liệu** trong PostgreSQL, được qu
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                        DATABASE SCHEMA                                │
+│                        DATABASE SCHEMA                               │
 ├──────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│  👤 User ◄────────┬──────── 🏷️ Product ◄──────── 📂 Category         │
-│   │               │            │                     │                │
-│   │  ┌────────────┘            │                  AttributeKey        │
-│   │  │                         │                     │                │
-│   │  │   💰 Bid ◄──────────────┤              ProductAttribute       │
-│   │  │                         │                                      │
-│   │  │   📦 OrderMessage       │                                      │
-│   │  │                         │                                      │
-│   ├──┤   💳 Transaction        ├──── ⭐ Review                        │
-│   │  │                         │                                      │
-│   │  │   💼 WalletRequest      ├──── 👁️ Watchlist                     │
-│   │  │                         │                                      │
-│   │  │   🔔 Notification       ├──── ❓ ProductQnaMessage             │
-│   │  │                         │                                      │
-│   │  │   📋 AuditLog           │                                      │
-│   │  │                         │                                      │
-│   │  └── ⚖️ DisputeTicket ◄───┘                                      │
-│   │         │                                                         │
-│   │         └── 💬 DisputeMessage                                     │
-│   │                                                                   │
-│   ├── 🎫 SupportTicket                                               │
-│   │      └── 💬 SupportMessage                                       │
-│   │                                                                   │
+│                                                                      │
+│   User ◄───────┬────────  Product ◄────────  Category                │
+│   │            │            │                     │                  │
+│   │  ┌─────────┘            │                  AttributeKey          │
+│   │  │                      │                     │                  │
+│   │  │    Bid ◄─────────────┤              ProductAttribute          │
+│   │  │                      │                                        │
+│   │  │    OrderMessage      │                                        │
+│   │  │                      │                                        │
+│   ├──┤    Transaction       ├────  Review                            │
+│   │  │                      │                                        │
+│   │  │    WalletRequest     ├────  Watchlist                         │ 
+│   │  │                      │                                        │
+│   │  │    Notification      ├────  ProductQnaMessage                 │
+│   │  │                      │                                        │
+│   │  │    AuditLog          │                                        │
+│   │  │                      │                                        │
+│   │  └──  DisputeTicket ◄───┘                                        │
+│   │         │                                                        │
+│   │         └──  DisputeMessage                                      │
+│   │                                                                  │
+│   ├──  SupportTicket                                                 │
+│   │      └──  SupportMessage                                         │
+│   │                                                                  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -502,9 +502,9 @@ Hệ thống sử dụng **19 bảng dữ liệu** trong PostgreSQL, được qu
 ### 1. Đấu giá với Khoá Dòng (Row Locking)
 ```
 Người A gửi thầu ──┐
-                    │   Transaction + SELECT ... FOR UPDATE
+                   │   Transaction + SELECT ... FOR UPDATE
 Người B gửi thầu ──┤   → Khoá dòng sản phẩm trong database
-                    │   → Chỉ 1 người được xử lý tại 1 thời điểm
+                   │   → Chỉ 1 người được xử lý tại 1 thời điểm
 Người C gửi thầu ──┘   → Tránh xung đột Race Condition
 ```
 
@@ -521,11 +521,11 @@ Người mua đặt thầu → Tiền bị đóng băng (frozenBalance += amount
 
 ### 3. Server-Sent Events (SSE)
 ```
-Client mở kết nối HTTP ──────────────────────────────────────▶ Server
-         ◀── headers: Content-Type: text/event-stream ──────── Server
-         ◀── data: {"newBid": 500000, "user": "Tuyên"} ────── Server (khi có thầu mới)
-         ◀── : heartbeat ──────────────────────────────────── Server (mỗi 30 giây)
-         ◀── data: {"timeExtended": true} ─────────────────── Server (khi gia hạn)
+Client mở kết nối HTTP ──────────────────────────────────────> Server
+         <── headers: Content-Type: text/event-stream ──────── Server
+         <── data: {"newBid": 500000, "user": "Tuyên"} ────── Server (khi có thầu mới)
+         <── : heartbeat ──────────────────────────────────── Server (mỗi 30 giây)
+         <── data: {"timeExtended": true} ─────────────────── Server (khi gia hạn)
 ```
 
 ---
