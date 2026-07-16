@@ -10,13 +10,18 @@ import {
   getPublicUserProfile,
   cancelWalletRequest,
   getWonAuctions,
-  getUserTransactionHistory
+  getUserTransactionHistory,
+  updateProfile
 } from '../controllers/userController.js';
 
 const router = express.Router();
 
 // GET /profile - Lấy thông tin chi tiết hồ sơ người dùng đang đăng nhập (được bảo vệ)
 router.get('/profile', requireAuth, getUserProfile);
+
+// PUT /profile - Cập nhật tên hiển thị và ảnh đại diện (được bảo vệ)
+router.put('/profile', requireAuth, requireNotBanned, updateProfile);
+
 
 // POST /verify-seller - Đặt người dùng hiện tại làm người bán đã xác minh (được bảo vệ)
 router.post('/verify-seller', requireAuth, requireNotBanned, verifySeller);

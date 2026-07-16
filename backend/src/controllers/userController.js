@@ -161,6 +161,60 @@ export const verifySeller = async (req, res, next) => {
   }
 };
 
+// Cập nhật hồ sơ cá nhân: tên hiển thị và ảnh đại diện
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(1, { message: "Tên hiển thị không được để trống." }).max(64, { message: "Tên hiển thị không được vượt quá 64 ký tự." }).optional(),
+  // Chấp nhận: URL thông thường (https://...) hoặc Data URI (data:image/...;base64,...) hoặc chuỗi rỗng (xoá ảnh)
+  avatarUrl: z.string().trim().max(5 * 1024 * 1024, { message: "Dữ liệu ảnh quá lớn." })
+    .refine(val => val === '' || val.startsWith('data:image/') || /^https?:\/\/.+/.test(val), {
+      message: "Ảnh đại diện phải là URL hợp lệ hoặc file ảnh được tải lên."
+    })
+    .optional()
+    .or(z.literal(''))
+});
+
+export const updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.session?.userId;
+    if (!userId) return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
+
+    const validation = updateProfileSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+
+    const { name, avatarUrl } = validation.data;
+
+    // Chỉ cập nhật các trường được truyền lên
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl || null;
+
+    if (Object.keys(updateData).length === 0) {
+      throw new ApiError(400, 'Không có thông tin nào được cập nhật.');
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        avatarUrl: true,
+        email: true
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cập nhật hồ sơ thành công.',
+      data: updatedUser
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // Tạo yêu cầu nạp tiền — admin sẽ xác nhận sau khi user chuyển khoản
 export const depositFunds = async (req, res, next) => {
   const userId = req.session?.userId;
