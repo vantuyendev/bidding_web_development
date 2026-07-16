@@ -121,6 +121,7 @@ export default function Navbar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyToast, setVerifyToast] = useState(null); // { type: 'success'|'error', message }
   const [activeMegaMenu, setActiveMegaMenu] = useState(null); // slug danh mục
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -256,13 +257,28 @@ export default function Navbar() {
     fetchNotifications();
   };
 
+  const showVerifyToast = (type, message) => {
+    setVerifyToast({ type, message });
+    setTimeout(() => setVerifyToast(null), 4000);
+  };
+
   const handleVerifySeller = async () => {
     setVerifyLoading(true);
+    setIsDropdownOpen(false); // đóng dropdown trước để tránh lỗi click-outside
     try {
       const res = await fetch(getApiUrl('/api/users/verify-seller'), { method: 'POST', credentials: 'include' });
       const data = await res.json();
-      if (data.success) await refreshUser();
-    } finally { setVerifyLoading(false); }
+      if (data.success) {
+        await refreshUser();
+        showVerifyToast('success', '🎉 Tài khoản của bạn đã được nâng cấp thành Người bán!');
+      } else {
+        showVerifyToast('error', data.error || 'Không thể nâng cấp tài khoản. Vui lòng thử lại.');
+      }
+    } catch (err) {
+      showVerifyToast('error', 'Lỗi kết nối máy chủ.');
+    } finally {
+      setVerifyLoading(false);
+    }
   };
 
   const openMegaMenu = (slug) => {
@@ -291,6 +307,24 @@ export default function Navbar() {
 
   return (
     <>
+      {/* ── Verify Seller Toast ── */}
+      {verifyToast && (
+        <div
+          style={{
+            position: 'fixed', top: 72, right: 20, zIndex: 9999,
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '12px 18px', borderRadius: 14,
+            background: verifyToast.type === 'success' ? 'hsl(152,72%,40%)' : 'hsl(3,83%,55%)',
+            color: '#fff', fontSize: 13, fontWeight: 600,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            animation: 'fadeIn 0.2s ease',
+          }}
+        >
+          <span>{verifyToast.type === 'success' ? '✓' : '✕'}</span>
+          {verifyToast.message}
+        </div>
+      )}
+
       {/* ── Main Navbar ────────────────────────────────────── */}
       <nav
         id="main-navbar"
