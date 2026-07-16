@@ -623,7 +623,7 @@ CLIENT_URL="http://localhost:5173"
 
 - **Họ tên**: Văn Tuyên
 - **GitHub**: [vantuyendev](https://github.com/vantuyendev)
-- **Dự án**: Đồ án tốt nghiệp — Hệ thống đấu giá trực tuyến C2C
+- **Dự án**: Hệ thống đấu giá trực tuyến C2C
 
 ---
 
