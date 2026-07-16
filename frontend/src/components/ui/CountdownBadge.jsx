@@ -30,7 +30,7 @@ export default function CountdownBadge({ endTime, className = '', compact = fals
     : 'countdown-normal';
 
   if (compact) {
-    // Short format: "2d 4h" or "45m 30s"
+    // Định dạng rút gọn: "2d 4h" hoặc "45m 30s"
     let label = '';
     if (days > 0)         label = `${days}d ${hours}h`;
     else if (hours > 0)   label = `${hours}h ${minutes}m`;
@@ -44,7 +44,7 @@ export default function CountdownBadge({ endTime, className = '', compact = fals
     );
   }
 
-  // Full format
+  // Định dạng đầy đủ
   let label = '';
   if (days > 0)         label = `${days}d ${hours}h ${minutes}m`;
   else if (hours > 0)   label = `${hours}h ${minutes}m ${seconds}s`;

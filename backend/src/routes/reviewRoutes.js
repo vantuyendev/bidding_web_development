@@ -4,7 +4,7 @@ import { requireNotBanned } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// POST /api/reviews - Create a review for an ended product transaction
+// POST /api/reviews - Tạo đánh giá cho giao dịch sản phẩm đã kết thúc
 router.post('/', requireNotBanned, createReview);
 
 export default router;

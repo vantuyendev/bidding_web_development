@@ -3,7 +3,7 @@ import ApiError from '../utils/ApiError.js';
 import { slugify } from '../utils/slugify.js';
 import productEvents from '../utils/eventEmitter.js';
 
-// GET /api/products - Get all products in the database (with query optimization)
+// GET /api/products - Lấy tất cả sản phẩm trong cơ sở dữ liệu (kèm tối ưu hóa truy vấn)
 export const getProducts = async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
@@ -52,7 +52,7 @@ export const getProducts = async (req, res, next) => {
       }
     });
 
-    // Convert Decimals to numbers for easier consumption on frontend
+    // Chuyển đổi Decimal thành Number để dễ sử dụng ở frontend
     const formattedProducts = products.map((product) => ({
       ...product,
       startPrice: Number(product.startPrice),
@@ -73,7 +73,7 @@ export const getProducts = async (req, res, next) => {
   }
 };
 
-// GET /api/products/:id - Get a product by ID (enriched with EAV specs, bids, seller, etc.)
+// GET /api/products/:id - Lấy sản phẩm theo ID (lấy kèm thuộc tính EAV, đấu giá, người bán, v.v.)
 export const getProductDetail = async (req, res, next) => {
   const { id } = req.params;
 
@@ -120,7 +120,7 @@ export const getProductDetail = async (req, res, next) => {
       throw new ApiError(404, "Không tìm thấy sản phẩm.");
     }
 
-    // Convert Decimals to numbers for easier consumption on frontend
+    // Chuyển đổi Decimal thành Number để dễ sử dụng ở frontend
     const formattedProduct = {
       ...product,
       startPrice: Number(product.startPrice),
@@ -162,7 +162,7 @@ export const getProductDetail = async (req, res, next) => {
   }
 };
 
-// GET /api/products/categories/:categorySlug/filters - Get dynamic filters for a category
+// GET /api/products/categories/:categorySlug/filters - Lấy bộ lọc động cho một danh mục
 export const getCategoryFilters = async (req, res, next) => {
   const { categorySlug } = req.params;
 
@@ -178,7 +178,7 @@ export const getCategoryFilters = async (req, res, next) => {
       throw new ApiError(404, "Không tìm thấy danh mục ngành hàng.");
     }
 
-    // Dynamically retrieve unique options for each attribute key to aid front-end filter generation
+    // Lấy động các tùy chọn duy nhất cho mỗi khóa thuộc tính để hỗ trợ tạo bộ lọc ở frontend
     const filtersWithOptions = await Promise.all(category.attributeKeys.map(async (key) => {
       const uniqueValues = await prisma.productAttribute.findMany({
         where: { attributeKeyId: key.id },
@@ -207,14 +207,14 @@ export const getCategoryFilters = async (req, res, next) => {
   }
 };
 
-// GET /api/products/search - Search products with dynamic EAV filters (with query optimization)
+// GET /api/products/search - Tìm kiếm sản phẩm với bộ lọc EAV động (kèm tối ưu hóa truy vấn)
 export const searchProducts = async (req, res, next) => {
   try {
     const { q, query, categorySlug, categoryId, page = 1, limit = 10 } = req.query;
 
     const andConditions = [];
 
-    // Only return approved and active/upcoming products that haven't ended yet
+    // Chỉ trả về các sản phẩm đã được duyệt và đang hoạt động/sắp diễn ra mà chưa kết thúc
     andConditions.push({
       approvalStatus: 'APPROVED',
       deletedAt: null,
@@ -225,7 +225,7 @@ export const searchProducts = async (req, res, next) => {
       ]
     });
 
-    // 1. Text Search (title / description)
+    // 1. Tìm kiếm văn bản (tiêu đề / mô tả)
     const searchText = query || q;
     if (searchText) {
       andConditions.push({
@@ -236,7 +236,7 @@ export const searchProducts = async (req, res, next) => {
       });
     }
 
-    // 2. Category filter
+    // 2. Lọc theo danh mục
     if (categorySlug) {
       andConditions.push({
         category: {
@@ -249,7 +249,7 @@ export const searchProducts = async (req, res, next) => {
       });
     }
 
-    // 3. Dynamic EAV attributes filtering
+    // 3. Lọc thuộc tính EAV động
     let parsedFilters = {};
     if (req.query.filters) {
       try {
@@ -260,7 +260,7 @@ export const searchProducts = async (req, res, next) => {
         console.error("Lỗi giải mã JSON filters:", e);
       }
     } else {
-      // Treat custom query parameters as filters
+      // Coi các tham số truy vấn tùy chỉnh là bộ lọc
       const standardParams = ['query', 'q', 'categorySlug', 'categoryId', 'page', 'limit', 'sortBy', 'sortOrder'];
       for (const [key, val] of Object.entries(req.query)) {
         if (!standardParams.includes(key) && val !== undefined && val !== null && val !== '') {
@@ -269,13 +269,13 @@ export const searchProducts = async (req, res, next) => {
       }
     }
 
-    // Convert dynamic attribute filters to Prisma AND some conditions
+    // Chuyển đổi bộ lọc thuộc tính động thành các điều kiện AND của Prisma
     for (const [key, val] of Object.entries(parsedFilters)) {
       if (val === undefined || val === null || val === '') continue;
 
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(key);
 
-      // Support array filtering (e.g. ram=["8GB", "16GB"] or ram=8GB,16GB)
+      // Hỗ trợ lọc dạng mảng (ví dụ: ram=["8GB", "16GB"] hoặc ram=8GB,16GB)
       const values = Array.isArray(val) 
         ? val 
         : typeof val === 'string' && val.includes(',')
@@ -305,7 +305,7 @@ export const searchProducts = async (req, res, next) => {
       }
     }
 
-    // 4. Pagination & Query execution
+    // 4. Phân trang & Thực thi truy vấn
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
@@ -344,7 +344,7 @@ export const searchProducts = async (req, res, next) => {
       })
     ]);
 
-    // Format products response
+    // Định dạng phản hồi danh sách sản phẩm
     const formattedProducts = products.map((product) => ({
       ...product,
       startPrice: Number(product.startPrice),
@@ -375,7 +375,7 @@ export const searchProducts = async (req, res, next) => {
   }
 };
 
-// POST /api/products - Create a new product for bidding (Seller only)
+// POST /api/products - Tạo sản phẩm mới để đấu giá (Chỉ Người bán)
 export const createProduct = async (req, res, next) => {
   try {
     const userId = req.session.userId;
@@ -400,7 +400,7 @@ export const createProduct = async (req, res, next) => {
       stepPrice,
       categoryId,
       newCategoryName,
-      startTime, // NEW: seller-chosen start time
+      startTime, // MỚI: thời gian bắt đầu do người bán chọn
       endTime,
       weight,
       length,
@@ -408,10 +408,10 @@ export const createProduct = async (req, res, next) => {
       height,
       provinceId,
       districtId,
-      attributes, // expects array or object map
+      attributes, // yêu cầu một mảng hoặc một bản đồ đối tượng
     } = req.body;
 
-    // Validate endTime: max 48 hours from startTime
+    // Xác thực endTime: tối đa 48 giờ kể từ startTime
     const chosenStart = startTime ? new Date(startTime) : new Date();
     const chosenEnd = new Date(endTime);
     const maxEndTime = new Date(chosenStart.getTime() + 48 * 60 * 60 * 1000);
@@ -509,7 +509,7 @@ export const createProduct = async (req, res, next) => {
           reservePrice: reservePrice ? Number(reservePrice) : null,
           stepPrice: stepPrice ? Number(stepPrice) : undefined,
           categoryId: actualCategoryId,
-          // startTime: seller can choose start time; default is now
+          // startTime: người bán có thể chọn thời gian bắt đầu; mặc định là ngay bây giờ
           startTime: startTime ? new Date(startTime) : new Date(),
           endTime: new Date(endTime),
           weight: weight ? Number(weight) : undefined,
@@ -519,7 +519,7 @@ export const createProduct = async (req, res, next) => {
           provinceId: provinceId || undefined,
           districtId: districtId || undefined,
           sellerId: userId,
-          // New: Products start as DRAFT and PENDING_REVIEW until admin approves
+          // Mới: Sản phẩm bắt đầu dưới dạng DRAFT (nháp) và PENDING_REVIEW (chờ duyệt) cho đến khi admin phê duyệt
           status: 'DRAFT',
           approvalStatus: 'PENDING_REVIEW',
           attributes: parsedAttributes.length > 0 ? {
@@ -546,7 +546,7 @@ export const createProduct = async (req, res, next) => {
       return prod;
     });
 
-    // Format response (convert Decimals to numbers for frontend consumption)
+    // Định dạng phản hồi (chuyển đổi Decimal thành Number để frontend sử dụng)
     const formattedProduct = {
       ...product,
       startPrice: Number(product.startPrice),
@@ -735,7 +735,7 @@ export const updateProduct = async (req, res, next) => {
   }
 };
 
-// GET /api/products/:id/bids - Get bid history for a product
+// GET /api/products/:id/bids - Lấy lịch sử đấu giá của sản phẩm
 export const getProductBids = async (req, res, next) => {
   const { id } = req.params;
 
@@ -774,7 +774,7 @@ export const getProductBids = async (req, res, next) => {
   }
 };
 
-// GET /api/products/:id/qna - Get all Q&A messages for a product
+// GET /api/products/:id/qna - Lấy tất cả tin nhắn hỏi đáp cho sản phẩm
 export const getProductQna = async (req, res, next) => {
   const { id } = req.params;
 
@@ -811,7 +811,7 @@ export const getProductQna = async (req, res, next) => {
   }
 };
 
-// POST /api/products/:id/qna - Post a new Q&A message
+// POST /api/products/:id/qna - Gửi câu hỏi đáp mới
 export const createProductQna = async (req, res, next) => {
   const { id } = req.params;
   const { message } = req.body;
@@ -834,7 +834,7 @@ export const createProductQna = async (req, res, next) => {
       throw new ApiError(404, "Không tìm thấy sản phẩm.");
     }
 
-    // Constraint: only ACTIVE or DRAFT products can receive Q&A
+    // Ràng buộc: chỉ sản phẩm ĐANG HOẠT ĐỘNG hoặc NHÁP mới có thể nhận Q&A
     if (!['ACTIVE', 'DRAFT'].includes(product.status)) {
       throw new ApiError(400, "Phiên đấu giá đã kết thúc hoặc không còn hoạt động. Không thể gửi câu hỏi/trả lời.");
     }
@@ -856,7 +856,7 @@ export const createProductQna = async (req, res, next) => {
       }
     });
 
-    // Broadcast update via SSE
+    // Phát sóng cập nhật qua SSE
     productEvents.emit(`update-${id}`, { qnaMessage: newMessage });
 
     return res.status(201).json({

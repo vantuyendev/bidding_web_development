@@ -1,7 +1,7 @@
 import prisma from '../models/db.js';
 import productEvents from '../utils/eventEmitter.js';
 
-// GET /api/orders/:id/messages
+// GET /api/orders/:id/messages - Lấy tin nhắn
 export const getOrderMessages = async (req, res) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
@@ -56,7 +56,7 @@ export const getOrderMessages = async (req, res) => {
   }
 };
 
-// POST /api/orders/:id/messages
+// POST /api/orders/:id/messages - Gửi tin nhắn
 export const createOrderMessage = async (req, res) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
@@ -90,7 +90,7 @@ export const createOrderMessage = async (req, res) => {
       return res.status(403).json({ success: false, error: 'Bạn không có quyền gửi tin nhắn trong đơn hàng này.' });
     }
 
-    // Block sending messages if status is completed, cancelled, or unsold
+    // Chặn gửi tin nhắn nếu trạng thái là đã hoàn thành, đã hủy hoặc không bán được
     if (['COMPLETED', 'CANCELLED', 'UNSOLD', 'ENDED'].includes(product.status)) {
       return res.status(400).json({
         success: false,
@@ -115,7 +115,7 @@ export const createOrderMessage = async (req, res) => {
       }
     });
 
-    // Real-time SSE notify
+    // Thông báo SSE thời gian thực
     productEvents.emit(`update-${productId}`, { chatMessage: newMessage });
 
     return res.status(201).json({

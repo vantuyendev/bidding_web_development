@@ -56,7 +56,7 @@ export const createDisputeTicket = async (req, res, next) => {
         throw new ApiError(400, "Sản phẩm chưa kết thúc đấu giá hoặc không ở trạng thái hợp lệ để khiếu nại.");
       }
 
-      // Check who won the auction (highest bidder)
+      // Kiểm tra xem ai đã thắng phiên đấu giá (người đặt giá cao nhất)
       const highestBid = await tx.bid.findFirst({
         where: { productId: product.id },
         orderBy: { bidAmount: 'desc' }
@@ -70,13 +70,13 @@ export const createDisputeTicket = async (req, res, next) => {
         throw new ApiError(403, "Chỉ người mua trúng đấu giá mới có quyền khiếu nại sản phẩm này.");
       }
 
-      // Lock product state by setting status to DISPUTED
+      // Khóa trạng thái sản phẩm bằng cách đặt trạng thái thành DISPUTED (đang tranh chấp)
       await tx.product.update({
         where: { id: productId },
         data: { status: 'DISPUTED' }
       });
 
-      // Create dispute ticket
+      // Tạo phiếu khiếu nại
       const ticket = await tx.disputeTicket.create({
         data: {
           productId,
@@ -108,6 +108,17 @@ export const createDisputeTicket = async (req, res, next) => {
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
+/**
+ * HÀM GIẢI QUYẾT KHIẾU NẠI CỦA ADMIN (adminResolveTicket)
+ * - Nó là gì: Cho phép quản trị viên xem xét bằng chứng tranh chấp (ví dụ: video khui hàng) 
+ *   và đưa ra phán quyết cuối cùng: Hoàn tiền cho Người mua hoặc Giải ngân cho Người bán.
+ * - Để làm gì: Giải quyết triệt để các xung đột C2C khi giao dịch gặp sự cố (ví dụ hàng hỏng, hàng giả).
+ * - Cơ chế hoạt động:
+ *   + Nếu phán quyết là HOÀN TIỀN (RESOLVED_REFUND): Hệ thống giải phóng số tiền đang bị đóng băng 
+ *     ở ví ký quỹ (Escrow) trả ngược lại số dư khả dụng (walletBalance) của Người mua.
+ *   + Nếu phán quyết là GIẢI NGÂN CHO NGƯỜI BÁN (RESOLVED_PAY): Hệ thống trừ vĩnh viễn số tiền đóng băng 
+ *     của Người mua và cộng trực tiếp vào ví khả dụng (walletBalance) của Người bán.
+ */
 export const adminResolveTicket = async (req, res, next) => {
   const adminId = req.session?.userId;
   if (!adminId) {
@@ -123,7 +134,7 @@ export const adminResolveTicket = async (req, res, next) => {
     const { ticketId, status } = validation.data;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Verify admin privilege by checking email in DB
+      // 1. Xác minh quyền admin bằng cách kiểm tra email trong DB
       const adminUser = await tx.user.findUnique({
         where: { id: adminId },
         select: { isAdmin: true }
@@ -132,7 +143,7 @@ export const adminResolveTicket = async (req, res, next) => {
         throw new ApiError(403, "Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện phán quyết.");
       }
 
-      // 2. Fetch ticket and related product with row-locking (selective SELECT to optimize performance)
+      // 2. Lấy thông tin khiếu nại và sản phẩm liên quan kèm khóa dòng (SELECT có chọn lọc để tối ưu hiệu năng)
       const ticket = await tx.disputeTicket.findUnique({
         where: { id: ticketId },
         select: {
@@ -172,7 +183,7 @@ export const adminResolveTicket = async (req, res, next) => {
       const buyerId = ticket.openedById;
       const sellerId = product.sellerId || "seller-id-placeholder";
 
-      // 3. Find the winning bid to retrieve deposit details
+      // 3. Tìm lượt đấu giá thắng để lấy thông tin đặt cọc
       const highestBid = await tx.bid.findFirst({
         where: { productId: product.id },
         orderBy: { bidAmount: 'desc' }
@@ -186,17 +197,27 @@ export const adminResolveTicket = async (req, res, next) => {
         ? new Prisma.Decimal(highestBid.maxAutoBidAmount).mul(0.1)
         : new Prisma.Decimal(highestBid.bidAmount).mul(0.1);
 
-      // Check if winner has checked out (paid remaining 90% and shipping fee)
+      // CƠ CHẾ KÝ QUỸ TRUNG GIAN (Escrow Wallet System):
+      // - Nếu người mua đã thanh toán xong đơn hàng (thanh toán 90% còn lại + phí vận chuyển),
+      //   toàn bộ số tiền (100% giá trị sản phẩm + phí vận chuyển) đang bị đóng băng ở frozenBalance của người mua.
+      // - Nếu người mua chưa thanh toán nốt (chỉ mới đặt cọc 10% sau khi thắng đấu giá), 
+      //   số tiền tranh chấp lúc này chỉ là 10% đặt cọc ban đầu.
       const hasCheckedOut = !!(product.winnerName && product.shippingFee);
       const escrowAmount = hasCheckedOut
         ? new Prisma.Decimal(product.currentPrice).plus(new Prisma.Decimal(product.shippingFee))
         : depositAmount;
 
       if (status === 'RESOLVED_REFUND') {
-        // Refund Buyer: Release buyer's frozen escrow/deposit to wallet
+        // PHÁN QUYẾT 1: HOÀN TIỀN CHO NGƯỜI MUA (RESOLVED_REFUND)
+        // - Ý nghĩa: Người mua thắng khiếu nại (ví dụ hàng vỡ hỏng, thiếu hàng).
+        // - Hành động: Giải phóng tiền từ trạng thái đóng băng (frozenBalance) quay về ví khả dụng (walletBalance) của người mua.
         await releaseEscrow(tx, buyerId, escrowAmount, product.id);
       } else if (status === 'RESOLVED_PAY') {
-        // Pay Seller: Deduct escrow from buyer's frozen balance and transfer to seller
+        // PHÁN QUYẾT 2: GIẢI NGÂN CHO NGƯỜI BÁN (RESOLVED_PAY)
+        // - Ý nghĩa: Người bán thắng khiếu nại (ví dụ người mua có ý gian lận, tráo hàng).
+        // - Hành động: 
+        //   1. Trừ tiền khỏi số dư bị đóng băng (frozenBalance) của người mua.
+        //   2. Cộng tiền tương ứng vào số dư ví khả dụng (walletBalance) của người bán.
         const buyer = await tx.user.findUnique({
           where: { id: buyerId },
           select: { frozenBalance: true }
@@ -210,7 +231,7 @@ export const adminResolveTicket = async (req, res, next) => {
           throw new ApiError(400, "Số dư đóng băng của người mua không đủ để thực hiện thanh toán.");
         }
 
-        // Deduct from buyer's frozen balance
+        // Khấu trừ từ số dư bị đóng băng của người mua
         await tx.user.update({
           where: { id: buyerId },
           data: {
@@ -218,7 +239,7 @@ export const adminResolveTicket = async (req, res, next) => {
           }
         });
 
-        // Log buyer deduction
+        // Ghi nhật ký khấu trừ của người mua
         await tx.transaction.create({
           data: {
             userId: buyerId,
@@ -229,7 +250,7 @@ export const adminResolveTicket = async (req, res, next) => {
           }
         });
 
-        // Ensure seller account exists
+        // Đảm bảo tài khoản người bán tồn tại
         await tx.user.upsert({
           where: { id: sellerId },
           update: {},
@@ -243,14 +264,14 @@ export const adminResolveTicket = async (req, res, next) => {
           }
         });
 
-        // Fetch seller wallet
+        // Lấy ví của người bán
         const seller = await tx.user.findUnique({
           where: { id: sellerId },
           select: { walletBalance: true }
         });
         const sellerWallet = new Prisma.Decimal(seller.walletBalance);
 
-        // Credit to seller's wallet balance
+        // Cộng tiền vào số dư ví của người bán
         await tx.user.update({
           where: { id: sellerId },
           data: {
@@ -258,7 +279,7 @@ export const adminResolveTicket = async (req, res, next) => {
           }
         });
 
-        // Log seller credit transaction
+        // Ghi nhật ký giao dịch cộng tiền cho người bán
         await tx.transaction.create({
           data: {
             userId: sellerId,
@@ -270,7 +291,7 @@ export const adminResolveTicket = async (req, res, next) => {
         });
       }
 
-      // 4. Update dispute ticket and product states
+      // 4. Cập nhật trạng thái yêu cầu khiếu nại và sản phẩm
       const updatedTicket = await tx.disputeTicket.update({
         where: { id: ticketId },
         data: { status }

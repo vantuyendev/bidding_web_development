@@ -3,13 +3,13 @@ import { getNotifications, markAsRead, streamNotifications } from '../controller
 
 const router = express.Router();
 
-// GET /api/notifications/live - SSE stream for notifications (protected, mounted with requireAuth in server.js)
+// GET /api/notifications/live - Luồng SSE cho thông báo (được bảo vệ, gắn kèm requireAuth trong server.js)
 router.get('/live', streamNotifications);
 
-// GET /api/notifications - Get list of notifications for current user
+// GET /api/notifications - Lấy danh sách thông báo của người dùng hiện tại
 router.get('/', getNotifications);
 
-// PUT /api/notifications/read - Mark one or all notifications of current user as read
+// PUT /api/notifications/read - Đánh dấu một hoặc tất cả thông báo của người dùng hiện tại là đã đọc
 router.put('/read', markAsRead);
 
 export default router;

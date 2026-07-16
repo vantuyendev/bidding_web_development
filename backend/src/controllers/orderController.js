@@ -4,7 +4,7 @@ import { calculateShippingFee } from '../services/shippingService.js';
 import { triggerProductUpdate } from './streamController.js';
 import ApiError from '../utils/ApiError.js';
 
-// POST /api/products/:id/checkout
+// POST /api/products/:id/checkout - Thanh toán
 export const checkoutProduct = async (req, res, next) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
@@ -37,7 +37,7 @@ export const checkoutProduct = async (req, res, next) => {
         throw new ApiError(403, 'Bạn không phải là người chiến thắng phiên đấu giá này.');
       }
 
-      // Format product for calculateShippingFee service
+      // Định dạng sản phẩm cho dịch vụ tính phí vận chuyển calculateShippingFee
       const productForFee = {
         weight: product.weight,
         length: product.length,
@@ -55,7 +55,7 @@ export const checkoutProduct = async (req, res, next) => {
       const remainingAmount = new Prisma.Decimal(product.current_price).mul(0.9);
       const totalDue = remainingAmount.plus(shippingFee);
 
-      // Lock user balance
+      // Khóa số dư người dùng
       const buyer = await tx.user.findUnique({
         where: { id: userId },
         select: { walletBalance: true, frozenBalance: true }
@@ -69,7 +69,7 @@ export const checkoutProduct = async (req, res, next) => {
         throw new ApiError(400, `Số dư ví không đủ để thanh toán 90% còn lại và phí ship (cần ${Number(totalDue).toLocaleString('vi-VN')} đ).`);
       }
 
-      // Freeze 90% + shipping fee (moving from walletBalance to frozenBalance)
+      // Đóng băng 90% còn lại + phí vận chuyển (chuyển từ walletBalance sang frozenBalance)
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -78,7 +78,7 @@ export const checkoutProduct = async (req, res, next) => {
         }
       });
 
-      // Log transaction
+      // Ghi nhật ký giao dịch
       await tx.transaction.create({
         data: {
           userId,
@@ -89,7 +89,7 @@ export const checkoutProduct = async (req, res, next) => {
         }
       });
 
-      // Update product status, address info
+      // Cập nhật trạng thái sản phẩm và thông tin địa chỉ
       const updatedProduct = await tx.product.update({
         where: { id: productId },
         data: {
@@ -98,12 +98,12 @@ export const checkoutProduct = async (req, res, next) => {
           winnerPhone,
           winnerAddress,
           shippingFee: shippingFee,
-          provinceId: toProvinceId, // save destination province
-          districtId: toDistrictId // save destination district
+          provinceId: toProvinceId, // lưu tỉnh/thành phố đích
+          districtId: toDistrictId // lưu quận/huyện đích
         }
       });
 
-      // Create notification for seller
+      // Tạo thông báo cho người bán
       await tx.notification.create({
         data: {
           userId: product.seller_id,
@@ -132,7 +132,7 @@ export const checkoutProduct = async (req, res, next) => {
   }
 };
 
-// POST /api/products/:id/ship
+// POST /api/products/:id/ship - Giao hàng
 export const shipProduct = async (req, res, next) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
@@ -163,7 +163,7 @@ export const shipProduct = async (req, res, next) => {
       data: { status: 'SHIPPED' }
     });
 
-    // Create notification for winner
+    // Tạo thông báo cho người thắng cuộc
     await prisma.notification.create({
       data: {
         userId: product.winnerId,
@@ -185,7 +185,7 @@ export const shipProduct = async (req, res, next) => {
   }
 };
 
-// POST /api/products/:id/receive
+// POST /api/products/:id/receive - Nhận hàng
 export const receiveProduct = async (req, res, next) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
@@ -212,12 +212,12 @@ export const receiveProduct = async (req, res, next) => {
         throw new ApiError(400, 'Đơn hàng chưa được vận chuyển hoặc đã hoàn tất.');
       }
 
-      // Calculate total amount to transfer to seller (100% price + shipping fee)
+      // Tính tổng số tiền chuyển cho người bán (100% giá + phí vận chuyển)
       const currentPrice = new Prisma.Decimal(product.currentPrice);
       const shippingFee = new Prisma.Decimal(product.shippingFee || 0);
       const totalEscrow = currentPrice.plus(shippingFee);
 
-      // Verify buyer frozen balance is enough
+      // Xác minh số dư bị đóng băng của người mua có đủ không
       const buyer = await tx.user.findUnique({
         where: { id: userId },
         select: { frozenBalance: true }
@@ -231,7 +231,7 @@ export const receiveProduct = async (req, res, next) => {
         throw new ApiError(400, 'Lỗi đồng bộ: Số dư đóng băng của người mua không đủ.');
       }
 
-      // Deduct from buyer frozen balance
+      // Khấu trừ từ số dư bị đóng băng của người mua
       await tx.user.update({
         where: { id: userId },
         data: {
@@ -239,7 +239,7 @@ export const receiveProduct = async (req, res, next) => {
         }
       });
 
-      // Credit to seller walletBalance
+      // Cộng tiền vào số dư ví của người bán (walletBalance)
       const seller = await tx.user.findUnique({
         where: { id: product.sellerId },
         select: { walletBalance: true }
@@ -254,7 +254,7 @@ export const receiveProduct = async (req, res, next) => {
         }
       });
 
-      // Log transaction logs
+      // Ghi nhật ký hoạt động giao dịch
       await tx.transaction.create({
         data: {
           userId,
@@ -274,13 +274,13 @@ export const receiveProduct = async (req, res, next) => {
         }
       });
 
-      // Update product status
+      // Cập nhật trạng thái sản phẩm
       const updatedProduct = await tx.product.update({
         where: { id: productId },
         data: { status: 'COMPLETED' }
       });
 
-      // Create notification for seller
+      // Tạo thông báo cho người bán
       await tx.notification.create({
         data: {
           userId: product.sellerId,

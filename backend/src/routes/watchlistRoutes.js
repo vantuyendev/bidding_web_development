@@ -4,16 +4,16 @@ import { addToWatchlist, removeFromWatchlist, getWatchlist } from '../controller
 
 const router = express.Router();
 
-// All watchlist routes require authentication
+// Tất cả các tuyến đường danh sách theo dõi đều yêu cầu xác thực
 router.use(requireAuth);
 
-// GET /api/watchlist - Get all watchlisted products (protected)
+// GET /api/watchlist - Lấy tất cả sản phẩm trong danh sách theo dõi (được bảo vệ)
 router.get('/', getWatchlist);
 
-// POST /api/watchlist - Add a product to watchlist (protected)
+// POST /api/watchlist - Thêm sản phẩm vào danh sách theo dõi (được bảo vệ)
 router.post('/', requireNotBanned, addToWatchlist);
 
-// DELETE /api/watchlist/:productId - Remove a product from watchlist (protected)
+// DELETE /api/watchlist/:productId - Xóa sản phẩm khỏi danh sách theo dõi (được bảo vệ)
 router.delete('/:productId', requireNotBanned, removeFromWatchlist);
 
 export default router;

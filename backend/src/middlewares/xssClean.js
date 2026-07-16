@@ -15,7 +15,7 @@ function cleanValue(data = '') {
     try {
       data = JSON.parse(data);
     } catch (e) {
-      // Ignore parsing errors
+      // Bỏ qua các lỗi phân tích cú pháp
     }
   }
 

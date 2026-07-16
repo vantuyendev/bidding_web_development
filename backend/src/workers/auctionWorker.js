@@ -213,7 +213,7 @@ cron.schedule('*/5 * * * *', async () => {
         data: { deletedAt: new Date(), status: 'CANCELLED' }
       });
 
-      // Notification cho seller
+      // Thông báo cho người bán
       await prisma.notification.create({
         data: {
           userId: product.sellerId,

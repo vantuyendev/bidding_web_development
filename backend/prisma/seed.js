@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('[SEED] Seeding database with production metadata...');
 
-  // Create Production Categories
+  // Tạo danh mục sản xuất
   const categoriesData = [
     { id: 'cat-dien-thoai', name: 'Điện thoại', slug: 'dien-thoai' },
     { id: 'cat-laptop', name: 'Laptop & Máy tính', slug: 'laptop-may-tinh' },
@@ -28,7 +28,7 @@ async function main() {
     console.log(`[SEED] Created/Verified category: ${cat.name} (${cat.slug})`);
   }
 
-  // Create Production Attribute Keys
+  // Tạo khóa thuộc tính sản xuất
   const attributeKeysData = [
     // Điện thoại
     { id: 'key-dt-brand', categoryId: 'cat-dien-thoai', name: 'Hãng sản xuất', type: 'SELECT' },

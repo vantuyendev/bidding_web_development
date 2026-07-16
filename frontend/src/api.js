@@ -8,7 +8,7 @@ export const getApiUrl = (path) => {
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const hasApiInBase = cleanBaseUrl.endsWith('/api');
     
-    // Only strip '/api' if base URL already ends with '/api'
+    // Chỉ loại bỏ '/api' nếu URL cơ sở đã kết thúc bằng '/api'
     const cleanPath = (hasApiInBase && path.startsWith('/api')) ? path.substring(4) : path;
     const cleanPathWithSlash = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
     return `${cleanBaseUrl}${cleanPathWithSlash}`;
@@ -25,7 +25,7 @@ export const getSseUrl = (productId) => {
     const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const hasApiInBase = cleanBaseUrl.endsWith('/api');
     
-    // Only add '/api' prefix if the base URL does not already include it
+    // Chỉ thêm tiền tố '/api' nếu URL cơ sở chưa bao gồm nó
     const pathPrefix = hasApiInBase ? '' : '/api';
     return `${cleanBaseUrl}${pathPrefix}/products/${productId}/live`;
   }

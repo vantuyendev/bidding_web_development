@@ -1,6 +1,6 @@
 import prisma from '../models/db.js';
 
-// POST /api/watchlist - Add a product to current user's watchlist
+// POST /api/watchlist - Thêm sản phẩm vào danh sách theo dõi của người dùng hiện tại
 export const addToWatchlist = async (req, res) => {
   const userId = req.session?.userId;
   const { productId } = req.body;
@@ -49,7 +49,7 @@ export const addToWatchlist = async (req, res) => {
   }
 };
 
-// DELETE /api/watchlist/:productId - Remove a product from watchlist
+// DELETE /api/watchlist/:productId - Xóa sản phẩm khỏi danh sách theo dõi
 export const removeFromWatchlist = async (req, res) => {
   const userId = req.session?.userId;
   const { productId } = req.params;
@@ -78,7 +78,7 @@ export const removeFromWatchlist = async (req, res) => {
   }
 };
 
-// GET /api/watchlist - Retrieve current user's watchlist products
+// GET /api/watchlist - Lấy sản phẩm trong danh sách theo dõi của người dùng hiện tại
 export const getWatchlist = async (req, res) => {
   const userId = req.session?.userId;
 

@@ -3,7 +3,7 @@ import { getEstimateFee } from '../controllers/shippingController.js';
 
 const router = express.Router();
 
-// Support both GET /api/shipping and /api/shipping/estimate for flexible client access
+// Hỗ trợ cả GET /api/shipping và /api/shipping/estimate để client truy cập linh hoạt
 router.get('/', getEstimateFee);
 router.get('/estimate', getEstimateFee);
 router.post('/estimate', getEstimateFee);

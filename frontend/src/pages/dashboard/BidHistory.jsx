@@ -11,7 +11,7 @@ export default function BidHistory(props) {
   const [reviewProductId, setReviewProductId] = useState('');
   const [reviewProductName, setReviewProductName] = useState('');
 
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'active' | 'won' | 'lost'
+  const [activeFilter, setActiveFilter] = useState('all'); // 'tất cả' | 'đang hoạt động' | 'đã thắng' | 'đã thua'
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('vi-VN') + ' đ';
   

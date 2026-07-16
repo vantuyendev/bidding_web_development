@@ -16,7 +16,7 @@ function AnimatedNumber({ target, duration = 1200 }) {
     const tick = (now) => {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out-cubic
+      const eased = 1 - Math.pow(1 - progress, 3); // hiệu ứng ease-out-cubic
       setDisplay(Math.round(from + (to - from) * eased));
       if (progress < 1) raf.current = requestAnimationFrame(tick);
     };

@@ -6,7 +6,7 @@ export default function AdminAuditLogs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Pagination & Search states
+  // Trạng thái Phân trang & Tìm kiếm
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -48,7 +48,7 @@ export default function AdminAuditLogs() {
     return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
-  // Render dynamic action badges
+  // Hiển thị các huy hiệu hành động động
   const getActionBadge = (action) => {
     let classes = 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300';
     if (action.includes('BAN')) {

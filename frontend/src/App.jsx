@@ -12,7 +12,7 @@ import DisputeDetail from './pages/DisputeDetail';
 import UserProfile from './pages/UserProfile';
 import CatalogPage from './pages/catalog/CatalogPage';
 
-// Dashboard pages
+// Các trang dashboard
 import UserSettings from './pages/dashboard/UserSettings';
 import WalletDashboard from './pages/dashboard/WalletDashboard';
 import BidHistory from './pages/dashboard/BidHistory';
@@ -23,7 +23,7 @@ import UserDisputes from './pages/dashboard/UserDisputes';
 import WonAuctions from './pages/dashboard/WonAuctions';
 import NotificationsPage from './pages/dashboard/NotificationsPage';
 
-// Admin pages
+// Các trang admin
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';

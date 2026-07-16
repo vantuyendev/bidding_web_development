@@ -7,7 +7,14 @@ import { triggerNotificationSend } from '../utils/notificationEmitter.js';
 import ApiError from '../utils/ApiError.js';
 
 /**
- * Tính Bước giá Biến thiên tự động theo currentPrice
+ * TÍNH BƯỚC GIÁ BIẾN THIÊN TỰ ĐỘNG (calculateStepPrice)
+ * - Nó là gì: Khoảng cách giá tối thiểu giữa lượt đặt giá mới và giá hiện tại.
+ * - Để làm gì: Tránh trường hợp người dùng đặt giá nâng lên một lượng quá nhỏ (ví dụ sản phẩm 10 triệu mà đặt thêm 1 đồng).
+ *   Quy định bước giá tăng dần theo giá trị sản phẩm:
+ *     + Giá trị sản phẩm < 1.000.000đ: bước giá là 10.000đ.
+ *     + Giá trị sản phẩm từ 1.000.000đ đến dưới 5.000.000đ: bước giá là 50.000đ.
+ *     + Giá trị sản phẩm từ 5.000.000đ trở lên: bước giá là 100.000đ.
+ * - Ý nghĩa: Đẩy nhanh tốc độ đấu giá và duy trì sự chuyên nghiệp, công bằng cho phiên.
  * @param {number|Prisma.Decimal|string} currentPrice
  * @returns {Prisma.Decimal}
  */
@@ -46,7 +53,7 @@ export const placeBid = async (req, res, next) => {
   }
 
   try {
-    // Validate request body using Zod (safeParse will throw a validation error if failed, or we can SafeParse and throw ApiError)
+    // Xác thực body của yêu cầu bằng Zod (safeParse sẽ ném ra lỗi xác thực nếu thất bại, hoặc chúng ta có thể SafeParse rồi ném lỗi ApiError)
     const validation = bidSchema.safeParse(req.body);
     if (!validation.success) {
       const errors = validation.error.errors.map(err => err.message).join(' ');
@@ -55,7 +62,7 @@ export const placeBid = async (req, res, next) => {
 
     const { productId, bidAmount, maxAutoBidAmount } = validation.data;
 
-    // Convert inputs to Decimal objects if present
+    // Chuyển đổi đầu vào thành đối tượng Decimal nếu có
     const bidDecimal = bidAmount !== undefined && bidAmount !== null ? new Prisma.Decimal(bidAmount) : null;
     const maxAutoBidDecimal = maxAutoBidAmount !== undefined && maxAutoBidAmount !== null ? new Prisma.Decimal(maxAutoBidAmount) : null;
 
@@ -63,9 +70,12 @@ export const placeBid = async (req, res, next) => {
     const ipAddress = req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || null;
     const userAgent = req.headers['user-agent'] || null;
 
-    // High-security Database Transaction
+    // GIAO DỊCH DATABASE BẢO MẬT CAO (Database Transaction)
+    // - Nó là gì: Gom một nhóm các thao tác DB vào một khối thực thi duy nhất tuân thủ tính chất ACID.
+    // - Để làm gì: Đảm bảo tính toàn vẹn dữ liệu tuyệt đối. Nếu có bất kỳ lỗi nào xảy ra giữa chừng 
+    //   (ví dụ đóng băng ví bị lỗi), toàn bộ giao dịch sẽ Rollback (quay xe), không lưu lại bất kỳ thay đổi nào.
     const result = await prisma.$transaction(async (tx) => {
-      // Ensure mock user exists in DB
+      // Đảm bảo người dùng giả lập tồn tại trong DB
       await tx.user.upsert({
         where: { id: userId },
         update: {},
@@ -78,7 +88,11 @@ export const placeBid = async (req, res, next) => {
         },
       });
 
-      // Row-level Locking: Lock product row - Tối ưu hóa selective SELECT
+      // KHÓA DÒNG DỮ LIỆU ĐỂ TRÁNH TRANH CHẤP (Row-level Locking - FOR UPDATE)
+      // - Nó là gì: Raw query sử dụng từ khóa "FOR UPDATE" để khóa sản phẩm đang được truy vấn trong DB.
+      // - Để làm gì: Ngăn ngừa Race Condition (Xung đột đồng thời). Nếu có 100 người dùng cùng click đặt giá 
+      //   ở cùng một phần nghìn giây, DB sẽ buộc họ phải xếp hàng thực hiện lần lượt. Người thứ nhất khóa dòng,
+      //   tính toán giá mới, lưu lại rồi mới mở khóa dòng để người thứ hai truy vấn.
       const products = await tx.$queryRaw`
         SELECT id, title, status, current_price, end_time, seller_id FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
@@ -91,7 +105,7 @@ export const placeBid = async (req, res, next) => {
       const now = new Date();
       const endTime = new Date(product.end_time);
 
-      // Check if auction has ended
+      // Kiểm tra xem phiên đấu giá đã kết thúc chưa
       if (now > endTime || product.status === 'ENDED' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
         throw new ApiError(400, "Buổi đấu giá đã kết thúc");
       }
@@ -105,7 +119,12 @@ export const placeBid = async (req, res, next) => {
       let isProxySetup = false;
 
       if (maxAutoBidDecimal !== null) {
-        // Proxy Bid
+        // CƠ CHẾ ĐẤU GIÁ HỘ (Proxy Bidding / Auto Bid)
+        // - Nó là gì: Người dùng chỉ cần thiết lập giá tối đa họ sẵn sàng trả (maxAutoBidAmount).
+        //   Hệ thống sẽ thay mặt họ tự động đấu thầu lên từng bước giá một khi có người khác trả giá cao hơn.
+        // - Để làm gì: Người dùng không cần trực tiếp canh phiên đấu giá 24/7.
+        // - Ký quỹ: Tiền cọc giữ hộ sẽ tự động đóng băng dựa trên 10% giá trị tối đa (maxAutoBidAmount) 
+        //   thay vì giá trị thầu hiện tại, nhằm đảm bảo người dùng đủ khả năng thanh toán nếu đẩy giá thầu tới đích.
         isProxySetup = true;
         depositAmount = maxAutoBidDecimal.mul(0.1);
 
@@ -115,7 +134,8 @@ export const placeBid = async (req, res, next) => {
 
         initialBidAmountDecimal = nextValidBid;
       } else {
-        // Manual Bid
+        // Đặt giá thủ công (Manual Bidding)
+        // Người dùng đặt giá trị thầu cụ thể ở lượt thầu này. Đóng băng cọc bằng 10% giá trị lượt thầu này.
         if (bidDecimal === null) {
           throw new ApiError(400, "Vui lòng cung cấp số tiền đặt giá");
         }
@@ -181,7 +201,7 @@ export const placeBid = async (req, res, next) => {
       let currentPrice = initialBidAmountDecimal;
       const bidsCreated = [initialBid];
 
-      // Proxy Loop
+      // Vòng lặp Proxy
       let loopCount = 0;
       const maxIterations = 100;
       while (loopCount < maxIterations) {
@@ -274,7 +294,12 @@ export const placeBid = async (req, res, next) => {
         throw new Error("Phát hiện vòng lặp vô hạn trong Đấu giá Tự động.");
       }
 
-      // Sniping Protection
+      // CƠ CHẾ CHỐNG BẮN TỈA PHÚT CHÓT (Sniping Protection)
+      // - Nó là gì: Nếu có một lượt đặt giá (thủ công hoặc tự động) được gửi vào hệ thống trong khoảng 30 giây
+      //   trước khi phiên đấu giá kết thúc, thời gian kết thúc sẽ được gia hạn thêm 2 phút.
+      // - Để làm gì: Ngăn chặn các hành vi "bắn tỉa" (sniper) - việc người đặt giá chờ đến giây cuối cùng để thầu 
+      //   khiến những người đấu giá cũ không kịp phản ứng. Cơ chế này đem lại sự công bằng và giúp sản phẩm 
+      //   đạt được giá trị thực tế cao nhất có thể.
       const timeRemainingMs = endTime.getTime() - now.getTime();
       let newEndTime = undefined;
 
@@ -314,7 +339,7 @@ export const placeBid = async (req, res, next) => {
       };
     });
 
-    // Broadcast SSE update event for bids
+    // Phát sóng sự kiện cập nhật SSE cho các lượt đấu giá
     for (const bid of result.bidsCreated) {
       const bidUser = await prisma.user.findUnique({
         where: { id: bid.userId },
@@ -340,7 +365,7 @@ export const placeBid = async (req, res, next) => {
       );
     }
 
-    // Broadcast user notifications
+    // Phát sóng thông báo người dùng
     for (const notif of result.notificationsToTrigger) {
       triggerNotificationSend(notif.userId, notif);
     }
@@ -372,7 +397,7 @@ export const buyNow = async (req, res, next) => {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // Ensure user exists
+      // Đảm bảo người dùng tồn tại
       await tx.user.upsert({
         where: { id: userId },
         update: {},
@@ -408,7 +433,7 @@ export const buyNow = async (req, res, next) => {
       const buyNowPriceDecimal = new Prisma.Decimal(product.buy_now_price);
       const depositAmount = buyNowPriceDecimal.mul(0.1);
 
-      // Verify wallet balance
+      // Xác minh số dư ví
       const buyer = await tx.user.findUnique({
         where: { id: userId },
         select: { walletBalance: true }
@@ -417,12 +442,12 @@ export const buyNow = async (req, res, next) => {
         throw new ApiError(400, "Số dư ví không đủ để đặt cọc mua đứt (cần cọc 10% giá trị mua đứt).");
       }
 
-      // Hold deposit (10%)
+      // Giữ tiền đặt cọc (10%)
       await holdEscrow(tx, userId, depositAmount, product.id);
 
       const notificationsToTrigger = [];
 
-      // Release previous highest bidder deposit if any
+      // Giải phóng tiền cọc của người đặt giá cao nhất trước đó nếu có
       const oldHighestBid = await tx.bid.findFirst({
         where: { productId: product.id },
         orderBy: { bidAmount: 'desc' }
@@ -434,7 +459,7 @@ export const buyNow = async (req, res, next) => {
           : new Prisma.Decimal(oldHighestBid.bidAmount).mul(0.1);
         await releaseEscrow(tx, oldHighestBid.userId, oldDeposit, product.id);
 
-        // Notify old highest bidder
+        // Thông báo cho người đặt giá cao nhất cũ
         const notifOutbid = await tx.notification.create({
           data: {
             userId: oldHighestBid.userId,
@@ -446,7 +471,7 @@ export const buyNow = async (req, res, next) => {
         notificationsToTrigger.push(notifOutbid);
       }
 
-      // Notify seller
+      // Thông báo cho người bán
       const notifSeller = await tx.notification.create({
         data: {
           userId: product.seller_id,
@@ -457,7 +482,7 @@ export const buyNow = async (req, res, next) => {
       });
       notificationsToTrigger.push(notifSeller);
 
-      // Notify buyer
+      // Thông báo cho người mua
       const notifBuyer = await tx.notification.create({
         data: {
           userId: userId,
@@ -468,7 +493,7 @@ export const buyNow = async (req, res, next) => {
       });
       notificationsToTrigger.push(notifBuyer);
 
-      // Create winning bid record
+      // Tạo bản ghi đấu giá thắng
       const bid = await tx.bid.create({
         data: {
           productId: product.id,
@@ -480,7 +505,7 @@ export const buyNow = async (req, res, next) => {
         }
       });
 
-      // End the auction: set currentPrice = buyNowPrice, status = PENDING_PAYMENT
+      // Kết thúc phiên đấu giá: đặt currentPrice = buyNowPrice, status = PENDING_PAYMENT
       const updatedProduct = await tx.product.update({
         where: { id: product.id },
         data: {
@@ -514,7 +539,7 @@ export const buyNow = async (req, res, next) => {
       };
     });
 
-    // Broadcast SSE update event
+    // Phát sóng sự kiện cập nhật SSE
     const bidUser = await prisma.user.findUnique({
       where: { id: result.bid.userId },
       select: { id: true, email: true }
@@ -538,7 +563,7 @@ export const buyNow = async (req, res, next) => {
       formattedBidForSse
     );
 
-    // Trigger user notifications via SSE
+    // Kích hoạt thông báo người dùng qua SSE
     for (const notif of result.notificationsToTrigger) {
       triggerNotificationSend(notif.userId, notif);
     }

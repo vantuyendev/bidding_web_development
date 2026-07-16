@@ -8,7 +8,7 @@ export default function AdminCategories() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Form states
+  // Trạng thái biểu mẫu
   const [newCategoryName, setNewCategoryName] = useState('');
   const [attributes, setAttributes] = useState([]); // [{ name: '', type: 'TEXT' }]
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +57,7 @@ export default function AdminCategories() {
     setError(null);
     setSuccess(null);
 
-    // Validate attributes: ensure all defined attributes have names
+    // Xác thực thuộc tính: đảm bảo tất cả các thuộc tính đã định nghĩa đều có tên
     const filteredAttributes = attributes.filter(attr => attr.name && attr.name.trim() !== "");
 
     try {

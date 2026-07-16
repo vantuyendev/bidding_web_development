@@ -44,7 +44,7 @@ async function checkAdmin(adminId) {
 }
 
 // ─────────────────────────────────────────────
-// USER MANAGEMENT
+// QUẢN LÝ NGƯỜI DÙNG
 // ─────────────────────────────────────────────
 
 // GET /api/admin/users — Danh sách tất cả users
@@ -145,7 +145,7 @@ export const adminBanUser = async (req, res, next) => {
       }
     });
 
-    // Ghi audit log
+    // Ghi nhật ký hoạt động (audit log)
     await prisma.auditLog.create({
       data: {
         userId: adminId,
@@ -178,7 +178,7 @@ export const adminBanUser = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────
-// AUCTION MANAGEMENT
+// QUẢN LÝ ĐẤU GIÁ
 // ─────────────────────────────────────────────
 
 // GET /api/admin/auctions — Danh sách phiên đấu giá đang ACTIVE
@@ -294,7 +294,7 @@ export const adminCancelAuction = async (req, res, next) => {
         data: { status: 'CANCELLED', deletedAt: new Date() }
       });
 
-      // Notification cho seller
+      // Thông báo cho người bán
       await tx.notification.create({
         data: {
           userId: product.sellerId,
@@ -304,7 +304,7 @@ export const adminCancelAuction = async (req, res, next) => {
         }
       });
 
-      // Ghi audit log
+      // Ghi nhật ký hoạt động (audit log)
       await tx.auditLog.create({
         data: {
           userId: adminId,
@@ -328,7 +328,7 @@ export const adminCancelAuction = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────
-// WALLET REQUEST MANAGEMENT
+// QUẢN LÝ YÊU CẦU VÍ
 // ─────────────────────────────────────────────
 
 // GET /api/admin/wallet-requests — Danh sách yêu cầu nạp/rút
@@ -486,7 +486,7 @@ export const adminConfirmWalletRequest = async (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────
-// PRODUCT APPROVAL
+// DUYỆT SẢN PHẨM
 // ─────────────────────────────────────────────
 
 // GET /api/admin/products — Sản phẩm chờ duyệt

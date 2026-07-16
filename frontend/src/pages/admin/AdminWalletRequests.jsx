@@ -8,13 +8,13 @@ export default function AdminWalletRequests() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Filter states
-  const [statusFilter, setStatusFilter] = useState('PENDING'); // PENDING | APPROVED | REJECTED
-  const [typeFilter, setTypeFilter] = useState(''); // '' (ALL) | DEPOSIT | WITHDRAW
+  // Các trạng thái bộ lọc
+  const [statusFilter, setStatusFilter] = useState('PENDING'); // PENDING (chờ duyệt) | APPROVED (đã duyệt) | REJECTED (từ chối)
+  const [typeFilter, setTypeFilter] = useState(''); // '' (TẤT CẢ) | NẠP TIỀN | RÚT TIỀN
 
-  // Reject dialog state
-  const [resolvingRequest, setResolvingRequest] = useState(null); // request object
-  const [resolveAction, setResolveAction] = useState(null); // 'APPROVE' | 'REJECT'
+  // Trạng thái hộp thoại từ chối
+  const [resolvingRequest, setResolvingRequest] = useState(null); // đối tượng yêu cầu
+  const [resolveAction, setResolveAction] = useState(null); // 'DUYỆT' | 'TỪ CHỐI'
   const [adminNote, setAdminNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 

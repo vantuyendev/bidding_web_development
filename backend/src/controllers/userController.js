@@ -34,7 +34,7 @@ const adminApproveKycSchema = z.object({
   path: ["rejectionReason"]
 });
 
-// Retrieve the current logged-in user profile with counts of sold products and reviews received
+// Lấy hồ sơ người dùng đăng nhập hiện tại cùng số lượng sản phẩm đã bán và số lượt đánh giá đã nhận
 export const getUserProfile = async (req, res, next) => {
   try {
     const userId = req.session.userId;
@@ -86,7 +86,7 @@ export const getUserProfile = async (req, res, next) => {
 
     const userProfile = user;
 
-    // Convert Decimals to Numbers for API output compatibility
+    // Chuyển đổi Decimal thành Number để tương thích với đầu ra API
     const data = {
       ...userProfile,
       balance: Number(userProfile.balance),
@@ -119,7 +119,13 @@ export const getUserProfile = async (req, res, next) => {
   }
 };
 
-// Automatically verify the seller profile (auto KYC for testing)
+// TỰ ĐỘNG XÁC MINH HỒ SƠ NGƯỜI BÁN PHỤC VỤ KIỂM THỬ (verifySeller - Auto KYC for Testing)
+// - Nó là gì: Cho phép tài khoản người dùng thông thường tự động nâng cấp thành người bán đã xác minh 
+//   (isVerifiedSeller = true, kycStatus = APPROVED) mà không cần qua Admin.
+// - Để làm gì: Tăng tốc độ phát triển và kiểm thử hệ thống. Khi muốn test tính năng đăng bán sản phẩm, 
+//   lập trình viên hoặc tester không cần chuyển tài khoản admin để duyệt thủ công.
+// - Bảo mật: Hàm này kiểm tra nghiêm ngặt biến môi trường `NODE_ENV`. Nếu chạy trên Production, 
+//   hành động này bị chặn hoàn toàn (trả về lỗi 403) để tránh lỗ hổng bảo mật.
 export const verifySeller = async (req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(403).json({
@@ -375,11 +381,11 @@ export const getWonAuctions = async (req, res, next) => {
       deletedAt: null
     };
 
-    // Filter by product status if provided (e.g., PENDING_PAYMENT, PAID, SHIPPED, COMPLETED)
+    // Lọc theo trạng thái sản phẩm nếu được cung cấp (ví dụ: PENDING_PAYMENT, PAID, SHIPPED, COMPLETED)
     if (status && ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED'].includes(status)) {
       where.status = status;
     } else {
-      // Default: only return won products in these states
+      // Mặc định: chỉ trả về các sản phẩm đã thắng ở các trạng thái này
       where.status = {
         in: ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED']
       };
@@ -458,7 +464,11 @@ export const getUserTransactionHistory = async (req, res, next) => {
   }
 };
 
-// Submit KYC Seller request
+// NỘP YÊU CẦU KYC NGƯỜI BÁN (submitKyc)
+// - Nó là gì: Người mua gửi hồ sơ định danh (gồm Số CCCD, ảnh CCCD, địa chỉ cửa hàng, SĐT) lên hệ thống.
+// - Để làm gì: Xác minh danh tính người dùng (Know Your Customer). Đây là quy trình bắt buộc để chuyển đổi 
+//   vai trò người dùng thông thường thành Người bán (Seller). Mục đích là ngăn chặn các gian thương tạo tài khoản ảo 
+//   để đăng bán sản phẩm giả, rác hoặc lừa đảo.
 export const submitKyc = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
@@ -501,7 +511,7 @@ export const submitKyc = async (req, res, next) => {
   }
 };
 
-// Admin retrieve pending KYC applications
+// Admin lấy danh sách yêu cầu KYC đang chờ duyệt
 export const adminGetPendingKyc = async (req, res, next) => {
   const adminId = req.session?.userId;
   if (!adminId) {
@@ -550,7 +560,11 @@ export const adminGetPendingKyc = async (req, res, next) => {
   }
 };
 
-// Admin approve/reject KYC Seller requests
+// ADMIN PHÊ DUYỆT KYC NGƯỜI BÁN (adminApproveKyc)
+// - Nó là gì: Lệnh dành riêng cho tài khoản quản trị viên để phê duyệt (APPROVED) hoặc từ chối (REJECTED) hồ sơ KYC.
+// - Để làm gì: Kiểm soát chất lượng và tính hợp pháp của những tài khoản muốn nâng cấp thành người bán.
+// - Nghiệp vụ: Khi được APPROVED, trường `isVerifiedSeller` của người dùng đó sẽ tự động được set thành `true`, 
+//   chính thức cho phép họ sử dụng tính năng đăng sản phẩm để bán đấu giá.
 export const adminApproveKyc = async (req, res, next) => {
   const adminId = req.session?.userId;
   if (!adminId) {
@@ -635,7 +649,7 @@ export const adminApproveKyc = async (req, res, next) => {
   }
 };
 
-// GET /api/users/:id - Fetch public profile of a user (seller) with reviews received
+// GET /api/users/:id - Lấy hồ sơ công khai của người dùng (người bán) kèm các đánh giá nhận được
 export const getPublicUserProfile = async (req, res, next) => {
   try {
     const { id } = req.params;

@@ -8,14 +8,14 @@ export default function AdminUsers() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Filter & Search states
+  // Trạng thái Lọc & Tìm kiếm
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState(''); // '' (ALL) | banned | seller | kyc_pending
+  const [statusFilter, setStatusFilter] = useState(''); // '' (TẤT CẢ) | bị khóa | người bán | chờ duyệt KYC
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Ban action states
-  const [banningUser, setBanningUser] = useState(null); // User object
+  // Các trạng thái hành động khóa tài khoản
+  const [banningUser, setBanningUser] = useState(null); // Đối tượng người dùng
   const [banReason, setBanReason] = useState('');
   const [submittingBan, setSubmittingBan] = useState(false);
 
@@ -57,7 +57,7 @@ export default function AdminUsers() {
       return;
     }
 
-    // Unban immediately
+    // Mở khóa ngay lập tức
     setError(null);
     setSuccess(null);
     try {

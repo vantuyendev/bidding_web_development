@@ -24,18 +24,18 @@ import { errorHandler } from './middlewares/errorMiddleware.js';
 import { logger } from './utils/logger.js';
 import './workers/auctionWorker.js';
 
-// Load environment variables
+// Tải các biến môi trường
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable trust proxy when running on Render or in production to support express-rate-limit behind reverse proxies
+// Bật trust proxy khi chạy trên Render hoặc trong môi trường sản xuất để hỗ trợ express-rate-limit phía sau reverse proxy
 if (process.env.NODE_ENV === 'production' || process.env.RENDER === 'true') {
   app.set('trust proxy', 1);
 }
 
-// Enable compression middleware to reduce transferred data size
+// Bật middleware nén để giảm kích thước dữ liệu truyền tải
 app.use(compression());
 
 // 1. Cấu hình Helmet đầu tiên để bảo vệ các Header nhạy cảm
@@ -47,7 +47,7 @@ app.use(hpp());
 // 3. Khử trùng đầu vào chống tấn công XSS
 app.use(xssClean());
 
-// Enable CORS with support for credentials (cookies) and robust origin matching
+// Bật CORS hỗ trợ credentials (cookie) và so khớp origin mạnh mẽ
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
@@ -56,25 +56,25 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    // Cho phép các yêu cầu không có origin (như ứng dụng di động, curl, hoặc server-to-server)
     if (!origin) return callback(null, true);
     
-    // Check if origin matches allowed list or ends with vercel.app
+    // Kiểm tra xem origin có khớp với danh sách được phép hoặc kết thúc bằng vercel.app không
     const isAllowed = allowedOrigins.includes(origin) || 
-                      allowedOrigins.includes(origin + '/') || // handle trailing slash safely
+                      allowedOrigins.includes(origin + '/') || // xử lý dấu gạch chéo cuối một cách an toàn
                       origin.endsWith('.vercel.app');
                       
     if (isAllowed) {
       callback(null, true);
     } else {
       console.warn(`[CORS] Blocked request from origin: ${origin}`);
-      callback(null, false); // Block CORS but don't crash Node process
+      callback(null, false); // Chặn CORS nhưng không làm sập tiến trình Node
     }
   },
   credentials: true // BẮT BUỘC ĐỂ NHẬN COOKIE
  }));
 
-// Parse JSON bodies (increased limit to 10mb to support base64 product image uploads)
+// Phân tích cú pháp JSON trong body (tăng giới hạn lên 10mb để hỗ trợ tải lên ảnh sản phẩm dạng base64)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -107,7 +107,7 @@ const strictLimiter = rateLimit({
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/bids/place', strictLimiter);
 
-// Configure Cookie Session middleware for authentication with banking-grade security
+// Cấu hình middleware Cookie Session để xác thực với bảo mật cấp ngân hàng
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'secret-key-123')) {
@@ -124,7 +124,7 @@ app.use(cookieSession({
   sameSite: isProduction ? 'none' : 'lax'
 }));
 
-// Mount API routes
+// Gắn các tuyến đường API
 app.use('/api/auth', authRoutes);
 app.use('/api/bids', bidRoutes);
 app.use('/api/products', productRoutes);
@@ -138,10 +138,10 @@ app.use('/api/notifications', requireAuth, notificationRoutes);
 app.use('/api/reviews', requireAuth, reviewRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Mounting Centralized Error Handler Middleware (MUST be registered after all route definitions)
+// Gắn middleware xử lý lỗi tập trung (PHẢI được đăng ký sau khi định nghĩa tất cả các tuyến đường)
 app.use(errorHandler);
 
-// Basic route to check if server is healthy
+// Tuyến đường cơ bản để kiểm tra máy chủ hoạt động bình thường
 app.get('/', (req, res) => {
   res.json({
     success: true,
@@ -150,7 +150,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Listen on the configured port
+// Lắng nghe trên cổng đã được cấu hình
 app.listen(PORT, () => {
   logger.info(`Server successfully started`, {
     port: PORT,

@@ -4,7 +4,7 @@ const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    // Check localStorage or system preference
+    // Kiểm tra localStorage hoặc cấu hình hệ thống
     const saved = localStorage.getItem('theme');
     if (saved === 'light' || saved === 'dark') return saved;
     

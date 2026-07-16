@@ -35,7 +35,7 @@ const SORT_OPTIONS = [
 export default function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // URL Params
+  // Tham số URL (URL Params)
   const queryParam = searchParams.get('q') || '';
   const categoryParam = searchParams.get('category') || '';
   const statusParam = searchParams.get('status') || 'all';
@@ -43,20 +43,20 @@ export default function CatalogPage() {
   const minPriceParam = searchParams.get('minPrice') || '';
   const maxPriceParam = searchParams.get('maxPrice') || '';
 
-  // Local state
+  // Trạng thái cục bộ
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tempMinPrice, setTempMinPrice] = useState(minPriceParam);
   const [tempMaxPrice, setTempMaxPrice] = useState(maxPriceParam);
 
-  // Sync temp inputs with url params
+  // Đồng bộ các đầu vào tạm thời với các tham số URL
   useEffect(() => {
     setTempMinPrice(minPriceParam);
     setTempMaxPrice(maxPriceParam);
   }, [minPriceParam, maxPriceParam]);
 
-  // Fetch categories and products
+  // Lấy danh sách danh mục và sản phẩm
   useEffect(() => {
     setLoading(true);
     
@@ -81,7 +81,7 @@ export default function CatalogPage() {
     fetchAll();
   }, []);
 
-  // Update a single query param
+  // Cập nhật một tham số truy vấn duy nhất
   const updateParam = (key, value) => {
     const newParams = new URLSearchParams(searchParams);
     if (value) {
@@ -110,22 +110,22 @@ export default function CatalogPage() {
     setTempMaxPrice('');
   };
 
-  // Filter & Sort logic in JS
+  // Logic lọc & Sắp xếp bằng JS
   const now = Date.now();
   const filteredProducts = products
     .filter((p) => {
-      // Search search term
+      // Từ khóa tìm kiếm
       if (queryParam && !p.title.toLowerCase().includes(queryParam.toLowerCase()) && 
           !(p.sellerName && p.sellerName.toLowerCase().includes(queryParam.toLowerCase()))) {
         return false;
       }
       
-      // Category filter
+      // Lọc theo danh mục
       if (categoryParam && p.categorySlug !== categoryParam) {
         return false;
       }
       
-      // Status filter
+      // Lọc theo trạng thái
       const isEnded = ['ENDED','COMPLETED','PAID','SHIPPED','CANCELLED','UNSOLD'].includes(p.status)
         || (p.endTime && new Date(p.endTime).getTime() <= now);
       
@@ -139,7 +139,7 @@ export default function CatalogPage() {
         if (!isUpcoming) return false;
       }
 
-      // Price filter
+      // Lọc theo giá
       if (minPriceParam && p.currentPrice < parseFloat(minPriceParam)) {
         return false;
       }

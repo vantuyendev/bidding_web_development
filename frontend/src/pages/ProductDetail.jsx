@@ -58,30 +58,30 @@ export default function ProductDetail() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [sseConnected, setSseConnected] = useState(true);
 
-  // Bid state
+  // Trạng thái đấu giá
   const [bidAmount, setBidAmount]       = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage]           = useState(null);
   const [isAutoBid, setIsAutoBid]       = useState(false);
 
-  // Watchlist
+  // Danh sách theo dõi
   const [inWatchlist, setInWatchlist]       = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
 
-  // Checkout
+  // Thanh toán
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkoutForm, setCheckoutForm]   = useState({ name: '', phone: '', address: '', province: 'Hà Nội', district: '' });
   const [estShipping, setEstShipping]     = useState(null);
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
 
-  // Dispute Modal
+  // Modal khiếu nại
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [disputeForm, setDisputeForm] = useState({ reason: 'Sản phẩm không đúng mô tả', description: '', videoUrl: '' });
   const [disputeSubmitting, setDisputeSubmitting] = useState(false);
   const [disputeError, setDisputeError] = useState('');
 
-  // Double-confirm modal state
+  // Trạng thái modal xác nhận hai lần
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
     type: '',
@@ -90,23 +90,23 @@ export default function ProductDetail() {
     action: null
   });
 
-  // Seller profile states
+  // Các trạng thái hồ sơ người bán
   const [sellerModalOpen, setSellerModalOpen] = useState(false);
   const [sellerLoading, setSellerLoading] = useState(false);
   const [sellerData, setSellerData] = useState(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
-  // UI tabs
+  // Các tab giao diện (UI tabs)
   const [activeTab, setActiveTab]         = useState('details');
   const [lightboxOpen, setLightboxOpen]   = useState(false);
 
-  // Order chat states
+  // Các trạng thái chat đơn hàng
   const [chatMessages, setChatMessages]   = useState([]);
   const [chatInput, setChatInput]         = useState('');
   const [chatSubmitting, setChatSubmitting] = useState(false);
   const [chatError, setChatError]         = useState('');
 
-  // Q&A states
+  // Trạng thái hỏi đáp (Q&A)
   const [qnaMessages, setQnaMessages]     = useState([]);
   const [qnaInput, setqnaInput]           = useState('');
   const [qnaSubmitting, setqnaSubmitting] = useState(false);
@@ -144,13 +144,13 @@ export default function ProductDetail() {
         setProduct(p);
         setBidAmount(String(Number(p.currentPrice) + getStepPrice(p.currentPrice)));
 
-        // Bids
+        // Các lượt đấu giá
         if (bidsRes) {
           const bd = await bidsRes.json().catch(() => ({}));
           if (bd.success) setBids(bd.data || []);
         }
 
-        // Related products
+        // Sản phẩm liên quan
         if (p.category?.slug) {
           const relRes = await fetch(getApiUrl(`/api/products/search?limit=5&categorySlug=${p.category.slug}`));
           const relData = await relRes.json().catch(() => ({}));
@@ -242,7 +242,7 @@ export default function ProductDetail() {
     };
   }, [id, refreshUser]);
 
-  // Fetch chat history for won/sold orders
+  // Lấy lịch sử chat cho đơn hàng đã thắng/đã bán
   useEffect(() => {
     if (!id || !user || !product) return;
     const isWinner = user.id === product.winnerId;
@@ -265,7 +265,7 @@ export default function ProductDetail() {
     loadChat();
   }, [id, user, product?.status, product?.winnerId, product?.sellerId]);
 
-  // Fetch Q&A history
+  // Lấy lịch sử Q&A
   useEffect(() => {
     if (!id) return;
     async function loadQna() {
@@ -282,7 +282,7 @@ export default function ProductDetail() {
     loadQna();
   }, [id]);
 
-  // Scroll to bottom when new messages arrive or tab changes to chat
+  // Cuộn xuống dưới cùng khi có tin nhắn mới hoặc tab chuyển sang chat
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;

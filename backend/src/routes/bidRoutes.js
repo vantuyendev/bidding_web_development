@@ -4,10 +4,10 @@ import { requireAuth, requireNotBanned } from '../middlewares/authMiddleware.js'
 
 const router = express.Router();
 
-// Route for placing a bid on a product
+// Tuyến đường đặt giá cho một sản phẩm
 router.post('/place', requireAuth, requireNotBanned, placeBid);
 
-// Route for buy-it-now purchase on a product
+// Tuyến đường cho việc mua ngay một sản phẩm
 router.post('/buy-now', requireAuth, requireNotBanned, buyNow);
 
 export default router;

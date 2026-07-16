@@ -14,7 +14,7 @@ export default function UserProfile() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [, setError] = useState(null);
 
-  // Fetch full profile info
+  // Lấy thông tin hồ sơ đầy đủ
   const fetchFullProfile = async () => {
     setLoading(true);
     try {
@@ -39,7 +39,7 @@ export default function UserProfile() {
     }
   };
 
-  // Fetch all products
+  // Lấy tất cả sản phẩm
   const fetchProducts = async () => {
     setProductsLoading(true);
     try {

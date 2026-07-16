@@ -23,7 +23,7 @@ export default function CountdownTimer({ endTime }) {
       };
     };
 
-    // Initial run
+    // Chạy lần đầu tiên
     setTimeLeft(calculateTimeLeft());
 
     const timer = setInterval(() => {

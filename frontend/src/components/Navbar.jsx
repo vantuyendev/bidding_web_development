@@ -5,7 +5,7 @@ import { getApiUrl } from '../api';
 import CreateAuctionModal from './CreateAuctionModal';
 import { useTheme } from '../context/ThemeContext';
 
-// ── Icons ──────────────────────────────────────────────────
+// ── Biểu tượng ──────────────────────────────────────────────────
 const BellIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
     <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
@@ -27,7 +27,7 @@ const MoonIcon = () => (
   </svg>
 );
 
-// ── Constant quick links ────────────────────────────────────
+// ── Các liên kết nhanh cố định ────────────────────────────────────
 const QUICK_LINKS = [
   { label: 'How to Win', href: '#how-to-win', icon: '🏆' },
   { label: 'Upcoming Auctions', href: '/?tab=upcoming', icon: '📅' },
@@ -120,14 +120,14 @@ export default function Navbar() {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
-  // State
+  // Trạng thái
   const [categories, setCategories] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [verifyLoading, setVerifyLoading] = useState(false);
-  const [activeMegaMenu, setActiveMegaMenu] = useState(null); // category slug
+  const [activeMegaMenu, setActiveMegaMenu] = useState(null); // slug danh mục
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMoreCategoriesOpen, setIsMoreCategoriesOpen] = useState(false);
@@ -140,14 +140,14 @@ export default function Navbar() {
   const moreCategoriesBtnRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // Scroll detection for glass blur
+  // Phát hiện cuộn để làm mờ kính (glass blur)
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Horizontal scrolling via mouse wheel on category bar
+  // Cuộn ngang bằng bánh xe chuột trên thanh danh mục
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -167,14 +167,14 @@ export default function Navbar() {
       .catch(() => {});
   }, []);
 
-  // Fetch categories for nav
+  // Lấy danh sách danh mục cho thanh điều hướng
   useEffect(() => {
     fetchCategories();
     window.addEventListener('product-created', fetchCategories);
     return () => window.removeEventListener('product-created', fetchCategories);
   }, [fetchCategories]);
 
-  // Notifications via SSE
+  // Thông báo qua SSE
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     try {
@@ -220,7 +220,7 @@ export default function Navbar() {
     };
   }, [user, fetchNotifications]);
 
-  // Click outside to close dropdowns
+  // Click ra ngoài để đóng các dropdown
   useEffect(() => {
     const handler = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsDropdownOpen(false);
@@ -237,7 +237,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Listen for open-post-modal event
+  // Lắng nghe sự kiện mở modal đăng tin
   useEffect(() => {
     const h = () => setIsPostModalOpen(true);
     window.addEventListener('open-post-modal', h);

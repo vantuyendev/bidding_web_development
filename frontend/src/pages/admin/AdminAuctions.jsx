@@ -8,8 +8,8 @@ export default function AdminAuctions() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Cancellation modal state
-  const [cancellingAuction, setCancellingAuction] = useState(null); // Auction object
+  // Trạng thái modal hủy
+  const [cancellingAuction, setCancellingAuction] = useState(null); // Đối tượng phiên đấu giá
   const [cancelReason, setCancelReason] = useState('');
   const [submittingCancel, setSubmittingCancel] = useState(false);
 

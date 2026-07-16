@@ -3,8 +3,8 @@ import React from 'react';
 export default function Button({
   children,
   type = 'button',
-  variant = 'primary', // 'primary' | 'secondary' | 'outline' | 'danger'
-  size = 'md',        // 'sm' | 'md' | 'lg'
+  variant = 'primary', // 'chính' | 'phụ' | 'viền' | 'nguy hiểm'
+  size = 'md',        // 'nhỏ' | 'trung bình' | 'lớn'
   loading = false,
   disabled = false,
   onClick,

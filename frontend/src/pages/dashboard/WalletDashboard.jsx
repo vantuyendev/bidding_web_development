@@ -31,19 +31,19 @@ export default function WalletDashboard(props) {
   const fetchFullProfile = props.fetchFullProfile || context.fetchFullProfile;
   const { refreshUser } = useAuth();
   
-  // Wallet Modal states
+  // Trạng thái Modal Ví
   const [walletModalOpen, setWalletModalOpen] = useState(false);
-  const [walletAction, setWalletAction] = useState('deposit'); // 'deposit' | 'withdraw'
+  const [walletAction, setWalletAction] = useState('deposit'); // 'nạp tiền' | 'rút tiền'
   const [walletAmount, setWalletAmount] = useState('');
   const [walletModalError, setWalletModalError] = useState('');
   const [walletSubmitting, setWalletSubmitting] = useState(false);
 
-  // Bank Info for Withdrawal
+  // Thông tin ngân hàng để rút tiền
   const [withdrawBankName, setWithdrawBankName] = useState('');
   const [withdrawBankAccount, setWithdrawBankAccount] = useState('');
   const [withdrawBankOwner, setWithdrawBankOwner] = useState('');
 
-  // Deposit Response details to show instructions
+  // Chi tiết phản hồi nạp tiền để hiển thị hướng dẫn
   const [depositInstructions, setDepositInstructions] = useState(null);
   const [adminBankInfo, setAdminBankInfo] = useState(null);
   const [copiedField, setCopiedField] = useState('');
@@ -54,12 +54,12 @@ export default function WalletDashboard(props) {
     setTimeout(() => setCopiedField(''), 1500);
   };
 
-  // Wallet Requests history state
+  // Trạng thái lịch sử Yêu cầu Ví
   const [walletRequests, setWalletRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
 
-  // Transactions history state
-  const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'transactions'
+  // Trạng thái lịch sử giao dịch
+  const [activeTab, setActiveTab] = useState('requests'); // 'yêu cầu' | 'giao dịch'
   const [transactions, setTransactions] = useState([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
 

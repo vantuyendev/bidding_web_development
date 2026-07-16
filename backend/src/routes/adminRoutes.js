@@ -19,34 +19,34 @@ import {
 
 const router = express.Router();
 
-// All admin routes require authentication and admin role
+// Tất cả các tuyến đường admin đều yêu cầu xác thực và vai trò admin
 router.use(requireAuth);
 router.use(requireAdmin);
 
-// Stats
+// Thống kê
 router.get('/stats', adminGetStats);
 
-// User management
+// Quản lý người dùng
 router.get('/users', adminGetAllUsers);
 router.post('/users/:id/ban', adminBanUser);
 
-// KYC management (moved from user routes)
+// Quản lý KYC (được chuyển từ tuyến đường người dùng)
 router.get('/kyc-pending', adminGetPendingKyc);
 router.post('/approve-kyc', adminApproveKyc);
 
-// Auction management
+// Quản lý đấu giá
 router.get('/auctions', adminGetActiveAuctions);
 router.post('/auctions/:id/cancel', adminCancelAuction);
 
-// Wallet request management
+// Quản lý yêu cầu ví
 router.get('/wallet-requests', adminGetWalletRequests);
 router.post('/wallet-requests/:id/confirm', adminConfirmWalletRequest);
 
-// Product approval
+// Phê duyệt sản phẩm
 router.get('/products', adminGetPendingProducts);
 router.post('/products/:id/approve', adminApproveProduct);
 
-// Audit logs
+// Nhật ký hoạt động (Audit logs)
 router.get('/audit-logs', adminGetAuditLogs);
 
 export default router;

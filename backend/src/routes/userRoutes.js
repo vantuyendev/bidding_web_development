@@ -15,34 +15,34 @@ import {
 
 const router = express.Router();
 
-// GET /profile - Get the current logged-in user profile details (protected)
+// GET /profile - Lấy thông tin chi tiết hồ sơ người dùng đang đăng nhập (được bảo vệ)
 router.get('/profile', requireAuth, getUserProfile);
 
-// POST /verify-seller - Set current user as a verified seller (protected)
+// POST /verify-seller - Đặt người dùng hiện tại làm người bán đã xác minh (được bảo vệ)
 router.post('/verify-seller', requireAuth, requireNotBanned, verifySeller);
 
-// POST /deposit - Create deposit request (protected)
+// POST /deposit - Tạo yêu cầu nạp tiền (được bảo vệ)
 router.post('/deposit', requireAuth, requireNotBanned, depositFunds);
 
-// POST /withdraw - Create withdraw request (protected)
+// POST /withdraw - Tạo yêu cầu rút tiền (được bảo vệ)
 router.post('/withdraw', requireAuth, requireNotBanned, withdrawFunds);
 
-// GET /wallet-requests - Get user's wallet request history (protected)
+// GET /wallet-requests - Lấy lịch sử yêu cầu ví của người dùng (được bảo vệ)
 router.get('/wallet-requests', requireAuth, getUserWalletRequests);
 
-// DELETE /wallet-requests/:id - Cancel a pending wallet request (protected)
+// DELETE /wallet-requests/:id - Hủy yêu cầu ví đang chờ duyệt (được bảo vệ)
 router.delete('/wallet-requests/:id', requireAuth, requireNotBanned, cancelWalletRequest);
 
-// GET /won-auctions - Get user's won auctions (protected)
+// GET /won-auctions - Lấy danh sách sản phẩm đấu giá thắng của người dùng (được bảo vệ)
 router.get('/won-auctions', requireAuth, getWonAuctions);
 
-// GET /transactions - Get user's transaction history (protected)
+// GET /transactions - Lấy lịch sử giao dịch của người dùng (được bảo vệ)
 router.get('/transactions', requireAuth, getUserTransactionHistory);
 
-// POST /submit-kyc - Submit KYC application for seller upgrade (protected)
+// POST /submit-kyc - Nộp hồ sơ KYC để nâng cấp lên người bán (được bảo vệ)
 router.post('/submit-kyc', requireAuth, requireNotBanned, submitKyc);
 
-// GET /:id - Fetch public profile and reviews of a user (seller)
+// GET /:id - Lấy hồ sơ công khai và đánh giá của một người dùng (người bán)
 router.get('/:id', getPublicUserProfile);
 
 export default router;

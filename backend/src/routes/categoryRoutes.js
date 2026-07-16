@@ -7,7 +7,7 @@ import ApiError from '../utils/ApiError.js';
 
 const router = express.Router();
 
-// GET /api/categories - Get all categories in the system (with in-memory caching)
+// GET /api/categories - Lấy tất cả danh mục trong hệ thống (kèm bộ nhớ đệm trong RAM)
 router.get('/', async (req, res, next) => {
   try {
     // 1. Kiểm tra dữ liệu trong bộ nhớ đệm (Cache)
@@ -39,7 +39,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// POST /api/categories - Create a new category dynamically (Admin only)
+// POST /api/categories - Tạo một danh mục mới một cách động (Chỉ Admin)
 router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
   const { name, attributeKeys } = req.body;
 
@@ -100,7 +100,7 @@ router.post('/', requireAuth, requireAdmin, async (req, res, next) => {
   }
 });
 
-// DELETE /api/categories/:id - Delete a category (Admin only)
+// DELETE /api/categories/:id - Xóa một danh mục (Chỉ Admin)
 router.delete('/:id', requireAuth, requireAdmin, async (req, res, next) => {
   const { id } = req.params;
 

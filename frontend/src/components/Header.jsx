@@ -29,7 +29,7 @@ export default function Header() {
   useEffect(() => {
     fetchUserStatus();
 
-    // Listen to custom event for balance updates or auth status changes
+    // Lắng nghe sự kiện tùy chỉnh cho cập nhật số dư hoặc thay đổi trạng thái xác thực
     const handleAuthChange = () => {
       fetchUserStatus();
     };
@@ -48,7 +48,7 @@ export default function Header() {
       const data = await res.json();
       if (data.success) {
         setUser(null);
-        // Trigger auth change event
+        // Kích hoạt sự kiện thay đổi xác thực
         window.dispatchEvent(new Event('auth-change'));
         navigate('/');
       }

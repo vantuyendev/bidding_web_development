@@ -8,7 +8,7 @@ export default function AdminProductApproval() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Rejection modal state
+  // Trạng thái modal từ chối
   const [rejectingProduct, setRejectingProduct] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [submittingReject, setSubmittingReject] = useState(false);

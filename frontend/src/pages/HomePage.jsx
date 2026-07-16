@@ -61,14 +61,14 @@ export default function HomePage() {
   const catalogRef = useRef(null);
   const searchDebounce = useRef(null);
 
-  // Sync URL params ↔ state
+  // Đồng bộ tham số URL ↔ trạng thái
   useEffect(() => {
     setSearchTerm(qParam);
     setSelectedCat(catParam);
     setActiveTab(tabParam || 'all');
   }, [qParam, catParam, tabParam]);
 
-  // Fetch categories
+  // Lấy danh sách danh mục
   useEffect(() => {
     fetch(getApiUrl('/api/categories'))
       .then(r => r.json())
@@ -76,7 +76,7 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  // Fetch products
+  // Lấy danh sách sản phẩm
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
@@ -103,7 +103,7 @@ export default function HomePage() {
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
-  // Scroll reveal
+  // Hiệu ứng hiển thị khi cuộn (scroll reveal)
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => e.isIntersecting && e.target.classList.add('active')),
@@ -113,7 +113,7 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [products, loading]);
 
-  // Fetch filters for category
+  // Lấy bộ lọc cho danh mục
   const handleCategorySelect = async (cat) => {
     const slug = cat ? cat.slug : '';
     setSelectedCat(slug);
@@ -151,7 +151,7 @@ export default function HomePage() {
     });
   };
 
-  // Processed / sorted products
+  // Các sản phẩm đã xử lý / sắp xếp
   const now = Date.now();
   const processedProducts = products
     .filter(p => {

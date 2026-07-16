@@ -7,7 +7,7 @@ export default function OfflineBanner() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      // Wait for a few seconds to let user know connection is back, then hide banner
+      // Đợi vài giây để người dùng biết kết nối đã trở lại, sau đó ẩn biểu ngữ
       setTimeout(() => {
         setShowBanner(false);
       }, 3000);

@@ -18,14 +18,14 @@ export default function CatalogCard({ auction, className = '' }) {
     startTime,
     endTime,
     status,
-    items = [],          // Array of {id, imageUrl, title}
+    items = [],          // Mảng chứa {id, imageUrl, title}
     itemCount,
   } = auction;
 
   const isLive = status === 'ACTIVE' && isNow(startTime, endTime);
   const isUpcoming = !isLive && new Date(startTime).getTime() > Date.now();
 
-  // Progress: 0–100%
+  // Tiến trình: 0–100%
   const progress = computeProgress(startTime, endTime);
 
   const thumbnails = items.slice(0, 3);
@@ -69,7 +69,7 @@ export default function CatalogCard({ auction, className = '' }) {
             </div>
           ))
         ) : (
-          // Fallback skeleton strip
+          // Dải skeleton dự phòng
           [0, 1, 2].map(i => (
             <div key={i} className="flex-1 skeleton" style={{ height: 104 }} />
           ))

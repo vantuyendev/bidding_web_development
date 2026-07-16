@@ -19,7 +19,7 @@ export default function DisputeDetail() {
 
 
 
-  // 2. Fetch dispute ticket details
+  // 2. Lấy chi tiết yêu cầu khiếu nại
   const fetchTicketDetails = useCallback(async () => {
     try {
       const res = await fetch(getApiUrl(`/api/disputes/${ticketId}`), {
@@ -36,7 +36,7 @@ export default function DisputeDetail() {
     }
   }, [ticketId]);
 
-  // 3. Fetch dispute chat history
+  // 3. Lấy lịch sử chat khiếu nại
   const fetchChatHistory = useCallback(async () => {
     try {
       const res = await fetch(getApiUrl(`/api/disputes/${ticketId}/messages`), {
@@ -51,7 +51,7 @@ export default function DisputeDetail() {
     }
   }, [ticketId]);
 
-  // Run initial fetches
+  // Thực hiện tải dữ liệu ban đầu
   useEffect(() => {
     const initFetch = async () => {
       setLoading(true);
@@ -63,7 +63,7 @@ export default function DisputeDetail() {
     initFetch();
   }, [fetchTicketDetails, fetchChatHistory]);
 
-  // Polling for real-time messages
+  // Bỏ phiếu (polling) tin nhắn thời gian thực
   const ticketStatus = ticket?.status;
   const hasTicket = !!ticket;
   useEffect(() => {
@@ -71,21 +71,21 @@ export default function DisputeDetail() {
 
     const timer = setInterval(() => {
       fetchChatHistory();
-      // Fetch ticket status as well to detect resolving events in real-time
+      // Lấy cả trạng thái phiếu để phát hiện sự kiện giải quyết trong thời gian thực
       fetchTicketDetails();
     }, 4000);
 
     return () => clearInterval(timer);
   }, [ticketId, ticketStatus, hasTicket, fetchChatHistory, fetchTicketDetails]);
 
-  // Scroll to bottom of chat
+  // Cuộn xuống dưới cùng của cuộc trò chuyện
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Send message handler
+  // Hàm xử lý gửi tin nhắn
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || sendLoading) return;
@@ -105,7 +105,7 @@ export default function DisputeDetail() {
       const data = await res.json();
       if (data.success) {
         setNewMessage('');
-        // Add new message to list
+        // Thêm tin nhắn mới vào danh sách
         setMessages((prev) => [...prev, data.data]);
       } else {
         setActionMessage({ type: 'error', text: data.error || 'Không thể gửi tin nhắn.' });
@@ -117,7 +117,7 @@ export default function DisputeDetail() {
     }
   };
 
-  // Resolve ticket handler (Admin only)
+  // Hàm xử lý giải quyết khiếu nại (Chỉ Admin)
   const handleResolveTicket = async (status) => {
     if (resolveLoading) return;
     
@@ -145,7 +145,7 @@ export default function DisputeDetail() {
           type: 'success', 
           text: `Phán quyết đã được thực thi thành công: ${status === 'RESOLVED_REFUND' ? 'Hoàn tiền cho Người mua' : 'Thanh toán cho Người bán'}.` 
         });
-        // Reload details immediately
+        // Tải lại thông tin chi tiết ngay lập tức
         await fetchTicketDetails();
         await fetchChatHistory();
       } else {
@@ -158,10 +158,10 @@ export default function DisputeDetail() {
     }
   };
 
-  // Determine user role
+  // Xác định vai trò người dùng
   const isAdmin = currentUser?.isAdmin === true;
 
-  // Determine status color classes
+  // Xác định các class màu sắc theo trạng thái
   const getStatusBadge = (status) => {
     switch (status) {
       case 'PENDING':
@@ -330,25 +330,25 @@ export default function DisputeDetail() {
                 const isMsgSeller = msg.senderId === ticket.product?.sellerId;
                 const isMsgAdmin = msg.sender?.isAdmin === true;
 
-                // Determine display name
+                // Xác định tên hiển thị
                 let senderLabel = 'Thành viên';
                 if (isMsgBuyer) senderLabel = 'Người mua';
                 if (isMsgSeller) senderLabel = 'Người bán';
                 if (isMsgAdmin) senderLabel = 'Trọng tài';
 
-                // Determine style based on sender
+                // Xác định kiểu dáng dựa trên người gửi
                 let bubbleClass = 'bg-neutral-100 text-neutral-800 dark:bg-zinc-850 dark:text-zinc-200 rounded-bl-none self-start border border-neutral-200/50 dark:border-transparent';
                 let wrapperClass = 'justify-start';
 
                 if (isMsgAdmin) {
-                  // Admin: Red/Yellow gradient style with outstanding border
+                  // Admin: Phong cách gradient Đỏ/Vàng với viền nổi bật
                   bubbleClass = 'bg-gradient-to-r from-rose-50 to-amber-50 dark:from-red-950/40 dark:to-amber-950/40 border-2 border-amber-400/60 dark:border-amber-400/80 text-amber-950 dark:text-amber-50 rounded-bl-none self-start shadow-sm font-bold';
                 } else if (isMsgBuyer) {
-                  // Buyer: Blue background, aligned right
+                  // Người mua: Nền xanh, căn phải
                   bubbleClass = 'bg-blue-600 text-white rounded-br-none self-end';
                   wrapperClass = 'justify-end';
                 } else if (isMsgSeller) {
-                  // Seller: Gray background, aligned left
+                  // Người bán: Nền xám, căn trái
                   bubbleClass = 'bg-neutral-100 text-neutral-800 dark:bg-zinc-700/80 dark:text-zinc-100 rounded-bl-none self-start border border-neutral-200/50 dark:border-transparent';
                 }
 

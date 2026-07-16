@@ -1,6 +1,6 @@
 import prisma from '../models/db.js';
 
-// Get current logged-in user session
+// Lấy phiên làm việc của người dùng đăng nhập hiện tại
 export const getMe = async (req, res) => {
   const userId = req.session?.userId;
   if (!userId) {
@@ -23,7 +23,7 @@ export const getMe = async (req, res) => {
     });
 
     if (!user) {
-      req.session = null; // Clear invalid session
+      req.session = null; // Xóa session không hợp lệ
       return res.status(200).json({
         success: true,
         data: null
@@ -56,7 +56,7 @@ export const getMe = async (req, res) => {
   }
 };
 
-// Register controller: create a new user in the system
+// Controller đăng ký: tạo một người dùng mới trong hệ thống
 export const register = async (req, res) => {
   const { email, password } = req.body;
 
@@ -82,13 +82,13 @@ export const register = async (req, res) => {
     const user = await prisma.user.create({
       data: {
         email,
-        passwordHash: '$2b$10$mockpasswordhashplaceholder', // Password hash authenticity is ignored
+        passwordHash: '$2b$10$mockpasswordhashplaceholder', // Tính xác thực của mã băm mật khẩu được bỏ qua
         balance: 0.00,
         walletBalance: 0.00
       }
     });
 
-    // Set user session
+    // Thiết lập phiên người dùng (session)
     req.session.userId = user.id;
 
     return res.status(201).json({
@@ -108,7 +108,7 @@ export const register = async (req, res) => {
   }
 };
 
-// Login controller: authenticity of mock password hash is ignored for this task
+// Controller đăng nhập: tính xác thực của mã băm mật khẩu giả lập được bỏ qua cho tác vụ này
 export const login = async (req, res) => {
   const { email } = req.body;
 
@@ -146,7 +146,7 @@ export const login = async (req, res) => {
       });
     }
 
-    // Set the userId in the session
+    // Thiết lập userId vào session
     req.session.userId = user.id;
 
     return res.status(200).json({
@@ -173,7 +173,7 @@ export const login = async (req, res) => {
   }
 };
 
-// Logout controller: clear session
+// Controller đăng xuất: xóa phiên làm việc (session)
 export const logout = (req, res) => {
   req.session = null;
   return res.status(200).json({

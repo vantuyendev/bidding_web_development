@@ -45,7 +45,7 @@ export default function SellerListings(props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Edit Modal State
+  // Trạng thái Modal chỉnh sửa
   const [editingProduct, setEditingProduct] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -87,7 +87,7 @@ export default function SellerListings(props) {
     }
   }, [profileData]);
 
-  // Listen to new listings posted to refresh
+  // Lắng nghe danh sách mới đăng để tải lại
   useEffect(() => {
     const handleProductCreated = () => {
       fetchSellerListings();
@@ -130,7 +130,7 @@ export default function SellerListings(props) {
     setEditBuyNowPrice(prod.buyNowPrice ? String(prod.buyNowPrice) : '');
     setEditHasBuyNow(!!prod.buyNowPrice);
     
-    // Format dates to datetime-local values (YYYY-MM-DDTHH:MM)
+    // Định dạng ngày thành giá trị datetime-local (YYYY-MM-DDTHH:MM)
     if (prod.startTime) {
       const startD = new Date(prod.startTime);
       const startFormatted = new Date(startD.getTime() - startD.getTimezoneOffset() * 60000).toISOString().slice(0, 16);

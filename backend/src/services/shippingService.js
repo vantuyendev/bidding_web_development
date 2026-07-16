@@ -100,18 +100,16 @@ export const getRegion = (provinceId) => {
       return region;
     }
   }
-  // Fallback to NORTH if not found
+  // Dự phòng về MIỀN BẮC nếu không tìm thấy
   return REGIONS.NORTH;
 };
 
 /**
- * Calculates the shipping fee based on the product specifications and destination.
- * 
- * @param {Object} params
- * @param {Object} params.product - Product object from DB
- * @param {string} params.toProvinceId - Destination Province ID
- * @param {string} params.toDistrictId - Destination District ID
- * @returns {Prisma.Decimal}
+ * HÀM TÍNH PHÍ VẬN CHUYỂN C2C DÂN DỤNG (calculateShippingFee)
+ * - Nó là gì: Hệ thống tính toán chi phí vận chuyển động dựa trên địa chỉ người bán (nơi gửi), 
+ *   địa chỉ người mua (nơi nhận) và kích thước/khối lượng của sản phẩm.
+ * - Để làm gì: Đảm bảo tính minh bạch về chi phí vận chuyển trước khi người mua thanh toán đơn hàng.
+ *   Phí vận chuyển được tự động cộng vào đơn hàng để người mua trả 1 lần.
  */
 export function calculateShippingFee({ product, toProvinceId, toDistrictId }) {
   if (!product) {
@@ -125,13 +123,20 @@ export function calculateShippingFee({ product, toProvinceId, toDistrictId }) {
   
   const fromProvince = product.provinceId || '';
 
-  // 1. Volumetric weight calculation
+  // 1. TÍNH TRỌNG LƯỢNG QUY ĐỔI (Volumetric Weight)
+  // - Nó là gì: Công thức quy đổi thể tích của thùng hàng thành khối lượng: (Dài x Rộng x Cao) / 5000.
+  // - Tại sao phải chia 5000: Đây là hệ số chuẩn quốc tế của ngành hàng không và đường bộ (Vận chuyển VNPost, ViettelPost,...).
+  // - Ý nghĩa: Một mặt hàng cồng kềnh tuy nhẹ (như gấu bông, thùng xốp) vẫn chiếm chỗ rất lớn trên xe tải/máy bay,
+  //   do đó phải tính cước phí theo thể tích quy đổi thay vì cân nặng thực tế.
   const volumetricWeight = (length * width * height) / 5000.0;
 
-  // 2. Chargeable weight
+  // 2. KHỐI LƯỢNG TÍNH CƯỚC (Chargeable Weight)
+  // - Nó là gì: Lấy giá trị lớn nhất giữa cân nặng thực tế (weight) và thể tích quy đổi (volumetricWeight).
+  // - Để làm gì: Bảo đảm nhà xe không bị lỗ khi chở hàng nhẹ cồng kềnh, hoặc hàng nhỏ siêu nặng (như tạ sắt).
   const chargeableWeight = Math.max(weight, volumetricWeight);
 
-  // 3. Matrix-based shipping fee lookup
+  // 3. TRA CỨU CƯỚC PHÍ THEO VÙNG ĐỊA LÝ (Matrix-based shipping fee lookup)
+  // - Phí vận chuyển bao gồm: Phí cơ bản (áp dụng cho 0.5kg đầu tiên) + Phí tăng thêm (cho mỗi 0.5kg tiếp theo).
   let baseFee = 0;
   let stepFee = 0;
 
@@ -139,7 +144,8 @@ export function calculateShippingFee({ product, toProvinceId, toDistrictId }) {
   const normTo = normalizeProvince(toProvinceId);
 
   if (normFrom === normTo && normFrom !== '') {
-    // Intra-province (Nội tỉnh)
+    // 3.1 NỘI TỈNH (Intra-province) - Gửi và nhận cùng tỉnh/thành phố (ví dụ: Hà Nội -> Hà Nội)
+    // Giá rẻ nhất và thời gian giao nhanh nhất.
     baseFee = 22000;
     stepFee = 5000;
   } else {
@@ -147,17 +153,20 @@ export function calculateShippingFee({ product, toProvinceId, toDistrictId }) {
     const regionTo = getRegion(toProvinceId);
 
     if (regionFrom === regionTo) {
-      // Intra-region (Nội miền)
+      // 3.2 NỘI MIỀN (Intra-region) - Khác tỉnh nhưng cùng miền (ví dụ: Hà Nội -> Hải Phòng, cùng Miền Bắc)
       baseFee = 35000;
       stepFee = 10000;
     } else {
-      // Inter-region (Liên miền)
+      // 3.3 LIÊN MIỀN (Inter-region) - Khác miền hoàn toàn (ví dụ: Hà Nội -> TP. Hồ Chí Minh, Bắc -> Nam)
+      // Cước phí cao nhất do khoảng cách xa, phải trung chuyển nhiều kho.
       baseFee = 45000;
       stepFee = 15000;
     }
   }
 
-  // Every additional 0.5kg beyond the base 0.5kg
+  // 4. TÍNH PHẦN KHỐI LƯỢNG VƯỢT TRỘI (Every additional 0.5kg beyond the base 0.5kg)
+  // - Trừ đi 0.5kg đầu tiên (đã bao gồm trong baseFee).
+  // - Phần khối lượng dư thừa sẽ được làm tròn lên theo các mốc 0.5kg để nhân với stepFee.
   const extraWeight = Math.max(0, chargeableWeight - 0.5);
   const extraSteps = Math.ceil(extraWeight / 0.5);
   const totalFee = baseFee + extraSteps * stepFee;

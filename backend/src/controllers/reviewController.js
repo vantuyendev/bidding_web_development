@@ -1,6 +1,6 @@
 import prisma from '../models/db.js';
 
-// POST /api/reviews - Create a review for an ended product transaction
+// POST /api/reviews - Tạo đánh giá cho giao dịch sản phẩm đã kết thúc
 export const createReview = async (req, res) => {
   const reviewerId = req.session.userId;
   const { productId, rating, comment } = req.body;
@@ -22,7 +22,7 @@ export const createReview = async (req, res) => {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Fetch product
+      // 1. Lấy thông tin sản phẩm
       const product = await tx.product.findUnique({
         where: { id: productId }
       });
@@ -31,12 +31,12 @@ export const createReview = async (req, res) => {
         throw new Error('Sản phẩm không tồn tại.');
       }
 
-      // 2. Verify status is COMPLETED
+      // 2. Xác minh trạng thái là ĐÃ HOÀN THÀNH
       if (product.status !== 'COMPLETED') {
         throw new Error('Chỉ có thể đánh giá đối tác sau khi đã hoàn thành nhận hàng.');
       }
 
-      // 3. Find highest bid to identify the winner (Buyer)
+      // 3. Tìm lượt đấu giá cao nhất để xác định người thắng (Người mua)
       const highestBid = await tx.bid.findFirst({
         where: { productId },
         orderBy: { bidAmount: 'desc' }
@@ -49,7 +49,7 @@ export const createReview = async (req, res) => {
         throw new Error('Bạn không có quyền đánh giá sản phẩm này. Chỉ người bán hoặc người mua thắng cuộc mới được quyền đánh giá.');
       }
 
-      // 4. Ensure product hasn't been reviewed yet
+      // 4. Đảm bảo sản phẩm chưa được đánh giá
       const existingReview = await tx.review.findUnique({
         where: { productId }
       });
@@ -58,10 +58,10 @@ export const createReview = async (req, res) => {
         throw new Error('Giao dịch của sản phẩm này đã được đánh giá trước đó.');
       }
 
-      // 5. Determine target user (who receives the review)
+      // 5. Xác định người dùng mục tiêu (người nhận đánh giá)
       const targetUserId = isWinner ? product.sellerId : highestBid.userId;
 
-      // 6. Create the review
+      // 6. Tạo đánh giá
       const review = await tx.review.create({
         data: {
           reviewerId,
@@ -72,7 +72,7 @@ export const createReview = async (req, res) => {
         }
       });
 
-      // 7. Recalculate target user's reputation score
+      // 7. Tính toán lại điểm uy tín của người dùng mục tiêu
       const reviews = await tx.review.aggregate({
         where: { targetUserId },
         _avg: { rating: true }

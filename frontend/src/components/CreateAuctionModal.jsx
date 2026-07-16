@@ -8,7 +8,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   // Categories list nạp từ API
   const [categories, setCategories] = useState([]);
   
-  // Form fields
+  // Các trường biểu mẫu
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -31,12 +31,12 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
 
   const [attributes, setAttributes] = useState({});
 
-  // Dynamic Categories and Custom Attributes states
+  // Trạng thái Danh mục động và Thuộc tính tùy chỉnh
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryAttributes, setNewCategoryAttributes] = useState([]);
   const [customAttributes, setCustomAttributes] = useState([]);
 
-  // Helpers for managing new category attribute keys
+  // Các hàm hỗ trợ quản lý khóa thuộc tính danh mục mới
   const addNewCatAttr = () => {
     setNewCategoryAttributes(prev => [...prev, { name: '', type: 'TEXT', value: '' }]);
   };
@@ -47,7 +47,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
     setNewCategoryAttributes(prev => prev.map((item, idx) => idx === index ? { ...item, [field]: val } : item));
   };
 
-  // Helpers for custom attributes on existing category
+  // Các hàm hỗ trợ cho thuộc tính tùy chỉnh trên danh mục hiện tại
   const addCustomAttr = () => {
     setCustomAttributes(prev => [...prev, { name: '', value: '' }]);
   };
@@ -61,7 +61,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // List of Vietnamese provinces for C2C logistics realism
+  // Danh sách các tỉnh thành Việt Nam để tạo tính thực tế cho logistics C2C
   const provinces = [
     { id: 'HN', name: 'Hà Nội' },
     { id: 'HCM', name: 'TP. Hồ Chí Minh' },
@@ -80,7 +80,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
     'Đà Nẵng': ['Quận Hải Châu', 'Quận Thanh Khê', 'Quận Sơn Trà', 'Quận Ngũ Hành Sơn', 'Quận Liên Chiểu', 'Quận Cẩm Lệ']
   };
 
-  // Load categories and default time
+  // Tải các danh mục và thời gian mặc định
   useEffect(() => {
     if (isOpen) {
       const fetchCategories = async () => {
@@ -99,13 +99,13 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       };
       fetchCategories();
 
-      // Default start time: now
+      // Thời gian bắt đầu mặc định: bây giờ
       const now = new Date();
       const startTzoffset = now.getTimezoneOffset() * 60000;
       const startLocalISOTime = new Date(now.getTime() - startTzoffset).toISOString().slice(0, 16);
       setStartTime(startLocalISOTime);
 
-      // Default end time: 24 hours from now
+      // Thời gian kết thúc mặc định: 24 giờ kể từ bây giờ
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const tzoffset = tomorrow.getTimezoneOffset() * 60000;
       const localISOTime = new Date(tomorrow.getTime() - tzoffset).toISOString().slice(0, 16);
@@ -115,7 +115,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Formatting helpers for price input
+  // Các hàm hỗ trợ định dạng cho đầu vào giá cả
   const formatNumberString = (str) => {
     const clean = str.replace(/\D/g, '');
     if (!clean) return '';
@@ -127,7 +127,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
     setter(formatted);
   };
 
-  // Drag & drop handlers
+  // Các hàm xử lý kéo & thả
   const handleDragOver = (e) => {
     e.preventDefault();
   };
@@ -163,7 +163,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
     setLoading(true);
     setError(null);
 
-    // Strip commas to get numeric values
+    // Loại bỏ dấu phẩy để lấy giá trị số
     const startPrice = Number(startPriceRaw.replace(/,/g, ''));
     const buyNowPrice = (hasBuyNow && buyNowPriceRaw) ? Number(buyNowPriceRaw.replace(/,/g, '')) : null;
     const reservePrice = reservePriceRaw ? Number(reservePriceRaw.replace(/,/g, '')) : null;
@@ -269,7 +269,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
       const data = await res.json();
       if (data.success && data.data) {
         onClose();
-        // Reset form states
+        // Đặt lại trạng thái biểu mẫu
         setTitle('');
         setDescription('');
         setStartPriceRaw('');
@@ -291,9 +291,9 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
         setSelectedFile(null);
         setFilePreview(null);
         
-        // Trigger a custom event to notify listeners (e.g. UserProfile)
+        // Kích hoạt một sự kiện tùy chỉnh để thông báo cho các listener (ví dụ: UserProfile)
         window.dispatchEvent(new Event('product-created'));
-        // Redirect to detail page
+        // Chuyển hướng đến trang chi tiết
         navigate(`/products/${data.data.id}`);
       } else {
         setError(data.error || 'Có lỗi xảy ra khi tạo bài đấu giá.');
@@ -382,7 +382,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
               value={imageUrl}
               onChange={(e) => {
                 setImageUrl(e.target.value);
-                setFilePreview(e.target.value); // Sync preview
+                setFilePreview(e.target.value); // Đồng bộ bản xem trước
               }}
               placeholder="https://picsum.photos/600/400"
               className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[10px] focus:outline-none focus:ring-1 focus:ring-neutral-900 dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
@@ -425,7 +425,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                 value={categoryId}
                 onChange={(e) => {
                   setCategoryId(e.target.value);
-                  setAttributes({}); // Reset attributes on category switch
+                  setAttributes({}); // Đặt lại thuộc tính khi chuyển đổi danh mục
                 }}
                 className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
                 required
@@ -448,7 +448,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                 value={provinceId}
                 onChange={(e) => {
                   setProvinceId(e.target.value);
-                  setDistrictId(''); // Reset district
+                  setDistrictId(''); // Đặt lại quận/huyện
                   setIsCustomDistrict(false);
                 }}
                 className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"

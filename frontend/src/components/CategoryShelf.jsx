@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-// Default category icons as SVG paths (inline — no external deps)
+// Biểu tượng danh mục mặc định dạng đường dẫn SVG (nội tuyến — không phụ thuộc bên ngoài)
 const CATEGORY_ICONS = {
   default: (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8">
@@ -10,7 +10,7 @@ const CATEGORY_ICONS = {
   ),
 };
 
-// Color pairs for category cards (bg, accent)
+// Các cặp màu cho thẻ danh mục (nền, điểm nhấn)
 const CATEGORY_COLORS = [
   { bg: 'hsl(196,40%,94%)', accent: 'hsl(196,100%,36%)' },
   { bg: 'hsl(43,60%,94%)',  accent: 'hsl(43,74%,48%)' },

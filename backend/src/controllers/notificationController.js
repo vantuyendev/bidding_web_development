@@ -1,7 +1,7 @@
 import prisma from '../models/db.js';
 import notificationEmitter from '../utils/notificationEmitter.js';
 
-// GET /api/notifications - Get list of notifications for current user
+// GET /api/notifications - Lấy danh sách thông báo của người dùng hiện tại
 export const getNotifications = async (req, res) => {
   try {
     const userId = req.session.userId;
@@ -23,14 +23,14 @@ export const getNotifications = async (req, res) => {
   }
 };
 
-// PUT /api/notifications/read - Mark one or all notifications of current user as read
+// PUT /api/notifications/read - Đánh dấu một hoặc tất cả thông báo của người dùng hiện tại là đã đọc
 export const markAsRead = async (req, res) => {
   try {
     const userId = req.session.userId;
     const { id } = req.body;
 
     if (id) {
-      // Mark a single notification as read, checking owner
+      // Đánh dấu một thông báo đơn lẻ là đã đọc, kiểm tra chủ sở hữu
       const notification = await prisma.notification.findFirst({
         where: { id, userId }
       });
@@ -53,7 +53,7 @@ export const markAsRead = async (req, res) => {
         data: updated
       });
     } else {
-      // Mark all notifications for this user as read
+      // Đánh dấu tất cả thông báo của người dùng này là đã đọc
       await prisma.notification.updateMany({
         where: { userId, isRead: false },
         data: { isRead: true }
@@ -72,7 +72,7 @@ export const markAsRead = async (req, res) => {
   }
 };
 
-// GET /api/notifications/live - SSE stream for real-time notifications
+// GET /api/notifications/live - Luồng SSE cho thông báo thời gian thực
 export const streamNotifications = (req, res) => {
   const userId = req.session?.userId;
 
@@ -80,7 +80,7 @@ export const streamNotifications = (req, res) => {
     return res.status(401).json({ success: false, error: 'Chưa đăng nhập' });
   }
 
-  // Set mandatory SSE headers
+  // Thiết lập các header SSE bắt buộc
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -95,7 +95,7 @@ export const streamNotifications = (req, res) => {
       const eventString = event ? `event: ${event}\n` : '';
       res.write(`${eventString}data: ${JSON.stringify(data)}\n\n`);
     } catch (e) {
-      // client closed connection
+      // client đã đóng kết nối
     }
   };
 
@@ -108,7 +108,7 @@ export const streamNotifications = (req, res) => {
   const eventName = `notification-${userId}`;
   notificationEmitter.on(eventName, onNotification);
 
-  // Heartbeat to prevent disconnect
+  // Gửi tín hiệu nhịp tim (heartbeat) để tránh ngắt kết nối
   const heartbeat = setInterval(() => {
     sendEvent('heartbeat', { time: new Date().toISOString() });
   }, 15000);
