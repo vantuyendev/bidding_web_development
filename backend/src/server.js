@@ -120,8 +120,8 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000,
   httpOnly: true, // Chống XSS: JavaScript ở frontend không thể đọc được cookie này
   secure: isProduction, // Chỉ gửi cookie qua HTTPS
-  // 'lax' is safe here because Vercel proxies /api/* to the backend (same-origin)
-  sameSite: 'lax'
+  // Trong production, nếu dùng VITE_API_URL trực tiếp (cross-origin) thì phải set sameSite: 'none'
+  sameSite: isProduction ? 'none' : 'lax'
 }));
 
 // Mount API routes
