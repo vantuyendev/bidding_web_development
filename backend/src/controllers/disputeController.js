@@ -243,7 +243,7 @@ export const adminResolveTicket = async (req, res) => {
 
       await tx.product.update({
         where: { id: product.id },
-        data: { status: 'RESOLVED' }
+        data: { status: status === 'RESOLVED_REFUND' ? 'CANCELLED' : 'COMPLETED' }
       });
 
       return updatedTicket;

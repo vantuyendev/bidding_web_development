@@ -382,7 +382,8 @@ enum TransactionStatus {
 
 enum DisputeStatus {
   PENDING
-  RESOLVED
+  RESOLVED_REFUND
+  RESOLVED_PAY
 }
 
 enum NotificationType {
