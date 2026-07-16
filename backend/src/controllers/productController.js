@@ -112,7 +112,12 @@ export const getProductDetail = async (req, res, next) => {
             }
           }
         },
-        review: true
+        review: true,
+        disputeTicket: {
+          select: {
+            id: true
+          }
+        }
       }
     });
 

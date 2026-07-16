@@ -585,3 +585,74 @@ export const getDisputesList = async (req, res, next) => {
     return next(error);
   }
 };
+
+/**
+ * HÀM CẬP NHẬT VIDEO UNBOXING BẰNG CHỨNG (updateDisputeVideoUrl)
+ * - Nó là gì: Cho phép người mua đã mở đơn khiếu nại tiến hành thêm mới hoặc cập nhật liên kết 
+ *   video khui hộp (unboxing) làm bằng chứng cho vụ tranh chấp.
+ * - Để làm gì: Giải quyết trường hợp lúc tạo khiếu nại người dùng chưa có link video hoặc điền sai,
+ *   giúp đồng bộ thông tin bằng chứng đầy đủ trước khi Admin đưa ra phán quyết.
+ * - Cơ chế hoạt động:
+ *   + Xác thực người dùng đã đăng nhập.
+ *   + Tìm đơn khiếu nại (DisputeTicket) tương ứng.
+ *   + Kiểm tra tính hợp lệ: Chỉ người mở khiếu nại (Buyer) mới được sửa, và chỉ khi trạng thái là `PENDING`.
+ *   + Sử dụng Zod để kiểm tra định dạng URL video.
+ *   + Cập nhật trường `unboxingVideoUrl` trong cơ sở dữ liệu và trả về kết quả thành công.
+ * 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+export const updateDisputeVideoUrl = async (req, res, next) => {
+  const userId = req.session?.userId;
+  if (!userId) {
+    return next(new ApiError(401, "Bạn cần đăng nhập để thực hiện hành động này."));
+  }
+
+  const { ticketId } = req.params;
+
+  try {
+    const ticket = await prisma.disputeTicket.findUnique({
+      where: { id: ticketId }
+    });
+
+    if (!ticket) {
+      throw new ApiError(404, "Không tìm thấy đơn khiếu nại.");
+    }
+
+    if (ticket.openedById !== userId) {
+      throw new ApiError(403, "Chỉ người mở khiếu nại mới có quyền cập nhật video bằng chứng.");
+    }
+
+    if (ticket.status !== 'PENDING') {
+      throw new ApiError(400, "Khiếu nại đã đóng hoặc được xử lý, không thể thay đổi bằng chứng.");
+    }
+
+    const updateSchema = z.object({
+      unboxingVideoUrl: z.string().trim().url({ message: "Đường dẫn video unboxing không hợp lệ." }).or(z.literal(''))
+    });
+
+    const validation = updateSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+
+    const { unboxingVideoUrl } = validation.data;
+
+    const updatedTicket = await prisma.disputeTicket.update({
+      where: { id: ticketId },
+      data: {
+        unboxingVideoUrl: unboxingVideoUrl || null
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật video bằng chứng unboxing thành công.",
+      data: updatedTicket
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+

@@ -1434,13 +1434,38 @@ export default function ProductDetail() {
                     </div>
                   )}
                   {product.status === 'DISPUTED' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
                       <div style={{ fontSize: 13, color: 'hsl(3,83%,40%)', fontWeight: 750, textAlign: 'center', padding: 4 }}>
                         ⚖️ Đơn hàng đang có tranh chấp / khiếu nại
                       </div>
                       <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', textAlign: 'center' }}>
-                        Ban quản trị đang xem xét bằng chứng và xử lý. Vui lòng thảo luận trong mục khiếu nại hoặc qua khung chat bên dưới.
+                        Ban quản trị đang xem xét bằng chứng và xử lý. Vui lòng thảo luận trong phòng giải quyết tranh chấp.
                       </div>
+                      {product.disputeTicket?.id && (
+                        <Link to={`/disputes/${product.disputeTicket.id}`} style={{ width: '100%', textDecoration: 'none' }}>
+                          <button
+                            className="bid-btn-primary"
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              background: 'hsl(3,83%,60%)',
+                              borderColor: 'hsl(3,83%,60%)',
+                              color: 'white',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              borderRadius: 4,
+                              fontFamily: 'var(--font-display)',
+                              letterSpacing: '0.04em',
+                              textTransform: 'uppercase',
+                              boxShadow: '0 2px 8px rgba(220, 38, 38, 0.15)',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            ⚖️ Vào phòng giải quyết tranh chấp
+                          </button>
+                        </Link>
+                      )}
                     </div>
                   )}
                   {!isWinner && !isSeller && product.status !== 'DISPUTED' && (

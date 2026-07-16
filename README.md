@@ -297,7 +297,7 @@ Mỗi controller chịu trách nhiệm **xử lý logic nghiệp vụ** cho mộ
 | `productController.js` | Sản phẩm | Tạo, sửa, xoá, tìm kiếm sản phẩm đấu giá. Hỗ trợ lọc theo danh mục, giá, trạng thái. Upload hình ảnh. |
 | `bidController.js` | Đấu giá | **Cốt lõi hệ thống.** Xử lý đặt thầu với cơ chế: bước giá biến thiên, khoá dòng database (`FOR UPDATE`), đấu giá tự động (Proxy Bidding), bảo vệ thầu phút chót (Sniping Protection). |
 | `orderController.js` | Đơn hàng | Tạo đơn hàng sau khi đấu giá kết thúc, cập nhật trạng thái vận chuyển, xác nhận nhận hàng. |
-| `disputeController.js` | Tranh chấp & Escrow | Mở tranh chấp, gửi bằng chứng, **Admin phân xử** (hoàn tiền cho người mua HOẶC giải ngân cho người bán) thông qua cơ chế ví ký quỹ (Escrow). |
+| `disputeController.js` | Tranh chấp & Escrow | Mở tranh chấp, gửi/đồng bộ bằng chứng (video khui hộp unboxing), **Admin phân xử** (hoàn tiền cho người mua HOẶC giải ngân cho người bán) thông qua cơ chế ví ký quỹ (Escrow). |
 | `reviewController.js` | Đánh giá | Người mua/bán đánh giá nhau sau giao dịch (1-5 sao + nhận xét), cập nhật điểm uy tín. |
 | `streamController.js` | Thời gian thực | **Server-Sent Events (SSE)** — đẩy dữ liệu đấu giá (giá thầu mới, thời gian...) từ server xuống trình duyệt ngay lập tức mà không cần client hỏi liên tục. |
 | `notificationController.js` | Thông báo | Lấy danh sách, đánh dấu đã đọc thông báo (trúng thầu, bị outbid, đơn hàng mới...). |

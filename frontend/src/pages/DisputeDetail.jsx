@@ -14,6 +14,9 @@ export default function DisputeDetail() {
   const [sendLoading, setSendLoading] = useState(false);
   const [resolveLoading, setResolveLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+  const [updatingVideo, setUpdatingVideo] = useState(false);
+  const [isEditingVideo, setIsEditingVideo] = useState(false);
 
   const messagesEndRef = useRef(null);
 
@@ -28,6 +31,7 @@ export default function DisputeDetail() {
       const data = await res.json();
       if (data.success) {
         setTicket(data.data);
+        setVideoUrlInput(prev => prev === '' ? (data.data.unboxingVideoUrl || '') : prev);
       } else {
         setError(data.error || 'Không thể tải thông tin khiếu nại.');
       }
@@ -114,6 +118,39 @@ export default function DisputeDetail() {
       setActionMessage({ type: 'error', text: 'Lỗi kết nối khi gửi tin nhắn.' });
     } finally {
       setSendLoading(false);
+    }
+  };
+
+  // Hàm xử lý cập nhật video unboxing bằng chứng
+  const handleUpdateVideoUrl = async (e) => {
+    e.preventDefault();
+    if (updatingVideo) return;
+
+    setUpdatingVideo(true);
+    setActionMessage(null);
+
+    try {
+      const res = await fetch(getApiUrl(`/api/disputes/${ticketId}/video`), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ unboxingVideoUrl: videoUrlInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMessage({ type: 'success', text: 'Cập nhật video bằng chứng thành công.' });
+        setIsEditingVideo(false);
+        // Tải lại chi tiết tranh chấp để hiển thị video mới
+        await fetchTicketDetails();
+      } else {
+        setActionMessage({ type: 'error', text: data.error || 'Không thể cập nhật video bằng chứng.' });
+      }
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Lỗi kết nối khi cập nhật video.' });
+    } finally {
+      setUpdatingVideo(false);
     }
   };
 
@@ -276,22 +313,69 @@ export default function DisputeDetail() {
 
           {/* Evidence Video Player */}
           <div className="flex-1 flex flex-col gap-3">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">Video unboxing bằng chứng</span>
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-neutral-200 dark:border-zinc-800 bg-neutral-100 dark:bg-zinc-950 flex items-center justify-center">
-              {ticket.unboxingVideoUrl ? (
-                <video
-                  src={ticket.unboxingVideoUrl}
-                  controls
-                  className="w-full h-full object-contain"
-                  poster="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80"
-                />
-              ) : (
-                <div className="text-center p-6 text-neutral-400 dark:text-zinc-500">
-                  <span className="text-4xl block mb-2">📹</span>
-                  <p className="text-sm font-medium">Không tìm thấy video bằng chứng unboxing.</p>
-                </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">Video unboxing bằng chứng</span>
+              {!isClosed && currentUser?.id === ticket.openedById && (
+                <button
+                  onClick={() => setIsEditingVideo(!isEditingVideo)}
+                  className="text-[10px] font-bold text-amber-500 hover:underline cursor-pointer bg-none border-none p-0"
+                >
+                  {isEditingVideo ? 'Hủy chỉnh sửa' : (ticket.unboxingVideoUrl ? '✏️ Đổi video' : '+ Thêm video')}
+                </button>
               )}
             </div>
+            
+            {isEditingVideo ? (
+              <form onSubmit={handleUpdateVideoUrl} className="p-4 border border-neutral-200 dark:border-zinc-800/80 rounded-2xl bg-neutral-50 dark:bg-zinc-950/40 space-y-3">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="video-url-edit" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Đường dẫn URL Video</label>
+                  <input
+                    id="video-url-edit"
+                    type="url"
+                    required
+                    placeholder="https://example.com/unboxing-video.mp4"
+                    value={videoUrlInput}
+                    onChange={(e) => setVideoUrlInput(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 text-neutral-800 dark:text-zinc-200 border border-neutral-250 dark:border-zinc-850 rounded-xl text-xs outline-none focus:border-amber-500 transition-all shadow-sm"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={updatingVideo}
+                  className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                >
+                  {updatingVideo ? (
+                    <div className="w-3.5 h-3.5 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Lưu video bằng chứng'
+                  )}
+                </button>
+              </form>
+            ) : (
+              <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-neutral-200 dark:border-zinc-800 bg-neutral-100 dark:bg-zinc-950 flex items-center justify-center">
+                {ticket.unboxingVideoUrl ? (
+                  <video
+                    src={ticket.unboxingVideoUrl}
+                    controls
+                    className="w-full h-full object-contain"
+                    poster="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80"
+                  />
+                ) : (
+                  <div className="text-center p-6 text-neutral-400 dark:text-zinc-500">
+                    <span className="text-4xl block mb-2">📹</span>
+                    <p className="text-sm font-medium">Không tìm thấy video bằng chứng unboxing.</p>
+                    {!isClosed && currentUser?.id === ticket.openedById && (
+                      <button
+                        onClick={() => setIsEditingVideo(true)}
+                        className="mt-3 px-4 py-1.5 bg-amber-500 text-zinc-950 hover:bg-amber-600 font-extrabold text-[10px] rounded-xl transition-all cursor-pointer border-none"
+                      >
+                        + Thêm video bằng chứng
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

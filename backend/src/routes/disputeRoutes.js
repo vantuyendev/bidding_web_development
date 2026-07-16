@@ -5,7 +5,8 @@ import {
   getDisputeDetail,
   getDisputeMessages,
   createDisputeMessage,
-  getDisputesList
+  getDisputesList,
+  updateDisputeVideoUrl
 } from '../controllers/disputeController.js';
 import { requireAuth, requireAdmin, requireNotBanned } from '../middlewares/authMiddleware.js';
 
@@ -22,6 +23,9 @@ router.post('/', requireNotBanned, createDisputeTicket);
 
 // POST /api/disputes/resolve - Giải quyết khiếu nại (chỉ admin)
 router.post('/resolve', requireAdmin, adminResolveTicket);
+
+// PATCH /api/disputes/:ticketId/video - Cập nhật video unboxing bằng chứng (chỉ người mua)
+router.patch('/:ticketId/video', requireNotBanned, updateDisputeVideoUrl);
 
 // GET /api/disputes/:ticketId - Lấy chi tiết phiếu khiếu nại
 router.get('/:ticketId', requireNotBanned, getDisputeDetail);

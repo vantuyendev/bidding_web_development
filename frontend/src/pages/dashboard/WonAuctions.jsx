@@ -55,6 +55,8 @@ export default function WonAuctions(props) {
         return 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20';
       case 'COMPLETED':
         return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+      case 'DISPUTED':
+        return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20';
       default:
         return 'bg-neutral-100 text-neutral-600';
     }
@@ -66,6 +68,7 @@ export default function WonAuctions(props) {
       case 'PAID': return 'Đã thanh toán (Chờ giao hàng)';
       case 'SHIPPED': return 'Đang giao hàng';
       case 'COMPLETED': return 'Hoàn thành';
+      case 'DISPUTED': return 'Đang tranh chấp';
       default: return status;
     }
   };
