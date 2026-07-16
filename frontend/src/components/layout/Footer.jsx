@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="bg-white border-t border-neutral-200 dark:bg-neutral-950 dark:border-neutral-900 transition-colors duration-300 select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand Info */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-1.5 no-underline">
@@ -23,18 +23,6 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Catalog Columns */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white mb-4">
-              Danh mục
-            </h4>
-            <ul className="space-y-2 text-xs text-neutral-400 dark:text-neutral-500">
-              <li><Link to="/?category=do-dien-tu" className="hover:text-[hsl(196,100%,36%)] transition-colors">Đồ điện tử</Link></li>
-              <li><Link to="/?category=thoi-trang" className="hover:text-[hsl(196,100%,36%)] transition-colors">Thời trang</Link></li>
-              <li><Link to="/?category=xe-co" className="hover:text-[hsl(196,100%,36%)] transition-colors">Xe cộ</Link></li>
-              <li><Link to="/?category=sach-va-suu-tam" className="hover:text-[hsl(196,100%,36%)] transition-colors">Sách & Sưu tầm</Link></li>
-            </ul>
-          </div>
 
           {/* Support Columns */}
           <div>
