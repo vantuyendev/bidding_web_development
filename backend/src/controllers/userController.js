@@ -57,6 +57,7 @@ export const getUserProfile = async (req, res, next) => {
         phoneNumber: true,
         isBanned: true,
         banReason: true,
+        isAdmin: true,
         _count: {
           select: {
             soldProducts: true,
