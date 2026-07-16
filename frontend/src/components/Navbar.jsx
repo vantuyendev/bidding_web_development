@@ -566,9 +566,9 @@ export default function Navbar() {
 
                     {/* Nav links */}
                     {[
-                      { label: 'My Auctions', to: '/profile?tab=auctions' },
-                      { label: 'Won Items', to: '/profile?tab=won' },
-                      { label: 'Watchlist', to: '/profile?tab=watchlist' },
+                      { label: 'My Auctions', to: '/profile/listings' },
+                      { label: 'Won Items', to: '/profile/won-auctions' },
+                      { label: 'Watchlist', to: '/profile/watchlist' },
                       { label: 'Profile & Settings', to: '/profile' },
                     ].map(({ label, to }) => (
                       <Link
