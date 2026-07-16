@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import xssClean from './middlewares/xssClean.js';
 import hpp from 'hpp';
+import compression from 'compression';
 import bidRoutes from './routes/bidRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
@@ -33,6 +34,9 @@ const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV === 'production' || process.env.RENDER === 'true') {
   app.set('trust proxy', 1);
 }
+
+// Enable compression middleware to reduce transferred data size
+app.use(compression());
 
 // 1. Cấu hình Helmet đầu tiên để bảo vệ các Header nhạy cảm
 app.use(helmet());
