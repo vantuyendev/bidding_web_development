@@ -27,12 +27,6 @@ const MoonIcon = () => (
   </svg>
 );
 
-// ── Các liên kết nhanh cố định ────────────────────────────────────
-const QUICK_LINKS = [
-  { label: 'How to Win', href: '#how-to-win', icon: '🏆' },
-  { label: 'Upcoming Auctions', href: '/?tab=upcoming', icon: '📅' },
-  { label: 'Price Results', href: '/?tab=ended', icon: '📊' },
-];
 
 const CATEGORY_SUBCATEGORIES = {
   'dien-thoai': [
@@ -717,21 +711,7 @@ export default function Navbar() {
               </button>
             )}
 
-            {/* Divider */}
-            <div style={{ width: 1, height: 20, background: 'var(--nav-border)', margin: '0 8px', flexShrink: 0 }} />
 
-            {/* Quick links */}
-            {QUICK_LINKS.map(lk => (
-              <Link
-                key={lk.href}
-                to={lk.href}
-                id={`nav-quick-${lk.label.toLowerCase().replace(/\s+/g, '-')}`}
-                className="cat-nav-tab"
-                style={{ fontSize: 12, color: 'var(--nav-text-secondary)' }}
-              >
-                {lk.label}
-              </Link>
-            ))}
           </div>
 
           {/* Dropdown "Xem thêm" list, positioned outside scrollable container to prevent vertical clipping */}
