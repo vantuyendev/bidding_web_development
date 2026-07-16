@@ -1,4 +1,4 @@
-# 🏷️ Hệ Thống Đấu Giá Trực Tuyến C2C (BidHub)
+# 🏷️ Hệ Thống Đấu Giá Trực Tuyến
 
 > **Nền tảng đấu giá trực tuyến mô hình C2C (Customer-to-Customer)** cho phép người dùng đăng bán sản phẩm, đặt giá thầu theo thời gian thực, quản lý ví điện tử nội bộ và giải quyết tranh chấp — tất cả thông qua giao diện web hiện đại.
 
