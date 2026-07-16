@@ -193,10 +193,10 @@ export default function DisputeDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col">
+      <div className="min-h-screen bg-warm-100 dark:bg-zinc-950 text-charcoal-900 dark:text-zinc-50 flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-zinc-400 text-sm font-semibold tracking-wider">ĐANG TẢI THÔNG TIN KHIẾU NẠI...</p>
+          <p className="text-neutral-500 dark:text-zinc-400 text-sm font-semibold tracking-wider">ĐANG TẢI THÔNG TIN KHIẾU NẠI...</p>
         </div>
       </div>
     );
@@ -204,16 +204,16 @@ export default function DisputeDetail() {
 
   if (error || !ticket) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col">
+      <div className="min-h-screen bg-warm-100 dark:bg-zinc-950 text-charcoal-900 dark:text-zinc-50 flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-20 h-20 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 text-3xl mb-6">
             ⚠️
           </div>
-          <h2 className="text-2xl font-black text-zinc-100 mb-2">Đã Xảy Ra Lỗi</h2>
-          <p className="text-zinc-400 max-w-md mb-8">{error || 'Không thể tìm thấy hoặc truy cập đơn khiếu nại này.'}</p>
+          <h2 className="text-2xl font-black text-neutral-900 dark:text-zinc-100 mb-2">Đã Xảy Ra Lỗi</h2>
+          <p className="text-neutral-500 dark:text-zinc-400 max-w-md mb-8">{error || 'Không thể tìm thấy hoặc truy cập đơn khiếu nại này.'}</p>
           <Link
             to="/"
-            className="px-6 py-3 bg-zinc-900 border border-zinc-800 rounded-2xl font-bold hover:bg-zinc-800 transition-all text-sm"
+            className="px-6 py-3 bg-white dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800 rounded-2xl font-bold hover:bg-neutral-50 dark:hover:bg-zinc-800 transition-all text-sm shadow-sm text-neutral-800 dark:text-zinc-200 no-underline"
           >
             Quay lại trang chủ
           </Link>
@@ -225,18 +225,18 @@ export default function DisputeDetail() {
   const isClosed = ticket.status !== 'PENDING';
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col font-sans selection:bg-amber-500/35">
+    <div className="min-h-screen bg-warm-100 dark:bg-zinc-950 text-charcoal-900 dark:text-zinc-50 flex flex-col font-sans selection:bg-amber-500/35">
 
       {/* Main Split Screen Layout container */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden max-w-7xl w-full mx-auto p-4 sm:p-6 gap-6">
         
         {/* LEFT COLUMN: Dispute Details */}
-        <div className="w-full lg:w-1/2 flex flex-col gap-5 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 backdrop-blur-xl overflow-y-auto">
+        <div className="w-full lg:w-1/2 flex flex-col gap-5 bg-white dark:bg-zinc-900/40 border border-neutral-200 dark:border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-sm overflow-y-auto">
           {/* Header Title */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-zinc-800 pb-5">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Mã khiếu nại: #{ticket.id.slice(0, 8)}</span>
-              <h1 className="text-2xl font-black tracking-tight text-zinc-100 mt-1">Chi Tiết Khiếu Nại</h1>
+              <h1 className="text-2xl font-black tracking-tight text-neutral-900 dark:text-zinc-100 mt-1">Chi Tiết Khiếu Nại</h1>
             </div>
             <div>
               {getStatusBadge(ticket.status)}
@@ -244,14 +244,14 @@ export default function DisputeDetail() {
           </div>
 
           {/* Product Details Card */}
-          <div className="bg-zinc-950/60 border border-zinc-800/60 p-5 rounded-2xl space-y-4">
+          <div className="bg-neutral-50 dark:bg-zinc-950/60 border border-neutral-100 dark:border-zinc-800/60 p-5 rounded-2xl space-y-4">
             <h3 className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">Sản phẩm tranh chấp</h3>
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <h4 className="text-lg font-bold text-zinc-200">{ticket.product?.title}</h4>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-zinc-400">
-                  <span>Người mua: <strong className="text-zinc-300">{ticket.openedBy?.email}</strong></span>
-                  <span>Mã Người bán: <strong className="text-zinc-300">#{ticket.product?.sellerId?.slice(0, 8)}</strong></span>
+                <h4 className="text-lg font-bold text-neutral-900 dark:text-zinc-200">{ticket.product?.title}</h4>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-neutral-500 dark:text-zinc-400">
+                  <span>Người mua: <strong className="text-neutral-700 dark:text-zinc-300">{ticket.openedBy?.email}</strong></span>
+                  <span>Mã Người bán: <strong className="text-neutral-700 dark:text-zinc-300">#{ticket.product?.sellerId?.slice(0, 8)}</strong></span>
                 </div>
               </div>
             </div>
@@ -261,14 +261,14 @@ export default function DisputeDetail() {
           <div className="space-y-4">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">Lý do khiếu nại</span>
-              <div className="px-4 py-3 bg-rose-500/5 border border-rose-500/10 text-rose-200 font-bold rounded-xl text-sm">
+              <div className="px-4 py-3 bg-rose-500/5 border border-rose-500/10 text-rose-600 dark:text-rose-200 font-bold rounded-xl text-sm">
                 {ticket.reason}
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">Mô tả chi tiết lỗi</span>
-              <div className="p-4 bg-zinc-950/40 border border-zinc-800/60 text-zinc-300 text-sm rounded-xl whitespace-pre-wrap leading-relaxed">
+              <div className="p-4 bg-neutral-50 dark:bg-zinc-950/40 border border-neutral-100 dark:border-zinc-800/60 text-neutral-750 dark:text-zinc-300 text-sm rounded-xl whitespace-pre-wrap leading-relaxed">
                 {ticket.description}
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function DisputeDetail() {
           {/* Evidence Video Player */}
           <div className="flex-1 flex flex-col gap-3">
             <span className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">Video unboxing bằng chứng</span>
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 flex items-center justify-center">
+            <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-neutral-200 dark:border-zinc-800 bg-neutral-100 dark:bg-zinc-950 flex items-center justify-center">
               {ticket.unboxingVideoUrl ? (
                 <video
                   src={ticket.unboxingVideoUrl}
@@ -286,7 +286,7 @@ export default function DisputeDetail() {
                   poster="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80"
                 />
               ) : (
-                <div className="text-center p-6 text-zinc-500">
+                <div className="text-center p-6 text-neutral-400 dark:text-zinc-500">
                   <span className="text-4xl block mb-2">📹</span>
                   <p className="text-sm font-medium">Không tìm thấy video bằng chứng unboxing.</p>
                 </div>
@@ -296,17 +296,17 @@ export default function DisputeDetail() {
         </div>
 
         {/* RIGHT COLUMN: 3-party Chat Room */}
-        <div className="w-full lg:w-1/2 flex flex-col bg-zinc-900/40 border border-zinc-800/80 rounded-3xl overflow-hidden backdrop-blur-xl relative">
+        <div className="w-full lg:w-1/2 flex flex-col bg-white dark:bg-zinc-900/40 border border-neutral-200 dark:border-zinc-800/80 rounded-3xl overflow-hidden shadow-sm relative">
           
           {/* Chat Header */}
-          <div className="px-5 py-4 border-b border-zinc-800 bg-zinc-900/20 flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-neutral-100 dark:border-zinc-800 bg-neutral-50/50 dark:bg-zinc-900/20 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-              <h2 className="font-extrabold text-sm text-zinc-200 tracking-wider uppercase">
+              <h2 className="font-extrabold text-sm text-neutral-800 dark:text-zinc-200 tracking-wider uppercase">
                 Phòng Tranh Chấp Trực Tuyến
               </h2>
             </div>
-            <span className="text-xs text-zinc-400 bg-zinc-950 px-3 py-1 rounded-full border border-zinc-800/60 font-semibold">
+            <span className="text-xs text-neutral-500 dark:text-zinc-400 bg-neutral-100 dark:bg-zinc-950 px-3 py-1 rounded-full border border-neutral-200 dark:border-zinc-800/60 font-semibold">
               3 Bên Đối Thoại
             </span>
           </div>
@@ -315,13 +315,13 @@ export default function DisputeDetail() {
           <div className="flex-1 overflow-y-auto p-5 space-y-4 flex flex-col min-h-[300px] lg:min-h-[450px]">
             
             {/* System Info Banner */}
-            <div className="text-center p-3 rounded-2xl bg-zinc-950/40 border border-zinc-800/50 text-[11px] text-zinc-500 space-y-1">
-              <p className="font-bold text-zinc-400">⚖️ CHAT ROOM TRỌNG TÀI ĐANG HOẠT ĐỘNG</p>
-              <p>Mọi tin nhắn từ Người mua, Người bán và Trọng tài đều được ghi lại làm cơ sở giải quyết tranh chấp.</p>
+            <div className="text-center p-3 rounded-2xl bg-neutral-50 dark:bg-zinc-950/40 border border-neutral-200 dark:border-zinc-800/50 text-[11px] text-neutral-500 space-y-1">
+              <p className="font-bold text-neutral-700 dark:text-zinc-400">⚖️ CHAT ROOM TRỌNG TÀI ĐANG HOẠT ĐỘNG</p>
+              <p className="text-neutral-500 dark:text-zinc-500">Mọi tin nhắn từ Người mua, Người bán và Trọng tài đều được ghi lại làm cơ sở giải quyết tranh chấp.</p>
             </div>
 
             {messages.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">
+              <div className="flex-1 flex items-center justify-center text-neutral-400 dark:text-zinc-500 text-sm">
                 Chưa có tin nhắn nào. Bắt đầu đối thoại để cung cấp thêm thông tin.
               </div>
             ) : (
@@ -337,26 +337,26 @@ export default function DisputeDetail() {
                 if (isMsgAdmin) senderLabel = 'Trọng tài';
 
                 // Determine style based on sender
-                let bubbleClass = 'bg-zinc-850 text-zinc-200 rounded-bl-none self-start';
+                let bubbleClass = 'bg-neutral-100 text-neutral-800 dark:bg-zinc-850 dark:text-zinc-200 rounded-bl-none self-start border border-neutral-200/50 dark:border-transparent';
                 let wrapperClass = 'justify-start';
 
                 if (isMsgAdmin) {
                   // Admin: Red/Yellow gradient style with outstanding border
-                  bubbleClass = 'bg-gradient-to-r from-red-900/60 to-amber-700/60 border-2 border-amber-400/80 text-amber-50 rounded-bl-none self-start shadow-lg shadow-red-900/10 font-bold';
+                  bubbleClass = 'bg-gradient-to-r from-rose-50 to-amber-50 dark:from-red-950/40 dark:to-amber-950/40 border-2 border-amber-400/60 dark:border-amber-400/80 text-amber-950 dark:text-amber-50 rounded-bl-none self-start shadow-sm font-bold';
                 } else if (isMsgBuyer) {
                   // Buyer: Blue background, aligned right
                   bubbleClass = 'bg-blue-600 text-white rounded-br-none self-end';
                   wrapperClass = 'justify-end';
                 } else if (isMsgSeller) {
                   // Seller: Gray background, aligned left
-                  bubbleClass = 'bg-zinc-700/80 text-zinc-100 rounded-bl-none self-start';
+                  bubbleClass = 'bg-neutral-100 text-neutral-800 dark:bg-zinc-700/80 dark:text-zinc-100 rounded-bl-none self-start border border-neutral-200/50 dark:border-transparent';
                 }
 
                 return (
                   <div key={msg.id} className={`flex ${wrapperClass} w-full`}>
                     <div className={`max-w-[85%] flex flex-col ${isMsgBuyer ? 'items-end' : 'items-start'}`}>
-                      {/* Message Sender Header */}
-                      <span className="text-[10px] text-zinc-400 font-bold mb-1 px-1 flex items-center gap-1.5">
+                       {/* Message Sender Header */}
+                      <span className="text-[10px] text-neutral-500 dark:text-zinc-400 font-bold mb-1 px-1 flex items-center gap-1.5">
                         <span className={`px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-wider ${
                           isMsgAdmin 
                             ? 'bg-gradient-to-r from-red-500 to-amber-500 shadow-sm shadow-amber-500/20' 
@@ -367,7 +367,7 @@ export default function DisputeDetail() {
                           {senderLabel}
                         </span>
                         <span>{msg.sender?.email}</span>
-                        <span className="text-[9px] font-normal text-zinc-500">
+                        <span className="text-[9px] font-normal text-neutral-400 dark:text-zinc-500">
                           {new Date(msg.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </span>
@@ -397,14 +397,14 @@ export default function DisputeDetail() {
           )}
 
           {/* Input text / Locked Message Box */}
-          <div className="p-4 bg-zinc-950/80 border-t border-zinc-800">
+          <div className="p-4 bg-neutral-50 dark:bg-zinc-950/80 border-t border-neutral-200 dark:border-zinc-800">
             {isClosed ? (
-              <div className="p-4 text-center rounded-2xl bg-zinc-900 border border-zinc-800/60 flex flex-col items-center justify-center gap-2 animate-fadeIn">
+              <div className="p-4 text-center rounded-2xl bg-neutral-100 dark:bg-zinc-900 border border-neutral-200 dark:border-zinc-800/60 flex flex-col items-center justify-center gap-2 animate-fadeIn">
                 <span className="text-2xl">🔒</span>
-                <p className="text-zinc-350 font-bold text-sm">
+                <p className="text-neutral-800 dark:text-zinc-300 font-bold text-sm">
                   Cuộc tranh chấp đã được phân xử bởi Admin. Khung chat đã đóng.
                 </p>
-                <p className="text-zinc-500 text-[11px]">
+                <p className="text-neutral-500 dark:text-zinc-500 text-[11px]">
                   Không thể gửi thêm tin nhắn sau khi quyết định giải quyết được đưa ra.
                 </p>
               </div>
@@ -417,7 +417,7 @@ export default function DisputeDetail() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Nhập phản hồi hoặc cung cấp bằng chứng tại đây..."
                   disabled={sendLoading}
-                  className="flex-1 px-4.5 py-3.5 bg-zinc-900 text-zinc-100 placeholder-zinc-500 border border-zinc-850 rounded-2xl focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-sm"
+                  className="flex-1 px-4.5 py-3.5 bg-white dark:bg-zinc-900 text-neutral-800 dark:text-zinc-100 placeholder-neutral-400 dark:placeholder-zinc-500 border border-neutral-250 dark:border-zinc-850 rounded-2xl focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all text-sm shadow-sm"
                 />
                 <button
                   type="submit"
@@ -438,17 +438,17 @@ export default function DisputeDetail() {
 
       {/* ADMIN CONTROL PANEL: Floating dashboard if logged-in user is ADMIN */}
       {isAdmin && (
-        <div className="fixed bottom-6 right-6 z-40 max-w-sm w-full sm:w-80 bg-zinc-900/95 border-2 border-amber-500/80 backdrop-blur-2xl rounded-3xl p-5 shadow-[0_10px_50px_rgba(245,158,11,0.2)] animate-slideUp">
-          <div className="flex items-center justify-between mb-4.5 border-b border-zinc-800 pb-3">
-            <h3 className="font-extrabold text-sm text-zinc-100 flex items-center gap-2">
+        <div className="fixed bottom-6 right-6 z-40 max-w-sm w-full sm:w-80 bg-white/95 dark:bg-zinc-900/95 border-2 border-amber-500/80 backdrop-blur-2xl rounded-3xl p-5 shadow-[0_10px_50px_rgba(245,158,11,0.15)] dark:shadow-[0_10px_50px_rgba(245,158,11,0.2)] animate-slideUp">
+          <div className="flex items-center justify-between mb-4.5 border-b border-neutral-200 dark:border-zinc-800 pb-3">
+            <h3 className="font-extrabold text-sm text-neutral-800 dark:text-zinc-100 flex items-center gap-2">
               <span className="text-lg">⚖️</span> Bảng Trọng Tài
             </h3>
             <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-              Admin Mode
+               Admin Mode
             </span>
           </div>
 
-          <p className="text-[11px] text-zinc-400 mb-5 leading-relaxed">
+          <p className="text-[11px] text-neutral-500 dark:text-zinc-400 mb-5 leading-relaxed">
             Xem xét cẩn thận mô tả và video unboxing trước khi đưa ra phán quyết tối cao. Hành động này không thể hoàn tác.
           </p>
 
@@ -463,14 +463,14 @@ export default function DisputeDetail() {
             <button
               onClick={() => handleResolveTicket('RESOLVED_PAY')}
               disabled={resolveLoading || isClosed}
-              className="w-full py-3.5 px-4 rounded-xl text-xs font-black tracking-wide text-emerald-400 hover:bg-emerald-605 hover:text-zinc-950 border border-emerald-500/30 bg-emerald-500/5 hover:border-transparent transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+              className="w-full py-3.5 px-4 rounded-xl text-xs font-black tracking-wide text-emerald-400 hover:bg-emerald-600 hover:text-zinc-950 border border-emerald-500/30 bg-emerald-500/5 hover:border-transparent transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
             >
               Thanh toán cho Người bán
             </button>
           </div>
 
           {isClosed && (
-            <div className="mt-4 p-2.5 rounded-xl bg-zinc-950 text-[10px] text-center text-zinc-500 font-bold border border-zinc-800/80">
+            <div className="mt-4 p-2.5 rounded-xl bg-neutral-50 dark:bg-zinc-950 text-[10px] text-center text-neutral-500 dark:text-zinc-500 font-bold border border-neutral-200 dark:border-zinc-800/80">
               Ticket đã được phân xử và đóng.
             </div>
           )}

@@ -29,8 +29,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable trust proxy in production to support express-rate-limit behind reverse proxies (like Render)
-if (process.env.NODE_ENV === 'production') {
+// Enable trust proxy when running on Render or in production to support express-rate-limit behind reverse proxies
+if (process.env.NODE_ENV === 'production' || process.env.RENDER === 'true') {
   app.set('trust proxy', 1);
 }
 
@@ -68,16 +68,16 @@ app.use(cors({
     }
   },
   credentials: true // BẮT BUỘC ĐỂ NHẬN COOKIE
-}));
+ }));
 
 // Parse JSON bodies (increased limit to 10mb to support base64 product image uploads)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// 4. Cấu hình Global Rate Limiter: Tối đa 100 requests mỗi 15 phút (tăng lên 10000 ở dev)
+// 4. Cấu hình Global Rate Limiter: Tăng giới hạn lên 1000 ở production / 10000 ở dev để tránh bị block nhầm
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 phút
-  max: process.env.NODE_ENV === 'development' ? 10000 : 100, // Tối đa 100 requests từ mỗi IP
+  max: (process.env.NODE_ENV === 'development') ? 10000 : 1000, // Tối đa 1000 requests từ mỗi IP ở production
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -87,10 +87,10 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// 5. Cấu hình Strict Rate Limiter chống Bot spam giá và Brute force đăng nhập: Tối đa 5 requests / phút (tăng lên 100 ở dev)
+// 5. Cấu hình Strict Rate Limiter chống Bot spam giá và Brute force: Tối đa 60 requests / phút ở prod
 const strictLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 phút
-  max: process.env.NODE_ENV === 'development' ? 100 : 5, // Tối đa 5 requests từ mỗi IP
+  max: (process.env.NODE_ENV === 'development') ? 100 : 60, // 60 requests/phút ở production để thoải mái bidding
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -99,7 +99,7 @@ const strictLimiter = rateLimit({
   }
 });
 
-// Áp dụng Rate Limiter đặc biệt khắc nghiệt cho các endpoints nhạy cảm
+// Áp dụng Rate Limiter đặc biệt cho các endpoints nhạy cảm
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/bids/place', strictLimiter);
 

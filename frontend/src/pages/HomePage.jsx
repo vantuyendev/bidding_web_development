@@ -182,7 +182,7 @@ export default function HomePage() {
   const trendingItems   = [...activeProducts].sort((a, b) => (b.bidCount || 0) - (a.bidCount || 0)).slice(0, 8);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'hsl(40,20%,97%)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--page-bg)' }}>
 
       {/* ── Hero ── */}
       <HeroBanner featuredItems={featuredItems} categories={categories} />
@@ -191,7 +191,7 @@ export default function HomePage() {
 
       {/* ── Ending Soon Section ── */}
       {!loading && endingSoonItems.length > 0 && (
-        <section className="py-8 reveal-on-scroll" style={{ borderBottom: '1px solid hsl(0,0%,89%)' }}>
+        <section className="py-8 reveal-on-scroll" style={{ borderBottom: '1px solid var(--page-border)' }}>
           <div className="page-container">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export default function HomePage() {
               </div>
               <button
                 onClick={() => handleTabChange('active')}
-                style={{ fontSize: 12, fontWeight: 600, color: 'hsl(196,100%,36%)', background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 View all →
               </button>
@@ -214,7 +214,7 @@ export default function HomePage() {
 
       {/* ── Trending / Most Bids Section ── */}
       {!loading && trendingItems.length > 0 && (
-        <section className="py-8 reveal-on-scroll" style={{ borderBottom: '1px solid hsl(0,0%,89%)' }}>
+        <section className="py-8 reveal-on-scroll" style={{ borderBottom: '1px solid var(--page-border)' }}>
           <div className="page-container">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
@@ -270,9 +270,9 @@ export default function HomePage() {
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
                 style={{
-                  border: '1px solid hsl(0,0%,85%)', borderRadius: 4,
+                  border: '1px solid var(--select-border)', borderRadius: 4,
                   padding: '6px 30px 6px 10px', fontSize: 12, fontWeight: 500,
-                  color: 'hsl(12,14%,11%)', background: 'white', cursor: 'pointer',
+                  color: 'var(--page-text)', background: 'var(--select-bg)', cursor: 'pointer',
                   outline: 'none', fontFamily: 'var(--font-sans)',
                   appearance: 'auto',
                 }}
@@ -285,7 +285,7 @@ export default function HomePage() {
           {/* Status Tabs */}
           <div
             className="flex gap-0 mb-6"
-            style={{ borderBottom: '1px solid hsl(0,0%,89%)' }}
+            style={{ borderBottom: '1px solid var(--tab-border)' }}
           >
             {STATUS_TABS.map(tab => (
               <button
@@ -297,9 +297,9 @@ export default function HomePage() {
                   fontFamily: 'var(--font-display)', cursor: 'pointer',
                   background: 'none', border: 'none',
                   borderBottom: activeTab === tab.value
-                    ? '2px solid hsl(196,100%,36%)'
+                    ? '2px solid var(--brand-primary)'
                     : '2px solid transparent',
-                  color: activeTab === tab.value ? 'hsl(196,100%,36%)' : 'hsl(12,8%,50%)',
+                  color: activeTab === tab.value ? 'var(--brand-primary)' : 'var(--page-text-muted)',
                   transition: 'all 0.15s', marginBottom: '-1px',
                 }}
               >
@@ -316,18 +316,18 @@ export default function HomePage() {
               <aside
                 style={{
                   width: 220, flexShrink: 0, fontSize: 12,
-                  borderRight: '1px solid hsl(0,0%,89%)', paddingRight: 20,
+                  borderRight: '1px solid var(--page-border)', paddingRight: 20,
                 }}
               >
                 <div
                   style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                    letterSpacing: '0.1em', color: 'hsl(12,8%,55%)', marginBottom: 16 }}
+                    letterSpacing: '0.1em', color: 'var(--page-text-muted)', marginBottom: 16 }}
                 >
                   Filter
                 </div>
                 {availableFilters.map(filter => (
                   <div key={filter.id} style={{ marginBottom: 20 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 8, color: 'hsl(12,14%,11%)' }}>
+                    <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--page-text)' }}>
                       {filter.name}
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -340,9 +340,9 @@ export default function HomePage() {
                             type="checkbox"
                             checked={(activeFilters[filter.id] || []).includes(opt)}
                             onChange={e => handleFilterChange(filter.id, opt, e.target.checked)}
-                            style={{ accentColor: 'hsl(196,100%,36%)' }}
+                            style={{ accentColor: 'var(--brand-primary)' }}
                           />
-                          <span style={{ color: 'hsl(12,14%,28%)' }}>{opt}</span>
+                          <span style={{ color: 'var(--page-text)' }}>{opt}</span>
                         </label>
                       ))}
                     </div>
@@ -444,7 +444,7 @@ function HowItWorks() {
     <section
       id="how-to-win"
       className="py-12 reveal-on-scroll"
-      style={{ background: 'white', borderTop: '1px solid hsl(0,0%,89%)', borderBottom: '1px solid hsl(0,0%,89%)' }}
+      style={{ background: 'var(--page-card-bg)', borderTop: '1px solid var(--page-border)', borderBottom: '1px solid var(--page-border)' }}
     >
       <div className="page-container">
         <h2 className="section-title text-center font-display" style={{ marginBottom: 32 }}>
@@ -456,7 +456,7 @@ function HowItWorks() {
               <div
                 style={{
                   width: 56, height: 56, borderRadius: '50%',
-                  background: 'hsl(196,100%,95%)',
+                  background: 'var(--nav-bg-hover)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 24, flexShrink: 0,
                 }}
@@ -466,17 +466,17 @@ function HowItWorks() {
               <div>
                 <div
                   style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                    letterSpacing: '0.1em', color: 'hsl(196,100%,36%)', marginBottom: 4 }}
+                    letterSpacing: '0.1em', color: 'var(--brand-primary)', marginBottom: 4 }}
                 >
                   Step {i + 1}
                 </div>
                 <h3
                   style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700,
-                    color: 'hsl(12,14%,11%)', marginBottom: 6 }}
+                    color: 'var(--page-text)', marginBottom: 6 }}
                 >
                   {step.title}
                 </h3>
-                <p style={{ fontSize: 12, color: 'hsl(12,8%,45%)', lineHeight: 1.6 }}>
+                <p style={{ fontSize: 12, color: 'var(--page-text-muted)', lineHeight: 1.6 }}>
                   {step.desc}
                 </p>
               </div>
@@ -492,10 +492,10 @@ function EmptyState({ searchTerm, onClear }) {
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px' }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 8 }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--page-text)', marginBottom: 8 }}>
         {searchTerm ? `No results for "${searchTerm}"` : 'No items found'}
       </h3>
-      <p style={{ fontSize: 13, color: 'hsl(12,8%,55%)', marginBottom: 20 }}>
+      <p style={{ fontSize: 13, color: 'var(--page-text-muted)', marginBottom: 20 }}>
         Try adjusting your search or filters to find what you're looking for.
       </p>
       <button
@@ -513,10 +513,10 @@ function ErrorState({ message, onRetry }) {
   return (
     <div style={{ textAlign: 'center', padding: '60px 20px' }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'hsl(12,14%,11%)', marginBottom: 8 }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--page-text)', marginBottom: 8 }}>
         Something went wrong
       </h3>
-      <p style={{ fontSize: 13, color: 'hsl(12,8%,55%)', marginBottom: 20 }}>{message}</p>
+      <p style={{ fontSize: 13, color: 'var(--page-text-muted)', marginBottom: 20 }}>{message}</p>
       <button
         onClick={onRetry}
         className="bid-btn-primary"

@@ -6,6 +6,82 @@
 
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Page backgrounds & texts */
+  --page-bg: hsl(40, 20%, 97%);
+  --page-text: hsl(12, 14%, 11%);
+  --page-text-muted: hsl(12, 8%, 45%);
+  --page-border: hsl(0, 0%, 89%);
+  --page-card-bg: white;
+  
+  /* Brand colors */
+  --brand-primary: hsl(196, 100%, 36%);
+  
+  /* Specific UI parts */
+  --chip-bg: white;
+  --select-bg: white;
+  --select-border: hsl(0, 0%, 85%);
+  --tab-border: hsl(0, 0%, 89%);
+  
+  /* Nav variables */
+  --nav-bg-scrolled: hsla(0,0%,100%,0.95);
+  --nav-bg-default: white;
+  --nav-border: hsl(0,0%,89%);
+  --nav-border-light: hsl(0,0%,93%);
+  --nav-text-primary: hsl(12,14%,11%);
+  --nav-text-secondary: hsl(12,8%,40%);
+  --nav-text-muted: hsl(12,8%,50%);
+  --nav-bg-hover: hsl(40,20%,95%);
+  --nav-bg-input: hsl(40,20%,98%);
+
+  /* Auth variables */
+  --auth-bg-panel: hsl(40, 20%, 97%);
+  --auth-bg-card: white;
+  --auth-text-title: hsl(12, 14%, 11%);
+  --auth-text-desc: hsl(12, 8%, 40%);
+  --auth-border: hsl(0, 0%, 89%);
+  --auth-border-light: hsl(0, 0%, 93%);
+}
+
+.dark {
+  /* Page backgrounds & texts */
+  --page-bg: #121212;
+  --page-text: #f5f5f5;
+  --page-text-muted: #a3a3a3;
+  --page-border: #262626;
+  --page-card-bg: #1e1e1e;
+
+  /* Brand colors */
+  --brand-primary: hsl(196, 100%, 46%);
+
+  /* Specific UI parts */
+  --chip-bg: #1e1e1e;
+  --select-bg: #1e1e1e;
+  --select-border: #404040;
+  --tab-border: #262626;
+
+  /* Nav variables */
+  --nav-bg-scrolled: rgba(23, 23, 23, 0.95);
+  --nav-bg-default: #171717;
+  --nav-border: #262626;
+  --nav-border-light: #262626;
+  --nav-text-primary: #f5f5f5;
+  --nav-text-secondary: #a3a3a3;
+  --nav-text-muted: #737373;
+  --nav-bg-hover: #262626;
+  --nav-bg-input: #262626;
+
+  /* Auth variables */
+  --auth-bg-panel: #171717;
+  --auth-bg-card: #262626;
+  --auth-text-title: #f5f5f5;
+  --auth-text-desc: #a3a3a3;
+  --auth-border: #404040;
+  --auth-border-light: #404040;
+}
+
 /* ── Google Fonts via index.html preconnect ── */
 
 @theme {
@@ -104,10 +180,11 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: hsl(40, 20%, 97%);
-  color: hsl(12, 14%, 11%);
+  background-color: var(--page-bg);
+  color: var(--page-text);
   line-height: 1.6;
   min-height: 100dvh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ── Typography helpers ── */
@@ -593,7 +670,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 40px 24px;
-  background: hsl(40, 20%, 97%);
+  background: var(--auth-bg-panel);
   overflow-y: auto;
 }
 
@@ -631,8 +708,8 @@ body {
 .auth-tabs {
   display: flex;
   gap: 0;
-  background: white;
-  border: 1px solid hsl(0, 0%, 89%);
+  background: var(--auth-bg-card);
+  border: 1px solid var(--auth-border);
   border-radius: 10px;
   padding: 4px;
   margin-bottom: 28px;
@@ -656,8 +733,8 @@ body {
   box-shadow: 0 2px 8px hsla(196, 100%, 36%, 0.35);
 }
 .auth-tab:not(.auth-tab--active):hover {
-  background: hsl(40, 20%, 97%);
-  color: hsl(12, 14%, 11%);
+  background: var(--auth-bg-panel);
+  color: var(--auth-text-title);
 }
 
 /* ── Heading block ── */
@@ -668,13 +745,13 @@ body {
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
-  color: hsl(12, 14%, 11%);
+  color: var(--auth-text-title);
   margin: 0 0 6px;
   line-height: 1.3;
 }
 .auth-form-subtitle {
   font-size: 14px;
-  color: hsl(12, 8%, 40%);
+  color: var(--auth-text-desc);
   margin: 0;
 }
 
@@ -715,12 +792,12 @@ body {
 .auth-bonus-title {
   font-size: 13px;
   font-weight: 700;
-  color: hsl(12, 14%, 11%);
+  color: var(--auth-text-title);
   margin-bottom: 2px;
 }
 .auth-bonus-desc {
   font-size: 12px;
-  color: hsl(12, 8%, 40%);
+  color: var(--auth-text-desc);
   line-height: 1.5;
 }
 
@@ -744,21 +821,21 @@ body {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: hsl(12, 10%, 28%);
+  color: var(--auth-text-title);
 }
 .auth-input {
   width: 100%;
   padding: 12px 16px;
   font-size: 15px;
   font-family: var(--font-sans);
-  color: hsl(12, 14%, 11%);
-  background: white;
-  border: 1.5px solid hsl(0, 0%, 89%);
+  color: var(--auth-text-title);
+  background: var(--auth-bg-card);
+  border: 1.5px solid var(--auth-border);
   border-radius: 10px;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.auth-input::placeholder { color: hsl(12, 4%, 70%); }
+.auth-input::placeholder { color: var(--auth-text-desc); }
 .auth-input:focus {
   border-color: hsl(196, 100%, 36%);
   box-shadow: 0 0 0 3px hsla(196, 100%, 36%, 0.12);
@@ -812,7 +889,7 @@ body {
 /* ── Footer text ── */
 .auth-footer-text {
   font-size: 14px;
-  color: hsl(12, 8%, 40%);
+  color: var(--auth-text-desc);
   text-align: center;
   margin: 0 0 12px;
 }
@@ -836,16 +913,17 @@ body {
 /* ── Legal text ── */
 .auth-legal {
   font-size: 12px;
-  color: hsl(12, 4%, 70%);
+  color: var(--auth-text-desc);
+  opacity: 0.7;
   text-align: center;
   line-height: 1.6;
   margin: 0;
 }
 .auth-legal-link {
-  color: hsl(12, 8%, 40%);
+  color: var(--auth-text-desc);
   text-decoration: underline;
 }
-.auth-legal-link:hover { color: hsl(196, 100%, 36%); }
+.auth-legal-link:hover { color: var(--brand-primary); }
 
 /* ═══════════════════════════════════════════════════════════
    AUCTION SCENE — Pure visual animation

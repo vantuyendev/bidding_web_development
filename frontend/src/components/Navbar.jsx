@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../api';
 import CreateAuctionModal from './CreateAuctionModal';
+import { useTheme } from '../context/ThemeContext';
 
 // ── Icons ──────────────────────────────────────────────────
 const BellIcon = () => (
@@ -13,6 +14,16 @@ const BellIcon = () => (
 const ChevronDown = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 ml-0.5 opacity-60">
     <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+  </svg>
+);
+const SunIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+  </svg>
+);
+const MoonIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
   </svg>
 );
 
@@ -107,6 +118,7 @@ export default function Navbar() {
   const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   // State
   const [categories, setCategories] = useState([]);
@@ -290,10 +302,10 @@ export default function Navbar() {
         id="main-navbar"
         className="fixed top-0 left-0 right-0 z-40 transition-all duration-300"
         style={{
-          background: isScrolled ? 'hsla(0,0%,100%,0.95)' : 'white',
+          background: isScrolled ? 'var(--nav-bg-scrolled)' : 'var(--nav-bg-default)',
           backdropFilter: isScrolled ? 'blur(16px)' : 'none',
-          borderBottom: '1px solid hsl(0,0%,89%)',
-          boxShadow: isScrolled ? '0 1px 8px hsla(0,0%,0%,0.08)' : 'none',
+          borderBottom: '1px solid var(--nav-border)',
+          boxShadow: isScrolled ? '0 1px 8px rgba(0,0,0,0.1)' : 'none',
         }}
       >
         {/* ── Top Bar ── */}
@@ -318,7 +330,7 @@ export default function Navbar() {
                 fontFamily: 'var(--font-display)',
                 fontWeight: 800,
                 fontSize: 18,
-                color: 'hsl(12,14%,11%)',
+                color: 'var(--nav-text-primary)',
                 letterSpacing: '-0.02em',
               }}
             >
@@ -342,18 +354,18 @@ export default function Navbar() {
                 aria-label="Search"
                 style={{
                   width: '100%',
-                  border: '1.5px solid hsl(0,0%,82%)',
+                  border: '1.5px solid var(--nav-border)',
                   borderRadius: 20,
                   padding: '7px 42px 7px 16px',
                   fontSize: 13,
                   fontFamily: 'var(--font-sans)',
                   outline: 'none',
-                  background: 'hsl(40,20%,98%)',
-                  color: 'hsl(12,14%,11%)',
+                  background: 'var(--nav-bg-input)',
+                  color: 'var(--nav-text-primary)',
                   transition: 'border-color 0.2s',
                 }}
-                onFocus={(e) => { e.target.style.borderColor = 'hsl(196,100%,36%)'; e.target.style.background = 'white'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'hsl(0,0%,82%)'; e.target.style.background = 'hsl(40,20%,98%)'; }}
+                onFocus={(e) => { e.target.style.borderColor = 'var(--brand-primary)'; e.target.style.background = 'var(--nav-bg-default)'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'var(--nav-border)'; e.target.style.background = 'var(--nav-bg-input)'; }}
               />
               <button
                 type="submit"
@@ -361,7 +373,7 @@ export default function Navbar() {
                 style={{
                   position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'hsl(12,8%,50%)', display: 'flex', padding: 4,
+                  color: 'var(--nav-text-muted)', display: 'flex', padding: 4,
                 }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -400,6 +412,22 @@ export default function Navbar() {
               + Post Auction
             </button>
 
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--nav-text-secondary)', padding: 6,
+                borderRadius: '50%', transition: 'background 0.15s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'var(--nav-bg-hover)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'none'; }}
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+            </button>
+
             {user && (
               <>
                 {/* Notification Bell */}
@@ -410,10 +438,10 @@ export default function Navbar() {
                     aria-label="Notifications"
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      position: 'relative', color: 'hsl(12,8%,40%)', padding: 6,
+                      position: 'relative', color: 'var(--nav-text-secondary)', padding: 6,
                       borderRadius: '50%', transition: 'background 0.15s',
                     }}
-                    onMouseOver={(e) => { e.currentTarget.style.background = 'hsl(40,20%,95%)'; }}
+                    onMouseOver={(e) => { e.currentTarget.style.background = 'var(--nav-bg-hover)'; }}
                     onMouseOut={(e) => { e.currentTarget.style.background = 'none'; }}
                   >
                     <BellIcon />
@@ -424,7 +452,7 @@ export default function Navbar() {
                           position: 'absolute', top: 4, right: 4,
                           width: 8, height: 8, borderRadius: '50%',
                           background: 'hsl(3,83%,60%)',
-                          border: '2px solid white',
+                          border: '2px solid var(--nav-bg-default)',
                         }}
                       />
                     )}
@@ -434,9 +462,9 @@ export default function Navbar() {
                   <div
                     style={{
                       position: 'absolute', right: 0, top: 'calc(100% + 8px)',
-                      width: 320, background: 'white',
-                      border: '1px solid hsl(0,0%,89%)',
-                      borderRadius: 8, boxShadow: '0 8px 32px hsla(0,0%,0%,0.12)',
+                      width: 320, background: 'var(--nav-bg-default)',
+                      border: '1px solid var(--nav-border)',
+                      borderRadius: 8, boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px hsla(0,0%,0%,0.12)',
                       zIndex: 200, padding: '12px 0',
                       transition: 'opacity 0.2s, transform 0.2s',
                       opacity: isNotificationsOpen ? 1 : 0,
@@ -444,17 +472,17 @@ export default function Navbar() {
                       pointerEvents: isNotificationsOpen ? 'auto' : 'none',
                     }}
                   >
-                    <div style={{ padding: '0 14px 10px', borderBottom: '1px solid hsl(0,0%,93%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'hsl(12,14%,11%)' }}>
+                    <div style={{ padding: '0 14px 10px', borderBottom: '1px solid var(--nav-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--nav-text-primary)' }}>
                         Notifications ({notifications.filter(n => !n.isRead).length})
                       </span>
-                      <button onClick={handleMarkAllAsRead} style={{ fontSize: 10, color: 'hsl(196,100%,36%)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                      <button onClick={handleMarkAllAsRead} style={{ fontSize: 10, color: 'var(--brand-primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                         Mark all read
                       </button>
                     </div>
                     <div style={{ maxHeight: 280, overflowY: 'auto' }}>
                       {notifications.length === 0 ? (
-                        <div style={{ padding: '24px 14px', textAlign: 'center', color: 'hsl(12,8%,60%)', fontSize: 12 }}>
+                        <div style={{ padding: '24px 14px', textAlign: 'center', color: 'var(--nav-text-muted)', fontSize: 12 }}>
                           No notifications yet.
                         </div>
                       ) : notifications.map(n => (
@@ -464,15 +492,15 @@ export default function Navbar() {
                           style={{
                             padding: '10px 14px', cursor: 'pointer',
                             borderLeft: !n.isRead ? '3px solid hsl(196,100%,36%)' : '3px solid transparent',
-                            background: !n.isRead ? 'hsl(196,100%,97%)' : 'transparent',
+                            background: !n.isRead ? (theme === 'dark' ? 'rgba(0,151,186,0.1)' : 'hsl(196,100%,97%)') : 'transparent',
                             transition: 'background 0.15s',
                           }}
-                          onMouseOver={(e) => { e.currentTarget.style.background = 'hsl(40,20%,97%)'; }}
-                          onMouseOut={(e) => { e.currentTarget.style.background = !n.isRead ? 'hsl(196,100%,97%)' : 'transparent'; }}
+                          onMouseOver={(e) => { e.currentTarget.style.background = 'var(--nav-bg-hover)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.background = !n.isRead ? (theme === 'dark' ? 'rgba(0,151,186,0.1)' : 'hsl(196,100%,97%)') : 'transparent'; }}
                         >
-                          <div style={{ fontSize: 12, fontWeight: n.isRead ? 500 : 700, color: 'hsl(12,14%,11%)' }}>{n.title}</div>
-                          <div style={{ fontSize: 11, color: 'hsl(12,8%,50%)', marginTop: 2 }}>{n.message}</div>
-                          <div style={{ fontSize: 10, color: 'hsl(12,8%,65%)', marginTop: 4 }}>{formatTime(n.createdAt)}</div>
+                          <div style={{ fontSize: 12, fontWeight: n.isRead ? 500 : 700, color: 'var(--nav-text-primary)' }}>{n.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--nav-text-muted)', marginTop: 2 }}>{n.message}</div>
+                          <div style={{ fontSize: 10, color: 'var(--nav-text-muted)', marginTop: 4 }}>{formatTime(n.createdAt)}</div>
                         </div>
                       ))}
                     </div>
@@ -501,7 +529,7 @@ export default function Navbar() {
                     }}>
                       {(user.name || user.email || '?')[0].toUpperCase()}
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(12,14%,11%)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--nav-text-primary)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {user.name || user.email}
                     </span>
                     <ChevronDown />
@@ -511,9 +539,9 @@ export default function Navbar() {
                   <div
                     style={{
                       position: 'absolute', right: 0, top: 'calc(100% + 8px)',
-                      width: 240, background: 'white',
-                      border: '1px solid hsl(0,0%,89%)', borderRadius: 8,
-                      boxShadow: '0 8px 32px hsla(0,0%,0%,0.12)',
+                      width: 240, background: 'var(--nav-bg-default)',
+                      border: '1px solid var(--nav-border)', borderRadius: 8,
+                      boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px hsla(0,0%,0%,0.12)',
                       zIndex: 200, overflow: 'hidden',
                       transition: 'opacity 0.2s, transform 0.2s',
                       opacity: isDropdownOpen ? 1 : 0,
@@ -522,11 +550,11 @@ export default function Navbar() {
                     }}
                   >
                     {/* User info header */}
-                    <div style={{ padding: '14px 16px', borderBottom: '1px solid hsl(0,0%,93%)' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'hsl(12,14%,11%)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--nav-border-light)' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--nav-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {user.name || 'Anonymous'}
                       </div>
-                      <div style={{ fontSize: 11, color: 'hsl(12,8%,55%)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 11, color: 'var(--nav-text-muted)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {user.email}
                       </div>
                       {user.isVerifiedSeller && (
@@ -535,9 +563,9 @@ export default function Navbar() {
                     </div>
 
                     {/* Balance */}
-                    <div style={{ padding: '10px 16px', borderBottom: '1px solid hsl(0,0%,93%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, color: 'hsl(12,8%,55%)' }}>Wallet balance</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: 'hsl(12,14%,11%)', fontFamily: 'var(--font-display)' }}>
+                    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--nav-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, color: 'var(--nav-text-muted)' }}>Wallet balance</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--nav-text-primary)', fontFamily: 'var(--font-display)' }}>
                         {Number(user.walletBalance ?? 0).toLocaleString('vi-VN')} đ
                       </span>
                     </div>
@@ -555,10 +583,10 @@ export default function Navbar() {
                         onClick={() => setIsDropdownOpen(false)}
                         style={{
                           display: 'block', padding: '9px 16px', fontSize: 12, fontWeight: 500,
-                          color: 'hsl(12,14%,11%)', textDecoration: 'none',
+                          color: 'var(--nav-text-primary)', textDecoration: 'none',
                           transition: 'background 0.1s',
                         }}
-                        onMouseOver={(e) => { e.currentTarget.style.background = 'hsl(40,20%,97%)'; }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = 'var(--nav-bg-hover)'; }}
                         onMouseOut={(e) => { e.currentTarget.style.background = ''; }}
                       >
                         {label}
@@ -572,9 +600,9 @@ export default function Navbar() {
                         style={{
                           display: 'block', width: '100%', textAlign: 'left',
                           padding: '9px 16px', fontSize: 12, fontWeight: 600,
-                          color: 'hsl(196,100%,36%)', background: 'none', border: 'none',
+                          color: 'var(--brand-primary)', background: 'none', border: 'none',
                           cursor: verifyLoading ? 'not-allowed' : 'pointer',
-                          borderTop: '1px solid hsl(0,0%,93%)',
+                          borderTop: '1px solid var(--nav-border-light)',
                           opacity: verifyLoading ? 0.6 : 1,
                         }}
                       >
@@ -589,7 +617,7 @@ export default function Navbar() {
                         display: 'block', width: '100%', textAlign: 'left',
                         padding: '9px 16px', fontSize: 12, fontWeight: 600,
                         color: 'hsl(3,83%,60%)', background: 'none', border: 'none',
-                        cursor: 'pointer', borderTop: '1px solid hsl(0,0%,93%)',
+                        cursor: 'pointer', borderTop: '1px solid var(--nav-border-light)',
                       }}
                     >
                       Log Out
@@ -603,22 +631,22 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  style={{ fontSize: 13, fontWeight: 600, color: 'hsl(12,14%,11%)', textDecoration: 'none' }}
-                  onMouseOver={(e) => { e.currentTarget.style.color = 'hsl(196,100%,36%)'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.color = 'hsl(12,14%,11%)'; }}
+                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--nav-text-primary)', textDecoration: 'none' }}
+                  onMouseOver={(e) => { e.currentTarget.style.color = 'var(--brand-primary)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.color = 'var(--nav-text-primary)'; }}
                 >
                   Log In
                 </Link>
                 <Link
                   to="/register"
                   style={{
-                    fontSize: 13, fontWeight: 700, color: 'hsl(196,100%,36%)',
-                    border: '1.5px solid hsl(196,100%,36%)', borderRadius: 20,
+                    fontSize: 13, fontWeight: 700, color: 'var(--brand-primary)',
+                    border: '1.5px solid var(--brand-primary)', borderRadius: 20,
                     padding: '5px 14px', textDecoration: 'none',
                     transition: 'all 0.15s',
                   }}
-                  onMouseOver={(e) => { e.currentTarget.style.background = 'hsl(196,100%,36%)'; e.currentTarget.style.color = 'white'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'hsl(196,100%,36%)'; }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = 'var(--brand-primary)'; e.currentTarget.style.color = 'white'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--brand-primary)'; }}
                 >
                   Register
                 </Link>
@@ -630,8 +658,8 @@ export default function Navbar() {
         {/* ── Category Tab Bar ── */}
         <div
           style={{
-            borderTop: '1px solid hsl(0,0%,93%)',
-            background: 'white',
+            borderTop: '1px solid var(--nav-border-light)',
+            background: 'var(--nav-bg-default)',
             position: 'relative',
           }}
         >
@@ -690,7 +718,7 @@ export default function Navbar() {
             )}
 
             {/* Divider */}
-            <div style={{ width: 1, height: 20, background: 'hsl(0,0%,89%)', margin: '0 8px', flexShrink: 0 }} />
+            <div style={{ width: 1, height: 20, background: 'var(--nav-border)', margin: '0 8px', flexShrink: 0 }} />
 
             {/* Quick links */}
             {QUICK_LINKS.map(lk => (
@@ -699,7 +727,7 @@ export default function Navbar() {
                 to={lk.href}
                 id={`nav-quick-${lk.label.toLowerCase().replace(/\s+/g, '-')}`}
                 className="cat-nav-tab"
-                style={{ fontSize: 12, color: 'hsl(12,8%,45%)' }}
+                style={{ fontSize: 12, color: 'var(--nav-text-secondary)' }}
               >
                 {lk.label}
               </Link>
@@ -715,10 +743,10 @@ export default function Navbar() {
                 right: 'max(20px, calc((100% - 1240px) / 2 + 20px))',
                 top: '100%',
                 width: 200,
-                background: 'white',
-                border: '1px solid hsl(0,0%,89%)',
+                background: 'var(--nav-bg-default)',
+                border: '1px solid var(--nav-border)',
                 borderRadius: 8,
-                boxShadow: '0 8px 32px hsla(0,0%,0%,0.12)',
+                boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px hsla(0,0%,0%,0.12)',
                 zIndex: 200,
                 padding: '8px 0',
                 transition: 'opacity 0.2s, transform 0.2s',
@@ -737,17 +765,17 @@ export default function Navbar() {
                     padding: '10px 16px',
                     fontSize: 13,
                     fontWeight: 500,
-                    color: 'hsl(12,14%,11%)',
+                    color: 'var(--nav-text-primary)',
                     textDecoration: 'none',
                     transition: 'background 0.1s, color 0.1s',
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'hsl(40,20%,97%)';
-                    e.currentTarget.style.color = 'hsl(196,100%,36%)';
+                    e.currentTarget.style.background = 'var(--nav-bg-hover)';
+                    e.currentTarget.style.color = 'var(--brand-primary)';
                   }}
                   onMouseOut={(e) => {
                     e.currentTarget.style.background = '';
-                    e.currentTarget.style.color = 'hsl(12,14%,11%)';
+                    e.currentTarget.style.color = 'var(--nav-text-primary)';
                   }}
                 >
                   {cat.name}
@@ -765,9 +793,9 @@ export default function Navbar() {
               onMouseLeave={closeMegaMenu}
               style={{
                 backdropFilter: 'blur(20px)',
-                background: 'rgba(255, 255, 255, 0.95)',
-                borderTop: '2px solid hsl(196, 100%, 36%)',
-                boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+                background: theme === 'dark' ? 'rgba(23, 23, 23, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                borderTop: '2px solid var(--brand-primary)',
+                boxShadow: theme === 'dark' ? '0 12px 40px rgba(0,0,0,0.4)' : '0 12px 40px rgba(0,0,0,0.08)',
               }}
             >
               <div style={{ maxWidth: 1240, margin: '0 auto', padding: '24px 40px' }}>
@@ -777,14 +805,14 @@ export default function Navbar() {
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                       {/* Category Header Title */}
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'hsl(196, 100%, 30%)', borderBottom: '1px solid hsl(0,0%,92%)', paddingBottom: 8 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-primary)', borderBottom: '1px solid var(--nav-border-light)', paddingBottom: 8 }}>
                         {cat.name}
                       </div>
                       
                       <div className="grid grid-cols-2 gap-12" style={{ padding: '4px 0' }}>
                         {/* Column 1: Popular Searches */}
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(12,8%,55%)', marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nav-text-muted)', marginBottom: 12 }}>
                             Tìm kiếm nổi bật
                           </div>
                           <div className="flex flex-col gap-1">
@@ -795,7 +823,7 @@ export default function Navbar() {
                                 onClick={() => setActiveMegaMenu(null)}
                                 style={{
                                   fontSize: 13,
-                                  color: 'hsl(12,14%,25%)',
+                                  color: 'var(--nav-text-primary)',
                                   textDecoration: 'none',
                                   padding: '5px 0',
                                   fontWeight: 500,
@@ -805,11 +833,11 @@ export default function Navbar() {
                                   gap: 6
                                 }}
                                 onMouseOver={(e) => {
-                                  e.currentTarget.style.color = 'hsl(196,100%,36%)';
+                                  e.currentTarget.style.color = 'var(--brand-primary)';
                                   e.currentTarget.style.transform = 'translateX(6px)';
                                 }}
                                 onMouseOut={(e) => {
-                                  e.currentTarget.style.color = 'hsl(12,14%,25%)';
+                                  e.currentTarget.style.color = 'var(--nav-text-primary)';
                                   e.currentTarget.style.transform = 'translateX(0)';
                                 }}
                               >
@@ -818,7 +846,7 @@ export default function Navbar() {
                               </Link>
                             ))}
                             {(CATEGORY_SUBCATEGORIES[cat.slug] || []).length === 0 && (
-                              <div style={{ fontSize: 13, color: 'hsl(12,8%,65%)', fontStyle: 'italic', padding: '6px 0' }}>
+                              <div style={{ fontSize: 13, color: 'var(--nav-text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
                                 Đang cập nhật danh mục con...
                               </div>
                             )}
@@ -827,7 +855,7 @@ export default function Navbar() {
 
                         {/* Column 2: Auction Status Filters */}
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(12,8%,55%)', marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nav-text-muted)', marginBottom: 12 }}>
                             Bộ lọc phiên đấu
                           </div>
                           <div className="flex flex-col gap-1">
@@ -848,7 +876,7 @@ export default function Navbar() {
                                   onClick={() => setActiveMegaMenu(null)}
                                   style={{
                                     fontSize: 13,
-                                    color: 'hsl(12,14%,25%)',
+                                    color: 'var(--nav-text-primary)',
                                     textDecoration: 'none',
                                     padding: '5px 0',
                                     fontWeight: 500,
@@ -858,11 +886,11 @@ export default function Navbar() {
                                     gap: 6
                                   }}
                                   onMouseOver={(e) => {
-                                    e.currentTarget.style.color = 'hsl(196,100%,36%)';
+                                    e.currentTarget.style.color = 'var(--brand-primary)';
                                     e.currentTarget.style.transform = 'translateX(6px)';
                                   }}
                                   onMouseOut={(e) => {
-                                    e.currentTarget.style.color = 'hsl(12,14%,25%)';
+                                    e.currentTarget.style.color = 'var(--nav-text-primary)';
                                     e.currentTarget.style.transform = 'translateX(0)';
                                   }}
                                 >
