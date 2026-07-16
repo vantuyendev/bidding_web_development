@@ -302,6 +302,11 @@ export const getUserWalletRequests = async (req, res, next) => {
     return res.json({
       success: true,
       data: requests.map(r => ({ ...r, amount: Number(r.amount) })),
+      adminBankInfo: {
+        bankName: process.env.ADMIN_BANK_NAME || 'Vietcombank',
+        bankAccount: process.env.ADMIN_BANK_ACCOUNT || '1234567890',
+        bankOwner: process.env.ADMIN_BANK_OWNER || 'NGUYEN VAN A'
+      },
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (error) {

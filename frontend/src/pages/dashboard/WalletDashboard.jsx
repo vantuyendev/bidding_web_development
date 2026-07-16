@@ -5,6 +5,25 @@ import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+const getVietQRBankId = (bankName) => {
+  if (!bankName) return 'vietcombank';
+  const name = bankName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (name.includes('vietcombank') || name === 'vcb') return 'vietcombank';
+  if (name.includes('vietinbank') || name === 'ctg') return 'vietinbank';
+  if (name.includes('bidv') || name === 'bid') return 'bidv';
+  if (name.includes('agribank') || name === 'vba') return 'agribank';
+  if (name.includes('mbbank') || name === 'mb' || name === 'militarybank') return 'mbbank';
+  if (name.includes('techcombank') || name === 'tcb') return 'techcombank';
+  if (name.includes('acb')) return 'acb';
+  if (name.includes('vpbank') || name === 'vpb') return 'vpbank';
+  if (name.includes('sacombank') || name === 'stb') return 'sacombank';
+  if (name.includes('tpbank') || name === 'tpb') return 'tpbank';
+  if (name.includes('vib')) return 'vib';
+  if (name.includes('shb')) return 'shb';
+  if (name.includes('hdbank') || name === 'hdb') return 'hdbank';
+  if (name.includes('scb')) return 'scb';
+  return name;
+};
 
 export default function WalletDashboard(props) {
   const context = useOutletContext() || {};
@@ -26,6 +45,14 @@ export default function WalletDashboard(props) {
 
   // Deposit Response details to show instructions
   const [depositInstructions, setDepositInstructions] = useState(null);
+  const [adminBankInfo, setAdminBankInfo] = useState(null);
+  const [copiedField, setCopiedField] = useState('');
+
+  const handleCopy = (text, field) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(''), 1500);
+  };
 
   // Wallet Requests history state
   const [walletRequests, setWalletRequests] = useState([]);
@@ -52,6 +79,9 @@ export default function WalletDashboard(props) {
       const data = await res.json();
       if (data.success) {
         setWalletRequests(data.data);
+        if (data.adminBankInfo) {
+          setAdminBankInfo(data.adminBankInfo);
+        }
       }
     } catch (err) {
       console.error('Lỗi khi tải lịch sử yêu cầu ví:', err);
@@ -365,13 +395,36 @@ export default function WalletDashboard(props) {
                         </td>
                         <td className="py-3.5 pl-4 text-center">
                           {req.status === 'PENDING' && (
-                            <button
-                              type="button"
-                              onClick={() => handleCancelRequest(req.id)}
-                              className="px-2 py-1 text-[9px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-500/30 hover:border-transparent rounded-lg transition-all cursor-pointer"
-                            >
-                              Hủy yêu cầu
-                            </button>
+                            <div className="flex flex-col sm:flex-row gap-1.5 justify-center items-center">
+                              {req.type === 'DEPOSIT' && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setWalletAction('deposit');
+                                    setDepositInstructions({
+                                      amount: req.amount,
+                                      transferNote: req.transferNote,
+                                      adminBankInfo: adminBankInfo || {
+                                        bankName: 'Vietcombank',
+                                        bankAccount: '1234567890',
+                                        bankOwner: 'NGUYEN VAN A'
+                                      }
+                                    });
+                                    setWalletModalOpen(true);
+                                  }}
+                                  className="px-2 py-1 text-[9px] font-bold text-amber-600 hover:text-white hover:bg-amber-500 border border-amber-500/30 hover:border-transparent rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                                >
+                                  Xem thông tin
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleCancelRequest(req.id)}
+                                className="px-2 py-1 text-[9px] font-bold text-rose-500 hover:text-white hover:bg-rose-500 border border-rose-500/30 hover:border-transparent rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                              >
+                                Hủy yêu cầu
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -459,15 +512,64 @@ export default function WalletDashboard(props) {
 
               <div className="space-y-3 bg-neutral-50 dark:bg-neutral-950 p-4.5 rounded-2xl border border-neutral-200/50 dark:border-neutral-850">
                 <h5 className="font-bold text-neutral-900 dark:text-white uppercase text-[10px] tracking-wider mb-2">Thông tin tài khoản Admin</h5>
-                <div className="space-y-2 text-xs text-neutral-700 dark:text-neutral-300">
-                  <p>Ngân hàng nhận: <span className="font-bold text-neutral-900 dark:text-white">{depositInstructions.adminBankInfo.bankName}</span></p>
-                  <p>Số tài khoản: <span className="font-mono font-bold text-neutral-900 dark:text-white">{depositInstructions.adminBankInfo.bankAccount}</span></p>
-                  <p>Chủ tài khoản: <span className="font-bold text-neutral-900 dark:text-white">{depositInstructions.adminBankInfo.bankOwner}</span></p>
-                  <p>Số tiền chuyển: <span className="font-bold text-amber-600 dark:text-amber-400">{formatMoney(depositInstructions.amount)}</span></p>
+                
+                {/* VietQR Integration */}
+                <div className="flex flex-col items-center justify-center p-3 mb-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/50 dark:border-neutral-800/80">
+                  <p className="text-[10px] text-neutral-405 mb-2 font-bold uppercase tracking-wider">Quét mã QR để chuyển khoản nhanh</p>
+                  <img
+                    src={`https://img.vietqr.io/image/${getVietQRBankId(depositInstructions.adminBankInfo?.bankName)}-${depositInstructions.adminBankInfo?.bankAccount}-compact2.png?amount=${depositInstructions.amount}&addInfo=${encodeURIComponent(depositInstructions.transferNote)}&accountName=${encodeURIComponent(depositInstructions.adminBankInfo?.bankOwner || '')}`}
+                    alt="VietQR Transfer"
+                    className="w-44 h-44 object-contain rounded-lg border border-neutral-100 dark:border-neutral-800"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  <p className="text-[9px] text-neutral-400 mt-2 text-center">Tự động điền Số tài khoản, Số tiền & Nội dung chuyển khoản</p>
+                </div>
+
+                <div className="space-y-2.5 text-xs text-neutral-700 dark:text-neutral-300">
+                  <div className="flex justify-between items-center gap-2">
+                    <p>Ngân hàng nhận: <span className="font-bold text-neutral-900 dark:text-white">{depositInstructions.adminBankInfo?.bankName}</span></p>
+                  </div>
                   
-                  <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
-                    <p className="text-neutral-400 text-[10px] font-bold uppercase">Nội dung chuyển khoản (BẮT BUỘC GHI ĐÚNG):</p>
-                    <p className="font-mono text-sm font-extrabold text-amber-600 dark:text-amber-400 tracking-wider mt-1 select-all bg-amber-500/5 p-2 rounded-lg text-center border border-dashed border-amber-500/30">
+                  <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-neutral-200/30 dark:border-neutral-800/30">
+                    <p>Số tài khoản: <span className="font-mono font-bold text-neutral-900 dark:text-white">{depositInstructions.adminBankInfo?.bankAccount}</span></p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(depositInstructions.adminBankInfo?.bankAccount || '', 'bankAccount')}
+                      className="px-2 py-0.5 text-[10px] font-bold text-amber-500 hover:text-amber-600 bg-amber-500/10 rounded cursor-pointer transition-all hover:scale-105"
+                    >
+                      {copiedField === 'bankAccount' ? '✓ Đã chép' : 'Sao chép'}
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-neutral-200/30 dark:border-neutral-800/30">
+                    <p>Chủ tài khoản: <span className="font-bold text-neutral-900 dark:text-white">{depositInstructions.adminBankInfo?.bankOwner}</span></p>
+                  </div>
+
+                  <div className="flex justify-between items-center gap-2 pb-1.5 border-b border-neutral-200/30 dark:border-neutral-800/30">
+                    <p>Số tiền chuyển: <span className="font-bold text-amber-600 dark:text-amber-400">{formatMoney(depositInstructions.amount)}</span></p>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(String(depositInstructions.amount), 'amount')}
+                      className="px-2 py-0.5 text-[10px] font-bold text-amber-500 hover:text-amber-600 bg-amber-500/10 rounded cursor-pointer transition-all hover:scale-105"
+                    >
+                      {copiedField === 'amount' ? '✓ Đã chép' : 'Sao chép'}
+                    </button>
+                  </div>
+                  
+                  <div className="mt-3 pt-2">
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-neutral-400 text-[10px] font-bold uppercase">Nội dung chuyển khoản (BẮT BUỘC GHI ĐÚNG):</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(depositInstructions.transferNote, 'transferNote')}
+                        className="px-2 py-0.5 text-[10px] font-bold text-amber-500 hover:text-amber-600 bg-amber-500/10 rounded cursor-pointer transition-all hover:scale-105"
+                      >
+                        {copiedField === 'transferNote' ? '✓ Đã chép' : 'Sao chép'}
+                      </button>
+                    </div>
+                    <p className="font-mono text-sm font-extrabold text-amber-600 dark:text-amber-400 tracking-wider mt-1 select-all bg-amber-500/5 p-2.5 rounded-xl text-center border border-dashed border-amber-500/30">
                       {depositInstructions.transferNote}
                     </p>
                   </div>
@@ -485,6 +587,33 @@ export default function WalletDashboard(props) {
             /* Bước 1: Nhập thông tin số tiền và thông tin nhận */
             <form onSubmit={handleWalletSubmit} className="space-y-4">
               {walletModalError && <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl font-bold">{walletModalError}</div>}
+
+              {/* Notice if there is a pending deposit request */}
+              {walletAction === 'deposit' && walletRequests.some(r => r.type === 'DEPOSIT' && r.status === 'PENDING') && (
+                <div className="p-3 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-[11px] leading-relaxed border border-amber-500/20">
+                  <span className="font-bold">Lưu ý:</span> Bạn đang có yêu cầu nạp tiền chưa hoàn tất. 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const pendingReq = walletRequests.find(r => r.type === 'DEPOSIT' && r.status === 'PENDING');
+                      if (pendingReq) {
+                        setDepositInstructions({
+                          amount: pendingReq.amount,
+                          transferNote: pendingReq.transferNote,
+                          adminBankInfo: adminBankInfo || {
+                            bankName: 'Vietcombank',
+                            bankAccount: '1234567890',
+                            bankOwner: 'NGUYEN VAN A'
+                          }
+                        });
+                      }
+                    }}
+                    className="ml-1 text-amber-600 dark:text-amber-300 underline font-semibold hover:text-amber-700 cursor-pointer"
+                  >
+                    Xem thông tin chuyển khoản tại đây
+                  </button>
+                </div>
+              )}
 
               <Input
                 id="wallet-amount-input"
