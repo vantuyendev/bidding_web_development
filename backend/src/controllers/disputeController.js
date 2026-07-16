@@ -1,44 +1,59 @@
 import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
 import { releaseEscrow } from '../services/walletService.js';
+import ApiError from '../utils/ApiError.js';
+import { z } from 'zod';
+
+// Định nghĩa các schema xác thực bằng Zod
+const createDisputeSchema = z.object({
+  productId: z.string().uuid({ message: "ID sản phẩm phải là định dạng UUID hợp lệ." }),
+  reason: z.string().trim().min(5, { message: "Lý do khiếu nại phải có ít nhất 5 ký tự." }),
+  description: z.string().trim().min(10, { message: "Mô tả chi tiết khiếu nại phải có ít nhất 10 ký tự." }),
+  unboxingVideoUrl: z.string().url({ message: "Đường dẫn video unboxing không hợp lệ." }).optional().or(z.literal(''))
+});
+
+const resolveDisputeSchema = z.object({
+  ticketId: z.string().uuid({ message: "ID khiếu nại không hợp lệ." }),
+  status: z.enum(['RESOLVED_REFUND', 'RESOLVED_PAY'], { errorMap: () => ({ message: "Quyết định xử lý chỉ có thể là RESOLVED_REFUND hoặc RESOLVED_PAY." }) })
+});
+
+const createMessageSchema = z.object({
+  message: z.string({ required_error: "Nội dung tin nhắn không được để trống." }).trim().min(1, { message: "Nội dung tin nhắn không được để trống." })
+});
 
 /**
  * Controller to create a new dispute ticket for an ended auction.
  * 
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-export const createDisputeTicket = async (req, res) => {
+export const createDisputeTicket = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: "Bạn cần đăng nhập để thực hiện khiếu nại."
-    });
-  }
-
-  const { productId, reason, description, unboxingVideoUrl } = req.body;
-
-  if (!productId || !reason || !description) {
-    return res.status(400).json({
-      success: false,
-      error: "Vui lòng điền đầy đủ các thông tin: productId, reason và description."
-    });
+    return next(new ApiError(401, "Bạn cần đăng nhập để thực hiện khiếu nại."));
   }
 
   try {
+    // Xác thực đầu vào
+    const validation = createDisputeSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { productId, reason, description, unboxingVideoUrl } = validation.data;
+
     const result = await prisma.$transaction(async (tx) => {
-      // Row-level lock to prevent concurrent modifications
+      // Tối ưu hóa truy vấn: Chỉ SELECT các cột cần thiết trong raw query
       const products = await tx.$queryRaw`
-        SELECT * FROM "products" WHERE id = ${productId} FOR UPDATE
+        SELECT id, status FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
       if (!products || products.length === 0) {
-        throw new Error("Sản phẩm không tồn tại.");
+        throw new ApiError(404, "Sản phẩm không tồn tại.");
       }
       const product = products[0];
 
       if (!['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'ENDED'].includes(product.status)) {
-        throw new Error("Sản phẩm chưa kết thúc đấu giá hoặc không ở trạng thái hợp lệ để khiếu nại.");
+        throw new ApiError(400, "Sản phẩm chưa kết thúc đấu giá hoặc không ở trạng thái hợp lệ để khiếu nại.");
       }
 
       // Check who won the auction (highest bidder)
@@ -48,11 +63,11 @@ export const createDisputeTicket = async (req, res) => {
       });
 
       if (!highestBid) {
-        throw new Error("Không thể khiếu nại sản phẩm không có lượt đặt giá thắng cuộc.");
+        throw new ApiError(400, "Không thể khiếu nại sản phẩm không có lượt đặt giá thắng cuộc.");
       }
 
       if (highestBid.userId !== userId) {
-        throw new Error("Chỉ người mua trúng đấu giá mới có quyền khiếu nại sản phẩm này.");
+        throw new ApiError(403, "Chỉ người mua trúng đấu giá mới có quyền khiếu nại sản phẩm này.");
       }
 
       // Lock product state by setting status to DISPUTED
@@ -82,10 +97,7 @@ export const createDisputeTicket = async (req, res) => {
       data: result
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi khi tạo khiếu nại."
-    });
+    return next(error);
   }
 };
 
@@ -94,47 +106,66 @@ export const createDisputeTicket = async (req, res) => {
  * 
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-export const adminResolveTicket = async (req, res) => {
+export const adminResolveTicket = async (req, res, next) => {
   const adminId = req.session?.userId;
   if (!adminId) {
-    return res.status(401).json({
-      success: false,
-      error: "Yêu cầu đăng nhập."
-    });
-  }
-
-  const { ticketId, status } = req.body;
-
-  if (!ticketId || !['RESOLVED_REFUND', 'RESOLVED_PAY'].includes(status)) {
-    return res.status(400).json({
-      success: false,
-      error: "Vui lòng cung cấp ticketId và status phán quyết hợp lệ (RESOLVED_REFUND hoặc RESOLVED_PAY)."
-    });
+    return next(new ApiError(401, "Yêu cầu đăng nhập."));
   }
 
   try {
+    // Xác thực đầu vào
+    const validation = resolveDisputeSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { ticketId, status } = validation.data;
+
     const result = await prisma.$transaction(async (tx) => {
       // 1. Verify admin privilege by checking email in DB
       const adminUser = await tx.user.findUnique({
-        where: { id: adminId }
+        where: { id: adminId },
+        select: { isAdmin: true }
       });
       if (!adminUser || !adminUser.isAdmin) {
-        throw new Error("Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện phán quyết.");
+        throw new ApiError(403, "Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện phán quyết.");
       }
 
-      // 2. Fetch ticket and related product with row-locking
+      // 2. Fetch ticket and related product with row-locking (selective SELECT to optimize performance)
       const ticket = await tx.disputeTicket.findUnique({
         where: { id: ticketId },
-        include: { product: true }
+        select: {
+          id: true,
+          status: true,
+          openedById: true,
+          productId: true,
+          product: {
+            select: {
+              id: true,
+              status: true,
+              sellerId: true,
+              currentPrice: true,
+              shippingFee: true,
+              winnerName: true,
+              winnerPhone: true,
+              winnerAddress: true,
+              provinceId: true,
+              weight: true,
+              length: true,
+              width: true,
+              height: true
+            }
+          }
+        }
       });
 
       if (!ticket) {
-        throw new Error("Không tìm thấy đơn khiếu nại.");
+        throw new ApiError(404, "Không tìm thấy đơn khiếu nại.");
       }
 
       if (ticket.status !== 'PENDING') {
-        throw new Error("Khiếu nại này đã được xử lý trước đó.");
+        throw new ApiError(400, "Khiếu nại này đã được xử lý trước đó.");
       }
 
       const product = ticket.product;
@@ -148,7 +179,7 @@ export const adminResolveTicket = async (req, res) => {
       });
 
       if (!highestBid) {
-        throw new Error("Sản phẩm khiếu nại không có lượt đặt giá thắng cuộc hợp lệ.");
+        throw new ApiError(400, "Sản phẩm khiếu nại không có lượt đặt giá thắng cuộc hợp lệ.");
       }
 
       const depositAmount = highestBid.isAutoBid && highestBid.maxAutoBidAmount
@@ -162,20 +193,21 @@ export const adminResolveTicket = async (req, res) => {
         : depositAmount;
 
       if (status === 'RESOLVED_REFUND') {
-        // Refund Buyer: Release buyer's frozen escrow/deposit to buyer's wallet balance
+        // Refund Buyer: Release buyer's frozen escrow/deposit to wallet
         await releaseEscrow(tx, buyerId, escrowAmount, product.id);
       } else if (status === 'RESOLVED_PAY') {
-        // Pay Seller: Release escrow/deposit from buyer's frozen balance and transfer to seller
+        // Pay Seller: Deduct escrow from buyer's frozen balance and transfer to seller
         const buyer = await tx.user.findUnique({
-          where: { id: buyerId }
+          where: { id: buyerId },
+          select: { frozenBalance: true }
         });
         if (!buyer) {
-          throw new Error("Không tìm thấy thông tin người mua.");
+          throw new ApiError(404, "Không tìm thấy thông tin người mua.");
         }
 
         const buyerFrozen = new Prisma.Decimal(buyer.frozenBalance);
         if (buyerFrozen.lt(escrowAmount)) {
-          throw new Error("Số dư đóng băng của người mua không đủ để thực hiện thanh toán.");
+          throw new ApiError(400, "Số dư đóng băng của người mua không đủ để thực hiện thanh toán.");
         }
 
         // Deduct from buyer's frozen balance
@@ -192,7 +224,8 @@ export const adminResolveTicket = async (req, res) => {
             userId: buyerId,
             amount: escrowAmount,
             type: "DISPUTE_PAY_BUYER_DEDUCT",
-            status: "COMPLETED"
+            status: "COMPLETED",
+            productId: product.id
           }
         });
 
@@ -212,7 +245,8 @@ export const adminResolveTicket = async (req, res) => {
 
         // Fetch seller wallet
         const seller = await tx.user.findUnique({
-          where: { id: sellerId }
+          where: { id: sellerId },
+          select: { walletBalance: true }
         });
         const sellerWallet = new Prisma.Decimal(seller.walletBalance);
 
@@ -230,7 +264,8 @@ export const adminResolveTicket = async (req, res) => {
             userId: sellerId,
             amount: escrowAmount,
             type: "DISPUTE_PAY_SELLER_ADD",
-            status: "COMPLETED"
+            status: "COMPLETED",
+            productId: product.id
           }
         });
       }
@@ -255,10 +290,7 @@ export const adminResolveTicket = async (req, res) => {
       data: result
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi khi xử lý khiếu nại."
-    });
+    return next(error);
   }
 };
 
@@ -267,14 +299,12 @@ export const adminResolveTicket = async (req, res) => {
  * 
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-export const getDisputeDetail = async (req, res) => {
+export const getDisputeDetail = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: "Yêu cầu đăng nhập."
-    });
+    return next(new ApiError(401, "Yêu cầu đăng nhập."));
   }
 
   const { ticketId } = req.params;
@@ -302,14 +332,12 @@ export const getDisputeDetail = async (req, res) => {
     });
 
     if (!ticket) {
-      return res.status(404).json({
-        success: false,
-        error: "Không tìm thấy đơn khiếu nại."
-      });
+      throw new ApiError(404, "Không tìm thấy đơn khiếu nại.");
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { isAdmin: true }
     });
 
     const isAdmin = user && user.isAdmin;
@@ -317,10 +345,7 @@ export const getDisputeDetail = async (req, res) => {
     const isSeller = ticket.product.sellerId === userId;
 
     if (!isAdmin && !isBuyer && !isSeller) {
-      return res.status(403).json({
-        success: false,
-        error: "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này."
-      });
+      throw new ApiError(403, "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này.");
     }
 
     return res.status(200).json({
@@ -328,10 +353,7 @@ export const getDisputeDetail = async (req, res) => {
       data: ticket
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi khi lấy thông tin khiếu nại."
-    });
+    return next(error);
   }
 };
 
@@ -340,14 +362,12 @@ export const getDisputeDetail = async (req, res) => {
  * 
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-export const getDisputeMessages = async (req, res) => {
+export const getDisputeMessages = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: "Yêu cầu đăng nhập."
-    });
+    return next(new ApiError(401, "Yêu cầu đăng nhập."));
   }
 
   const { ticketId } = req.params;
@@ -359,14 +379,12 @@ export const getDisputeMessages = async (req, res) => {
     });
 
     if (!ticket) {
-      return res.status(404).json({
-        success: false,
-        error: "Không tìm thấy đơn khiếu nại."
-      });
+      throw new ApiError(404, "Không tìm thấy đơn khiếu nại.");
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { isAdmin: true }
     });
 
     const isAdmin = user && user.isAdmin;
@@ -374,10 +392,7 @@ export const getDisputeMessages = async (req, res) => {
     const isSeller = ticket.product.sellerId === userId;
 
     if (!isAdmin && !isBuyer && !isSeller) {
-      return res.status(403).json({
-        success: false,
-        error: "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này."
-      });
+      throw new ApiError(403, "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này.");
     }
 
     const messages = await prisma.disputeMessage.findMany({
@@ -399,10 +414,7 @@ export const getDisputeMessages = async (req, res) => {
       data: messages
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi khi lấy danh sách tin nhắn."
-    });
+    return next(error);
   }
 };
 
@@ -411,48 +423,40 @@ export const getDisputeMessages = async (req, res) => {
  * 
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-export const createDisputeMessage = async (req, res) => {
+export const createDisputeMessage = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: "Yêu cầu đăng nhập."
-    });
+    return next(new ApiError(401, "Yêu cầu đăng nhập."));
   }
 
   const { ticketId } = req.params;
-  const { message } = req.body;
-
-  if (!message || message.trim() === "") {
-    return res.status(400).json({
-      success: false,
-      error: "Nội dung tin nhắn không được để trống."
-    });
-  }
 
   try {
+    // Xác thực đầu vào
+    const validation = createMessageSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { message } = validation.data;
+
     const ticket = await prisma.disputeTicket.findUnique({
       where: { id: ticketId },
       include: { product: true }
     });
 
     if (!ticket) {
-      return res.status(404).json({
-        success: false,
-        error: "Không tìm thấy đơn khiếu nại."
-      });
+      throw new ApiError(404, "Không tìm thấy đơn khiếu nại.");
     }
 
     if (ticket.status !== 'PENDING') {
-      return res.status(400).json({
-        success: false,
-        error: "Khiếu nại đã được đóng. Bạn không thể gửi tin nhắn."
-      });
+      throw new ApiError(400, "Khiếu nại đã được đóng. Bạn không thể gửi tin nhắn.");
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { isAdmin: true }
     });
 
     const isAdmin = user && user.isAdmin;
@@ -460,10 +464,7 @@ export const createDisputeMessage = async (req, res) => {
     const isSeller = ticket.product.sellerId === userId;
 
     if (!isAdmin && !isBuyer && !isSeller) {
-      return res.status(403).json({
-        success: false,
-        error: "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này."
-      });
+      throw new ApiError(403, "Quyền truy cập bị từ chối: Bạn không liên quan đến khiếu nại này.");
     }
 
     const newMessage = await prisma.disputeMessage.create({
@@ -488,10 +489,7 @@ export const createDisputeMessage = async (req, res) => {
       data: newMessage
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi khi gửi tin nhắn."
-    });
+    return next(error);
   }
 };
 
@@ -500,83 +498,69 @@ export const createDisputeMessage = async (req, res) => {
  * 
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
-export const getDisputesList = async (req, res) => {
+export const getDisputesList = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({
-      success: false,
-      error: "Bạn cần đăng nhập để xem danh sách khiếu nại."
-    });
+    return next(new ApiError(401, "Bạn cần đăng nhập để xem danh sách khiếu nại."));
   }
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { isAdmin: true }
     });
 
     const isAdmin = user && user.isAdmin;
 
-    let tickets;
-    if (isAdmin) {
-      tickets = await prisma.disputeTicket.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-          product: {
-            select: {
-              id: true,
-              title: true,
-              sellerId: true,
-              status: true
-            }
-          },
-          openedBy: {
-            select: {
-              id: true,
-              email: true,
-              isAdmin: true
-            }
-          }
-        }
-      });
-    } else {
-      tickets = await prisma.disputeTicket.findMany({
-        where: {
-          OR: [
-            { openedById: userId },
-            { product: { sellerId: userId } }
-          ]
-        },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          product: {
-            select: {
-              id: true,
-              title: true,
-              sellerId: true,
-              status: true
-            }
-          },
-          openedBy: {
-            select: {
-              id: true,
-              email: true,
-              isAdmin: true
-            }
-          }
-        }
-      });
+    // Tối ưu hóa database: Bổ sung phân trang cho danh sách khiếu nại
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, parseInt(limit) || 20);
+    const skip = (pageNum - 1) * limitNum;
+
+    const where = {};
+    if (!isAdmin) {
+      where.OR = [
+        { openedById: userId },
+        { product: { sellerId: userId } }
+      ];
     }
+
+    const [tickets, total] = await Promise.all([
+      prisma.disputeTicket.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          product: {
+            select: {
+              id: true,
+              title: true,
+              sellerId: true,
+              status: true
+            }
+          },
+          openedBy: {
+            select: {
+              id: true,
+              email: true,
+              isAdmin: true
+            }
+          }
+        },
+        skip,
+        take: limitNum
+      }),
+      prisma.disputeTicket.count({ where })
+    ]);
 
     return res.status(200).json({
       success: true,
-      data: tickets
+      data: tickets,
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Đã xảy ra lỗi khi tải danh sách khiếu nại."
-    });
+    return next(error);
   }
 };
-

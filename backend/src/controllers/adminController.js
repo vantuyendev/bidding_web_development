@@ -2,25 +2,55 @@ import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
 import { releaseEscrow } from '../services/walletService.js';
 import { logger } from '../utils/logger.js';
+import ApiError from '../utils/ApiError.js';
+import { z } from 'zod';
+
+// Định nghĩa các schema xác thực bằng Zod
+const banUserSchema = z.object({
+  action: z.enum(['ban', 'unban'], { errorMap: () => ({ message: "Hành động chỉ có thể là ban hoặc unban." }) }),
+  reason: z.string().trim().optional()
+}).refine(data => data.action !== 'ban' || (data.reason && data.reason.trim().length > 0), {
+  message: "Phải cung cấp lý do khi khóa tài khoản.",
+  path: ["reason"]
+});
+
+const cancelAuctionSchema = z.object({
+  reason: z.string().trim().min(5, { message: "Lý do hủy phiên đấu giá phải có ít nhất 5 ký tự." })
+});
+
+const confirmWalletRequestSchema = z.object({
+  action: z.enum(['APPROVE', 'REJECT'], { errorMap: () => ({ message: "Hành động chỉ có thể là APPROVE hoặc REJECT." }) }),
+  adminNote: z.string().trim().optional()
+});
+
+const approveProductSchema = z.object({
+  action: z.enum(['APPROVE', 'REJECT'], { errorMap: () => ({ message: "Hành động chỉ có thể là APPROVE hoặc REJECT." }) }),
+  rejectionReason: z.string().trim().optional()
+}).refine(data => data.action !== 'REJECT' || (data.rejectionReason && data.rejectionReason.trim().length > 0), {
+  message: "Phải cung cấp lý do từ chối duyệt sản phẩm.",
+  path: ["rejectionReason"]
+});
 
 // Helper: Kiểm tra quyền admin (sử dụng thuộc tính isAdmin trong DB)
 async function checkAdmin(adminId) {
-  const admin = await prisma.user.findUnique({ where: { id: adminId } });
+  const admin = await prisma.user.findUnique({
+    where: { id: adminId },
+    select: { id: true, isAdmin: true }
+  });
   if (!admin || !admin.isAdmin) {
-    throw new Error('FORBIDDEN');
+    throw new ApiError(403, 'Không có quyền truy cập.');
   }
   return admin;
 }
-
 
 // ─────────────────────────────────────────────
 // USER MANAGEMENT
 // ─────────────────────────────────────────────
 
 // GET /api/admin/users — Danh sách tất cả users
-export const adminGetAllUsers = async (req, res) => {
+export const adminGetAllUsers = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   try {
     await checkAdmin(adminId);
@@ -69,35 +99,36 @@ export const adminGetAllUsers = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
 // POST /api/admin/users/:id/ban — Ban hoặc Unban tài khoản
-export const adminBanUser = async (req, res) => {
+export const adminBanUser = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   const { id: targetUserId } = req.params;
-  const { action, reason } = req.body; // action: 'ban' | 'unban'
-
-  if (!['ban', 'unban'].includes(action)) {
-    return res.status(400).json({ success: false, error: 'action phải là ban hoặc unban.' });
-  }
-  if (action === 'ban' && !reason) {
-    return res.status(400).json({ success: false, error: 'Phải cung cấp lý do khi ban tài khoản.' });
-  }
 
   try {
     await checkAdmin(adminId);
 
     if (targetUserId === adminId) {
-      return res.status(400).json({ success: false, error: 'Không thể tự ban tài khoản của mình.' });
+      throw new ApiError(400, 'Không thể tự ban tài khoản của mình.');
     }
 
-    const target = await prisma.user.findUnique({ where: { id: targetUserId } });
-    if (!target) return res.status(404).json({ success: false, error: 'Không tìm thấy người dùng.' });
+    // Xác thực đầu vào
+    const validation = banUserSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { action, reason } = validation.data;
+
+    const target = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, email: true }
+    });
+    if (!target) throw new ApiError(404, 'Không tìm thấy người dùng.');
 
     const isBanning = action === 'ban';
 
@@ -107,6 +138,10 @@ export const adminBanUser = async (req, res) => {
         isBanned: isBanning,
         banReason: isBanning ? reason : null,
         bannedAt: isBanning ? new Date() : null
+      },
+      select: {
+        id: true,
+        isBanned: true
       }
     });
 
@@ -138,8 +173,7 @@ export const adminBanUser = async (req, res) => {
       data: { id: updated.id, isBanned: updated.isBanned }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
@@ -148,9 +182,9 @@ export const adminBanUser = async (req, res) => {
 // ─────────────────────────────────────────────
 
 // GET /api/admin/auctions — Danh sách phiên đấu giá đang ACTIVE
-export const adminGetActiveAuctions = async (req, res) => {
+export const adminGetActiveAuctions = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   try {
     await checkAdmin(adminId);
@@ -185,32 +219,35 @@ export const adminGetActiveAuctions = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
 // POST /api/admin/auctions/:id/cancel — Hủy phiên đấu giá + hoàn tiền
-export const adminCancelAuction = async (req, res) => {
+export const adminCancelAuction = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   const { id: productId } = req.params;
-  const { reason } = req.body;
-
-  if (!reason) return res.status(400).json({ success: false, error: 'Phải cung cấp lý do hủy phiên đấu giá.' });
 
   try {
     await checkAdmin(adminId);
+
+    // Xác thực đầu vào
+    const validation = cancelAuctionSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { reason } = validation.data;
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
       include: { bids: { orderBy: { bidAmount: 'desc' } } }
     });
 
-    if (!product) return res.status(404).json({ success: false, error: 'Không tìm thấy sản phẩm.' });
+    if (!product) throw new ApiError(404, 'Không tìm thấy sản phẩm.');
     if (product.status !== 'ACTIVE') {
-      return res.status(400).json({ success: false, error: `Chỉ có thể hủy phiên đang ACTIVE. Trạng thái hiện tại: ${product.status}` });
+      throw new ApiError(400, `Chỉ có thể hủy phiên đang ACTIVE. Trạng thái hiện tại: ${product.status}`);
     }
 
     const refundedUsers = new Set();
@@ -286,9 +323,7 @@ export const adminCancelAuction = async (req, res) => {
       data: { productId, refundedCount: refundedUsers.size }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    logger.error('Error cancelling auction', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
@@ -297,9 +332,9 @@ export const adminCancelAuction = async (req, res) => {
 // ─────────────────────────────────────────────
 
 // GET /api/admin/wallet-requests — Danh sách yêu cầu nạp/rút
-export const adminGetWalletRequests = async (req, res) => {
+export const adminGetWalletRequests = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   try {
     await checkAdmin(adminId);
@@ -332,34 +367,41 @@ export const adminGetWalletRequests = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
 // POST /api/admin/wallet-requests/:id/confirm — Duyệt hoặc từ chối yêu cầu
-export const adminConfirmWalletRequest = async (req, res) => {
+export const adminConfirmWalletRequest = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   const { id: requestId } = req.params;
-  const { action, adminNote } = req.body; // action: 'APPROVE' | 'REJECT'
-
-  if (!['APPROVE', 'REJECT'].includes(action)) {
-    return res.status(400).json({ success: false, error: 'action phải là APPROVE hoặc REJECT.' });
-  }
 
   try {
     await checkAdmin(adminId);
 
+    // Xác thực đầu vào
+    const validation = confirmWalletRequestSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { action, adminNote } = validation.data;
+
     const walletReq = await prisma.walletRequest.findUnique({
       where: { id: requestId },
-      include: { user: { select: { id: true, email: true, walletBalance: true } } }
+      select: {
+        id: true,
+        userId: true,
+        type: true,
+        amount: true,
+        status: true
+      }
     });
 
-    if (!walletReq) return res.status(404).json({ success: false, error: 'Không tìm thấy yêu cầu.' });
+    if (!walletReq) throw new ApiError(404, 'Không tìm thấy yêu cầu.');
     if (walletReq.status !== 'PENDING') {
-      return res.status(400).json({ success: false, error: 'Yêu cầu này đã được xử lý.' });
+      throw new ApiError(400, 'Yêu cầu này đã được xử lý.');
     }
 
     const isApproved = action === 'APPROVE';
@@ -439,8 +481,7 @@ export const adminConfirmWalletRequest = async (req, res) => {
       message: isApproved ? 'Đã duyệt yêu cầu thành công.' : 'Đã từ chối yêu cầu.',
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
@@ -449,9 +490,9 @@ export const adminConfirmWalletRequest = async (req, res) => {
 // ─────────────────────────────────────────────
 
 // GET /api/admin/products — Sản phẩm chờ duyệt
-export const adminGetPendingProducts = async (req, res) => {
+export const adminGetPendingProducts = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   try {
     await checkAdmin(adminId);
@@ -492,37 +533,41 @@ export const adminGetPendingProducts = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
 // POST /api/admin/products/:id/approve — Duyệt hoặc từ chối sản phẩm
-export const adminApproveProduct = async (req, res) => {
+export const adminApproveProduct = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   const { id: productId } = req.params;
-  const { action, rejectionReason } = req.body; // action: 'APPROVE' | 'REJECT'
-
-  if (!['APPROVE', 'REJECT'].includes(action)) {
-    return res.status(400).json({ success: false, error: 'action phải là APPROVE hoặc REJECT.' });
-  }
-  if (action === 'REJECT' && !rejectionReason) {
-    return res.status(400).json({ success: false, error: 'Phải cung cấp lý do từ chối.' });
-  }
 
   try {
     await checkAdmin(adminId);
 
+    // Xác thực đầu vào
+    const validation = approveProductSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { action, rejectionReason } = validation.data;
+
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      include: { seller: { select: { id: true, email: true } } }
+      select: {
+        id: true,
+        title: true,
+        sellerId: true,
+        approvalStatus: true,
+        startTime: true
+      }
     });
 
-    if (!product) return res.status(404).json({ success: false, error: 'Không tìm thấy sản phẩm.' });
+    if (!product) throw new ApiError(404, 'Không tìm thấy sản phẩm.');
     if (product.approvalStatus !== 'PENDING_REVIEW') {
-      return res.status(400).json({ success: false, error: 'Sản phẩm này không ở trạng thái chờ duyệt.' });
+      throw new ApiError(400, 'Sản phẩm này không ở trạng thái chờ duyệt.');
     }
 
     const isApproved = action === 'APPROVE';
@@ -591,15 +636,14 @@ export const adminApproveProduct = async (req, res) => {
         : `Đã từ chối sản phẩm "${product.title}". Seller sẽ được thông báo.`
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
 // GET /api/admin/stats — Thống kê tổng quan
-export const adminGetStats = async (req, res) => {
+export const adminGetStats = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   try {
     await checkAdmin(adminId);
@@ -653,15 +697,14 @@ export const adminGetStats = async (req, res) => {
       }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
 
 // GET /api/admin/audit-logs — Danh sách nhật ký hệ thống
-export const adminGetAuditLogs = async (req, res) => {
+export const adminGetAuditLogs = async (req, res, next) => {
   const adminId = req.session?.userId;
-  if (!adminId) return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+  if (!adminId) return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
 
   try {
     await checkAdmin(adminId);
@@ -700,8 +743,6 @@ export const adminGetAuditLogs = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (err) {
-    if (err.message === 'FORBIDDEN') return res.status(403).json({ success: false, error: 'Không có quyền truy cập.' });
-    return res.status(500).json({ success: false, error: err.message });
+    return next(err);
   }
 };
-

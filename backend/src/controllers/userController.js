@@ -1,13 +1,61 @@
 import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
+import ApiError from '../utils/ApiError.js';
+import { z } from 'zod';
+
+// Định nghĩa các schema xác thực đầu vào bằng Zod
+const depositSchema = z.object({
+  amount: z.coerce.number({ invalid_type_error: "Số tiền nạp phải là một con số." })
+    .gt(0, { message: "Số tiền nạp phải lớn hơn 0." })
+    .max(500000000, { message: "Số tiền nạp tối đa mỗi lần là 500 triệu đồng." })
+});
+
+const withdrawSchema = z.object({
+  amount: z.coerce.number({ invalid_type_error: "Số tiền rút phải là một con số." })
+    .gt(0, { message: "Số tiền rút phải lớn hơn 0." }),
+  bankName: z.string({ required_error: "Vui lòng nhập tên ngân hàng nhận tiền." }).trim().min(1, { message: "Tên ngân hàng nhận tiền không được để trống." }),
+  bankAccount: z.string({ required_error: "Vui lòng nhập số tài khoản nhận tiền." }).trim().min(1, { message: "Số tài khoản nhận tiền không được để trống." }),
+  bankOwner: z.string({ required_error: "Vui lòng nhập tên chủ tài khoản nhận tiền." }).trim().min(1, { message: "Tên chủ tài khoản nhận tiền không được để trống." })
+});
+
+const kycSchema = z.object({
+  idCardNumber: z.string().trim().min(9, { message: "Số CMND/CCCD phải có ít nhất 9 ký tự." }).max(20, { message: "Số CMND/CCCD không hợp lệ." }),
+  idCardImageUrl: z.string().url({ message: "Đường dẫn ảnh thẻ CMND/CCCD không hợp lệ." }).optional().or(z.literal('')),
+  shopAddress: z.string().trim().min(5, { message: "Địa chỉ cửa hàng phải có ít nhất 5 ký tự." }),
+  phoneNumber: z.string().trim().regex(/^[0-9+]{9,15}$/, { message: "Số điện thoại không hợp lệ." }).optional().or(z.literal(''))
+});
+
+const adminApproveKycSchema = z.object({
+  targetUserId: z.string().uuid({ message: "ID người dùng không hợp lệ." }),
+  action: z.enum(['APPROVE', 'REJECT'], { errorMap: () => ({ message: "Hành động chỉ có thể là APPROVE hoặc REJECT." }) }),
+  rejectionReason: z.string().trim().optional()
+}).refine(data => data.action !== 'REJECT' || (data.rejectionReason && data.rejectionReason.trim().length > 0), {
+  message: "Vui lòng cung cấp lý do từ chối hồ sơ KYC.",
+  path: ["rejectionReason"]
+});
 
 // Retrieve the current logged-in user profile with counts of sold products and reviews received
-export const getUserProfile = async (req, res) => {
+export const getUserProfile = async (req, res, next) => {
   try {
     const userId = req.session.userId;
+    // Tối ưu hóa database: Chỉ SELECT các cột cần thiết, tránh passwordHash ngay từ tầng DB
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        balance: true,
+        walletBalance: true,
+        frozenBalance: true,
+        reputationScore: true,
+        createdAt: true,
+        isVerifiedSeller: true,
+        kycStatus: true,
+        avatarUrl: true,
+        phoneNumber: true,
+        isBanned: true,
+        banReason: true,
         _count: {
           select: {
             soldProducts: true,
@@ -33,14 +81,10 @@ export const getUserProfile = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'Không tìm thấy người dùng.'
-      });
+      throw new ApiError(404, 'Không tìm thấy người dùng.');
     }
 
-    // Remove passwordHash for security
-    const { passwordHash, ...userProfile } = user;
+    const userProfile = user;
 
     // Convert Decimals to Numbers for API output compatibility
     const data = {
@@ -71,15 +115,12 @@ export const getUserProfile = async (req, res) => {
       data
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi lấy thông tin cá nhân.'
-    });
+    return next(error);
   }
 };
 
 // Automatically verify the seller profile (auto KYC for testing)
-export const verifySeller = async (req, res) => {
+export const verifySeller = async (req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(403).json({
       success: false,
@@ -91,7 +132,12 @@ export const verifySeller = async (req, res) => {
     const userId = req.session.userId;
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { isVerifiedSeller: true, kycStatus: 'APPROVED' }
+      data: { isVerifiedSeller: true, kycStatus: 'APPROVED' },
+      select: {
+        id: true,
+        isVerifiedSeller: true,
+        kycStatus: true
+      }
     });
 
     return res.status(200).json({
@@ -104,37 +150,32 @@ export const verifySeller = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi xác thực người bán.'
-    });
+    return next(error);
   }
 };
 
 // Tạo yêu cầu nạp tiền — admin sẽ xác nhận sau khi user chuyển khoản
-export const depositFunds = async (req, res) => {
+export const depositFunds = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
-  }
-
-  const { amount } = req.body;
-  const depositAmount = new Prisma.Decimal(amount || 0);
-
-  if (depositAmount.lte(0)) {
-    return res.status(400).json({ success: false, error: 'Số tiền nạp phải lớn hơn 0.' });
-  }
-  if (depositAmount.gt(500000000)) {
-    return res.status(400).json({ success: false, error: 'Số tiền nạp tối đa mỗi lần là 500 triệu đồng.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
   }
 
   try {
+    // Xác thực đầu vào bằng Zod
+    const validation = depositSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { amount } = validation.data;
+    const depositAmount = new Prisma.Decimal(amount);
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, isBanned: true }
     });
-    if (!user) return res.status(404).json({ success: false, error: 'Người dùng không tồn tại.' });
-    if (user.isBanned) return res.status(403).json({ success: false, error: 'Tài khoản của bạn đã bị khóa.' });
+    if (!user) throw new ApiError(404, 'Người dùng không tồn tại.');
+    if (user.isBanned) throw new ApiError(403, 'Tài khoản của bạn đã bị khóa.');
 
     // Tạo mã tham chiếu để user ghi vào nội dung chuyển khoản
     const transferNote = `NAP ${userId.slice(0, 8).toUpperCase()} ${Date.now().toString().slice(-6)}`;
@@ -164,41 +205,36 @@ export const depositFunds = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi tạo yêu cầu nạp tiền.'
-    });
+    return next(error);
   }
 };
 
 // Tạo yêu cầu rút tiền — admin sẽ chuyển khoản sau khi xác nhận
-export const withdrawFunds = async (req, res) => {
+export const withdrawFunds = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
-  }
-
-  const { amount, bankName, bankAccount, bankOwner } = req.body;
-  const withdrawAmount = new Prisma.Decimal(amount || 0);
-
-  if (withdrawAmount.lte(0)) {
-    return res.status(400).json({ success: false, error: 'Số tiền rút phải lớn hơn 0.' });
-  }
-  if (!bankName || !bankAccount || !bankOwner) {
-    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp thông tin ngân hàng nhận tiền.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
   }
 
   try {
+    // Xác thực đầu vào bằng Zod
+    const validation = withdrawSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { amount, bankName, bankAccount, bankOwner } = validation.data;
+    const withdrawAmount = new Prisma.Decimal(amount);
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, walletBalance: true, isBanned: true }
     });
-    if (!user) return res.status(404).json({ success: false, error: 'Người dùng không tồn tại.' });
-    if (user.isBanned) return res.status(403).json({ success: false, error: 'Tài khoản của bạn đã bị khóa.' });
+    if (!user) throw new ApiError(404, 'Người dùng không tồn tại.');
+    if (user.isBanned) throw new ApiError(403, 'Tài khoản của bạn đã bị khóa.');
 
     const walletBal = new Prisma.Decimal(user.walletBalance);
     if (walletBal.lt(withdrawAmount)) {
-      return res.status(400).json({ success: false, error: 'Số dư ví không đủ để thực hiện rút tiền.' });
+      throw new ApiError(400, 'Số dư ví không đủ để thực hiện rút tiền.');
     }
 
     // Kiểm tra xem có yêu cầu rút tiền đang chờ xử lý không
@@ -206,7 +242,7 @@ export const withdrawFunds = async (req, res) => {
       where: { userId, type: 'WITHDRAW', status: 'PENDING' }
     });
     if (pendingWithdraw) {
-      return res.status(400).json({ success: false, error: 'Bạn đã có một yêu cầu rút tiền đang chờ xử lý.' });
+      throw new ApiError(400, 'Bạn đã có một yêu cầu rút tiền đang chờ xử lý.');
     }
 
     const walletRequest = await prisma.walletRequest.create({
@@ -215,9 +251,9 @@ export const withdrawFunds = async (req, res) => {
         type: 'WITHDRAW',
         amount: withdrawAmount,
         status: 'PENDING',
-        bankName: bankName.trim(),
-        bankAccount: bankAccount.trim(),
-        bankOwner: bankOwner.trim()
+        bankName,
+        bankAccount,
+        bankOwner
       }
     });
 
@@ -233,18 +269,15 @@ export const withdrawFunds = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi tạo yêu cầu rút tiền.'
-    });
+    return next(error);
   }
 };
 
 // GET /api/users/wallet-requests — Lấy danh sách yêu cầu nạp/rút của user
-export const getUserWalletRequests = async (req, res) => {
+export const getUserWalletRequests = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
   }
 
   try {
@@ -272,18 +305,15 @@ export const getUserWalletRequests = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi lấy danh sách yêu cầu.'
-    });
+    return next(error);
   }
 };
 
 // DELETE /api/users/wallet-requests/:id — Hủy yêu cầu nạp/rút tiền đang chờ duyệt (PENDING)
-export const cancelWalletRequest = async (req, res) => {
+export const cancelWalletRequest = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
   }
 
   const { id: requestId } = req.params;
@@ -294,15 +324,15 @@ export const cancelWalletRequest = async (req, res) => {
     });
 
     if (!walletReq) {
-      return res.status(404).json({ success: false, error: 'Không tìm thấy yêu cầu.' });
+      throw new ApiError(404, 'Không tìm thấy yêu cầu.');
     }
 
     if (walletReq.userId !== userId) {
-      return res.status(403).json({ success: false, error: 'Bạn không có quyền hủy yêu cầu này.' });
+      throw new ApiError(403, 'Bạn không có quyền hủy yêu cầu này.');
     }
 
     if (walletReq.status !== 'PENDING') {
-      return res.status(400).json({ success: false, error: 'Chỉ có thể hủy yêu cầu đang ở trạng thái chờ duyệt.' });
+      throw new ApiError(400, 'Chỉ có thể hủy yêu cầu đang ở trạng thái chờ duyệt.');
     }
 
     const updated = await prisma.walletRequest.update({
@@ -319,18 +349,15 @@ export const cancelWalletRequest = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi hủy yêu cầu.'
-    });
+    return next(error);
   }
 };
 
 // GET /api/users/won-auctions — Lấy danh sách sản phẩm thắng đấu giá của user
-export const getWonAuctions = async (req, res) => {
+export const getWonAuctions = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
   }
 
   try {
@@ -379,18 +406,15 @@ export const getWonAuctions = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi lấy danh sách sản phẩm trúng đấu giá.'
-    });
+    return next(error);
   }
 };
 
 // GET /api/users/transactions — Lấy lịch sử giao dịch ví của user
-export const getUserTransactionHistory = async (req, res) => {
+export const getUserTransactionHistory = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
   }
 
   try {
@@ -425,27 +449,25 @@ export const getUserTransactionHistory = async (req, res) => {
       pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi lấy lịch sử giao dịch.'
-    });
+    return next(error);
   }
 };
 
 // Submit KYC Seller request
-export const submitKyc = async (req, res) => {
+export const submitKyc = async (req, res, next) => {
   const userId = req.session?.userId;
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thực hiện.' });
-  }
-
-  const { idCardNumber, idCardImageUrl, shopAddress, phoneNumber } = req.body;
-
-  if (!idCardNumber || !shopAddress) {
-    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp số CCCD và địa chỉ cửa hàng.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thực hiện.'));
   }
 
   try {
+    // Xác thực đầu vào bằng Zod
+    const validation = kycSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { idCardNumber, idCardImageUrl, shopAddress, phoneNumber } = validation.data;
+
     const updated = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -454,6 +476,10 @@ export const submitKyc = async (req, res) => {
         shopAddress,
         phoneNumber: phoneNumber || undefined,
         kycStatus: 'PENDING'
+      },
+      select: {
+        id: true,
+        kycStatus: true
       }
     });
 
@@ -466,79 +492,82 @@ export const submitKyc = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi gửi hồ sơ KYC.'
-    });
+    return next(error);
   }
 };
 
 // Admin retrieve pending KYC applications
-export const adminGetPendingKyc = async (req, res) => {
+export const adminGetPendingKyc = async (req, res, next) => {
   const adminId = req.session?.userId;
   if (!adminId) {
-    return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+    return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
   }
 
   try {
     const adminUser = await prisma.user.findUnique({ where: { id: adminId } });
     if (!adminUser || !adminUser.isAdmin) {
-      return res.status(403).json({ success: false, error: 'Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện.' });
+      throw new ApiError(403, 'Quyền truy cập bị từ chối: Chỉ tài khoản Admin mới được thực hiện.');
     }
 
-    const pendingUsers = await prisma.user.findMany({
-      where: { kycStatus: 'PENDING' },
-      select: {
-        id: true,
-        email: true,
-        phoneNumber: true,
-        idCardNumber: true,
-        idCardImageUrl: true,
-        shopAddress: true,
-        kycStatus: true,
-        createdAt: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    // Tối ưu hóa database: Bổ sung phân trang cho danh sách KYC chờ duyệt
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(50, parseInt(limit) || 20);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [pendingUsers, total] = await Promise.all([
+      prisma.user.findMany({
+        where: { kycStatus: 'PENDING' },
+        select: {
+          id: true,
+          email: true,
+          phoneNumber: true,
+          idCardNumber: true,
+          idCardImageUrl: true,
+          shopAddress: true,
+          kycStatus: true,
+          createdAt: true
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum
+      }),
+      prisma.user.count({ where: { kycStatus: 'PENDING' } })
+    ]);
 
     return res.status(200).json({
       success: true,
-      data: pendingUsers
+      data: pendingUsers,
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi lấy hồ sơ KYC.'
-    });
+    return next(error);
   }
 };
 
 // Admin approve/reject KYC Seller requests
-export const adminApproveKyc = async (req, res) => {
+export const adminApproveKyc = async (req, res, next) => {
   const adminId = req.session?.userId;
   if (!adminId) {
-    return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
-  }
-
-  const { targetUserId, action, rejectionReason } = req.body; // action: 'APPROVE' or 'REJECT'
-
-  if (!targetUserId || !['APPROVE', 'REJECT'].includes(action)) {
-    return res.status(400).json({ success: false, error: 'Thiếu thông tin targetUserId hoặc action hợp lệ.' });
-  }
-
-  if (action === 'REJECT' && !rejectionReason) {
-    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp lý do từ chối hồ sơ KYC.' });
+    return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
   }
 
   try {
     const adminUser = await prisma.user.findUnique({ where: { id: adminId } });
     if (!adminUser || !adminUser.isAdmin) {
-      return res.status(403).json({ success: false, error: 'Quyền truy cập bị từ chối.' });
+      throw new ApiError(403, 'Quyền truy cập bị từ chối.');
     }
+
+    // Xác thực đầu vào bằng Zod
+    const validation = adminApproveKycSchema.safeParse(req.body);
+    if (!validation.success) {
+      throw new ApiError(400, validation.error.errors[0].message);
+    }
+    const { targetUserId, action, rejectionReason } = validation.data;
 
     const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
     if (!targetUser) {
-      return res.status(404).json({ success: false, error: 'Không tìm thấy người dùng cần duyệt.' });
+      throw new ApiError(404, 'Không tìm thấy người dùng cần duyệt.');
     }
 
     const kycStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
@@ -597,20 +626,24 @@ export const adminApproveKyc = async (req, res) => {
       }
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi duyệt hồ sơ.'
-    });
+    return next(error);
   }
 };
 
 // GET /api/users/:id - Fetch public profile of a user (seller) with reviews received
-export const getPublicUserProfile = async (req, res) => {
+export const getPublicUserProfile = async (req, res, next) => {
   try {
     const { id } = req.params;
+    // Tối ưu hóa database: Chỉ SELECT các thuộc tính công khai cần thiết, không SELECT thông tin nhạy cảm (như passwordHash, idCardNumber, v.v.)
     const user = await prisma.user.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        reputationScore: true,
+        isVerifiedSeller: true,
+        createdAt: true,
         _count: {
           select: {
             soldProducts: true,
@@ -641,10 +674,7 @@ export const getPublicUserProfile = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'Không tìm thấy thông tin người dùng.'
-      });
+      throw new ApiError(404, 'Không tìm thấy thông tin người dùng.');
     }
 
     const data = {
@@ -677,11 +707,6 @@ export const getPublicUserProfile = async (req, res) => {
       data
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi lấy thông tin người dùng.'
-    });
+    return next(error);
   }
 };
-
-

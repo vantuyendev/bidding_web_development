@@ -2,38 +2,39 @@ import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
 import { calculateShippingFee } from '../services/shippingService.js';
 import { triggerProductUpdate } from './streamController.js';
+import ApiError from '../utils/ApiError.js';
 
 // POST /api/products/:id/checkout
-export const checkoutProduct = async (req, res) => {
+export const checkoutProduct = async (req, res, next) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
   const { winnerName, winnerPhone, winnerAddress, toProvinceId, toDistrictId } = req.body;
 
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Bạn cần đăng nhập để thanh toán.' });
+    return next(new ApiError(401, 'Bạn cần đăng nhập để thanh toán.'));
   }
 
   if (!winnerName || !winnerPhone || !winnerAddress || !toProvinceId || !toDistrictId) {
-    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp đầy đủ thông tin giao hàng.' });
+    return next(new ApiError(400, 'Vui lòng cung cấp đầy đủ thông tin giao hàng.'));
   }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // Row-lock product
+      // Row-lock product - Tối ưu hóa selective SELECT thay vì SELECT *
       const products = await tx.$queryRaw`
-        SELECT * FROM "products" WHERE id = ${productId} FOR UPDATE
+        SELECT id, status, winner_id, weight, length, width, height, province_id, current_price, seller_id, title FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
       if (!products || products.length === 0) {
-        throw new Error('Sản phẩm không tồn tại.');
+        throw new ApiError(404, 'Sản phẩm không tồn tại.');
       }
       const product = products[0];
 
       if (product.status !== 'PENDING_PAYMENT') {
-        throw new Error('Sản phẩm không ở trạng thái chờ thanh toán.');
+        throw new ApiError(400, 'Sản phẩm không ở trạng thái chờ thanh toán.');
       }
 
       if (product.winner_id !== userId) {
-        throw new Error('Bạn không phải là người chiến thắng phiên đấu giá này.');
+        throw new ApiError(403, 'Bạn không phải là người chiến thắng phiên đấu giá này.');
       }
 
       // Format product for calculateShippingFee service
@@ -60,8 +61,12 @@ export const checkoutProduct = async (req, res) => {
         select: { walletBalance: true, frozenBalance: true }
       });
 
+      if (!buyer) {
+        throw new ApiError(404, 'Không tìm thấy người mua.');
+      }
+
       if (new Prisma.Decimal(buyer.walletBalance).lt(totalDue)) {
-        throw new Error(`Số dư ví không đủ để thanh toán 90% còn lại và phí ship (cần ${Number(totalDue).toLocaleString('vi-VN')} đ).`);
+        throw new ApiError(400, `Số dư ví không đủ để thanh toán 90% còn lại và phí ship (cần ${Number(totalDue).toLocaleString('vi-VN')} đ).`);
       }
 
       // Freeze 90% + shipping fee (moving from walletBalance to frozenBalance)
@@ -79,7 +84,8 @@ export const checkoutProduct = async (req, res) => {
           userId,
           amount: totalDue,
           type: 'HOLD_ESCROW',
-          status: 'COMPLETED'
+          status: 'COMPLETED',
+          productId: product.id
         }
       });
 
@@ -122,20 +128,17 @@ export const checkoutProduct = async (req, res) => {
       data: result
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi hoàn tất thanh toán.'
-    });
+    return next(error);
   }
 };
 
 // POST /api/products/:id/ship
-export const shipProduct = async (req, res) => {
+export const shipProduct = async (req, res, next) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
 
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+    return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
   }
 
   try {
@@ -144,15 +147,15 @@ export const shipProduct = async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).json({ success: false, error: 'Sản phẩm không tồn tại.' });
+      throw new ApiError(404, 'Sản phẩm không tồn tại.');
     }
 
     if (product.sellerId !== userId) {
-      return res.status(403).json({ success: false, error: 'Bạn không phải là người bán của sản phẩm này.' });
+      throw new ApiError(403, 'Bạn không phải là người bán của sản phẩm này.');
     }
 
     if (product.status !== 'PAID') {
-      return res.status(400).json({ success: false, error: 'Đơn hàng chưa được thanh toán hoặc đã giao.' });
+      throw new ApiError(400, 'Đơn hàng chưa được thanh toán hoặc đã giao.');
     }
 
     const updatedProduct = await prisma.product.update({
@@ -178,20 +181,17 @@ export const shipProduct = async (req, res) => {
       data: updatedProduct
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi xác nhận gửi hàng.'
-    });
+    return next(error);
   }
 };
 
 // POST /api/products/:id/receive
-export const receiveProduct = async (req, res) => {
+export const receiveProduct = async (req, res, next) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
 
   if (!userId) {
-    return res.status(401).json({ success: false, error: 'Yêu cầu đăng nhập.' });
+    return next(new ApiError(401, 'Yêu cầu đăng nhập.'));
   }
 
   try {
@@ -201,15 +201,15 @@ export const receiveProduct = async (req, res) => {
       });
 
       if (!product) {
-        throw new Error('Sản phẩm không tồn tại.');
+        throw new ApiError(404, 'Sản phẩm không tồn tại.');
       }
 
       if (product.winnerId !== userId) {
-        throw new Error('Bạn không phải là người mua đơn hàng này.');
+        throw new ApiError(403, 'Bạn không phải là người mua đơn hàng này.');
       }
 
       if (product.status !== 'SHIPPED') {
-        throw new Error('Đơn hàng chưa được vận chuyển hoặc đã hoàn tất.');
+        throw new ApiError(400, 'Đơn hàng chưa được vận chuyển hoặc đã hoàn tất.');
       }
 
       // Calculate total amount to transfer to seller (100% price + shipping fee)
@@ -223,8 +223,12 @@ export const receiveProduct = async (req, res) => {
         select: { frozenBalance: true }
       });
 
+      if (!buyer) {
+        throw new ApiError(404, 'Không tìm thấy người mua.');
+      }
+
       if (new Prisma.Decimal(buyer.frozenBalance).lt(totalEscrow)) {
-        throw new Error('Lỗi đồng bộ: Số dư đóng băng của người mua không đủ.');
+        throw new ApiError(400, 'Lỗi đồng bộ: Số dư đóng băng của người mua không đủ.');
       }
 
       // Deduct from buyer frozen balance
@@ -240,6 +244,9 @@ export const receiveProduct = async (req, res) => {
         where: { id: product.sellerId },
         select: { walletBalance: true }
       });
+      if (!seller) {
+        throw new ApiError(404, 'Không tìm thấy người bán.');
+      }
       await tx.user.update({
         where: { id: product.sellerId },
         data: {
@@ -253,7 +260,8 @@ export const receiveProduct = async (req, res) => {
           userId,
           amount: totalEscrow,
           type: 'PAYMENT',
-          status: 'COMPLETED'
+          status: 'COMPLETED',
+          productId: product.id
         }
       });
       await tx.transaction.create({
@@ -261,7 +269,8 @@ export const receiveProduct = async (req, res) => {
           userId: product.sellerId,
           amount: totalEscrow,
           type: 'RELEASE_ESCROW',
-          status: 'COMPLETED'
+          status: 'COMPLETED',
+          productId: product.id
         }
       });
 
@@ -292,9 +301,6 @@ export const receiveProduct = async (req, res) => {
       data: result
     });
   } catch (error) {
-    return res.status(400).json({
-      success: false,
-      error: error.message || 'Đã xảy ra lỗi khi xác nhận nhận hàng.'
-    });
+    return next(error);
   }
 };

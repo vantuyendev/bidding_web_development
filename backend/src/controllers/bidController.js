@@ -78,13 +78,13 @@ export const placeBid = async (req, res, next) => {
         },
       });
 
-      // Row-level Locking: Lock product row
+      // Row-level Locking: Lock product row - Tối ưu hóa selective SELECT
       const products = await tx.$queryRaw`
-        SELECT * FROM "products" WHERE id = ${productId} FOR UPDATE
+        SELECT id, title, status, current_price, end_time, seller_id FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
 
       if (!products || products.length === 0) {
-        throw new Error("Sản phẩm không tồn tại");
+        throw new ApiError(404, "Sản phẩm không tồn tại");
       }
 
       const product = products[0];
@@ -93,7 +93,7 @@ export const placeBid = async (req, res, next) => {
 
       // Check if auction has ended
       if (now > endTime || product.status === 'ENDED' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
-        throw new Error("Buổi đấu giá đã kết thúc");
+        throw new ApiError(400, "Buổi đấu giá đã kết thúc");
       }
 
       const currentPriceDecimal = new Prisma.Decimal(product.current_price);
@@ -110,18 +110,18 @@ export const placeBid = async (req, res, next) => {
         depositAmount = maxAutoBidDecimal.mul(0.1);
 
         if (maxAutoBidDecimal.lt(nextValidBid)) {
-          throw new Error("Mức giá tối đa thiết lập phải lớn hơn giá thầu hợp lệ tiếp theo");
+          throw new ApiError(400, "Mức giá tối đa thiết lập phải lớn hơn giá thầu hợp lệ tiếp theo");
         }
 
         initialBidAmountDecimal = nextValidBid;
       } else {
         // Manual Bid
         if (bidDecimal === null) {
-          throw new Error("Vui lòng cung cấp số tiền đặt giá");
+          throw new ApiError(400, "Vui lòng cung cấp số tiền đặt giá");
         }
 
         if (bidDecimal.lt(nextValidBid)) {
-          throw new Error(`Giá đặt phải lớn hơn hoặc bằng giá thầu tối thiểu: ${nextValidBid.toString()}`);
+          throw new ApiError(400, `Giá đặt phải lớn hơn hoặc bằng giá thầu tối thiểu: ${nextValidBid.toString()}`);
         }
 
         depositAmount = bidDecimal.mul(0.1);
@@ -355,7 +355,7 @@ export const placeBid = async (req, res, next) => {
     });
 
   } catch (error) {
-    return next(new ApiError(400, error.message || "Đã xảy ra lỗi không xác định."));
+    return next(error);
   }
 };
 
@@ -386,11 +386,11 @@ export const buyNow = async (req, res, next) => {
       });
 
       const products = await tx.$queryRaw`
-        SELECT * FROM "products" WHERE id = ${productId} FOR UPDATE
+        SELECT id, title, status, buy_now_price, end_time, seller_id FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
 
       if (!products || products.length === 0) {
-        throw new Error("Sản phẩm không tồn tại");
+        throw new ApiError(404, "Sản phẩm không tồn tại");
       }
 
       const product = products[0];
@@ -398,11 +398,11 @@ export const buyNow = async (req, res, next) => {
       const endTime = new Date(product.end_time);
 
       if (now > endTime || product.status === 'ENDED' || product.status === 'PENDING_PAYMENT' || product.status === 'PAID') {
-        throw new Error("Buổi đấu giá đã kết thúc");
+        throw new ApiError(400, "Buổi đấu giá đã kết thúc");
       }
 
       if (!product.buy_now_price) {
-        throw new Error("Sản phẩm này không hỗ trợ tính năng Mua đứt");
+        throw new ApiError(400, "Sản phẩm này không hỗ trợ tính năng Mua đứt");
       }
 
       const buyNowPriceDecimal = new Prisma.Decimal(product.buy_now_price);
@@ -413,8 +413,8 @@ export const buyNow = async (req, res, next) => {
         where: { id: userId },
         select: { walletBalance: true }
       });
-      if (new Prisma.Decimal(buyer.walletBalance).lt(depositAmount)) {
-        throw new Error("Số dư ví không đủ để đặt cọc mua đứt (cần cọc 10% giá trị mua đứt).");
+      if (!buyer || new Prisma.Decimal(buyer.walletBalance).lt(depositAmount)) {
+        throw new ApiError(400, "Số dư ví không đủ để đặt cọc mua đứt (cần cọc 10% giá trị mua đứt).");
       }
 
       // Hold deposit (10%)
@@ -554,6 +554,6 @@ export const buyNow = async (req, res, next) => {
     });
 
   } catch (error) {
-    return next(new ApiError(400, error.message || "Đã xảy ra lỗi khi thực hiện mua đứt."));
+    return next(error);
   }
 };
