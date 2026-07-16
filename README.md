@@ -398,41 +398,6 @@ Mỗi file `.jsx` tương ứng với **một trang** (route) trong ứng dụng
 
 ---
 
-## 🗄 Mô Hình Cơ Sở Dữ Liệu
-
-Hệ thống sử dụng **19 bảng dữ liệu** trong PostgreSQL, được quản lý bởi Prisma ORM:
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        DATABASE SCHEMA                               │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   User ◄───────┬────────  Product ◄────────  Category                │
-│   │            │            │                     │                  │
-│   │  ┌─────────┘            │                  AttributeKey          │
-│   │  │                      │                     │                  │
-│   │  │    Bid ◄─────────────┤              ProductAttribute          │
-│   │  │                      │                                        │
-│   │  │    OrderMessage      │                                        │
-│   │  │                      │                                        │
-│   ├──┤    Transaction       ├────  Review                            │
-│   │  │                      │                                        │
-│   │  │    WalletRequest     ├────  Watchlist                         │ 
-│   │  │                      │                                        │
-│   │  │    Notification      ├────  ProductQnaMessage                 │
-│   │  │                      │                                        │
-│   │  │    AuditLog          │                                        │
-│   │  │                      │                                        │
-│   │  └──  DisputeTicket ◄───┘                                        │
-│   │         │                                                        │
-│   │         └──  DisputeMessage                                      │
-│   │                                                                  │
-│   ├──  SupportTicket                                                 │
-│   │      └──  SupportMessage                                         │
-│   │                                                                  │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
 ### Bảng chính & ý nghĩa
 
 | Bảng | Ý nghĩa |
