@@ -80,6 +80,12 @@ export const register = async (req, res) => {
       });
     }
 
+    // Băm mật khẩu bằng bcrypt trước khi lưu vào database.
+    // - Cost factor 12: chỉ định độ phức tạp của thuật toán băm (2^12 vòng lặp),
+    //   càng cao càng an toàn nhưng càng chậm. Factor 12 là mức khó khuyến nghị năm 2024+.
+    // - bcrypt tự động thêm "salt" (chuỗi ngẫu nhiên) vào mật khẩu trước khi băm,
+    //   giúp ngăn chặn tấn công Rainbow Table (bảng tra mã hásh định sẵn).
+    // - Kết quả là một chuỗi 60 ký tự dài được lưu vào cột `password_hash`.
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
@@ -111,6 +117,7 @@ export const register = async (req, res) => {
   }
 };
 
+// Controller đăng nhập: kiểm tra email, xác thực mật khẩu bằng bcrypt, tạo session
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -141,6 +148,10 @@ export const login = async (req, res) => {
       });
     }
 
+    // Xác thực mật khẩu người dùng nhập vào với mã băm lưu trong database.
+    // - bcrypt.compare() không giải mã (vì không thể giải mã), mà băm lại mật khẩu
+    //   với cùng salt đằ rồi so sánh kết quả với hash đã lưu.
+    // - Trả về `false` nếu sai mật khẩu, trả `true` nếu đúng.
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return res.status(401).json({

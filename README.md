@@ -51,6 +51,7 @@
 | **Prisma ORM** | 6.19 | Ánh xạ đối tượng - quan hệ (ORM), tương tác PostgreSQL |
 | **PostgreSQL** | 16 | Cơ sở dữ liệu quan hệ chính |
 | **Zod** | 4.x | Xác thực & kiểm duyệt dữ liệu đầu vào (Schema Validation) |
+| **bcryptjs** | 3.x | Băm (hash) và xác thực mật khẩu người dùng (bcrypt algorithm) |
 | **Helmet** | 8.x | Bảo vệ HTTP Headers |
 | **express-rate-limit** | 8.x | Giới hạn tần suất gọi API (Rate Limiting) |
 | **node-cron** | 4.x | Lập lịch tác vụ nền (Scheduled Jobs) |
@@ -154,6 +155,7 @@ bidding_web_development/
 │       │   ├── 📄 streamController.js         # SSE (Server-Sent Events) realtime
 │       │   ├── 📄 shippingController.js       # API tính phí vận chuyển
 │       │   ├── 📄 orderMessageController.js   # Nhắn tin trong đơn hàng
+│       │   ├── 📄 settingController.js        # Cài đặt hệ thống (thông tin ngân hàng nạp tiền)
 │       │   └── 📄 adminController.js          # Quản trị hệ thống (Admin)
 │       │
 │       ├── 📁 routes/             # Định tuyến URL tới Controller tương ứng
@@ -259,12 +261,13 @@ bidding_web_development/
             │
             └── 📁 admin/          # Trang quản trị viên (Admin Panel)
                 ├── 📄 AdminDashboard.jsx      # Bảng tổng quan hệ thống
-                ├── 📄 AdminLayout.jsx         # Bố cục riêng cho trang Admin
+                ├── 📄 AdminLayout.jsx         # Bố cục riêng cho trang Admin (sidebar + nav)
                 ├── 📄 AdminUsers.jsx          # Quản lý người dùng (ban/unban)
                 ├── 📄 AdminAuctions.jsx       # Quản lý phiên đấu giá
                 ├── 📄 AdminProductApproval.jsx# Duyệt sản phẩm đăng bán
                 ├── 📄 AdminCategories.jsx     # Quản lý danh mục sản phẩm
                 ├── 📄 AdminWalletRequests.jsx # Duyệt yêu cầu nạp/rút tiền
+                ├── 📄 AdminSettings.jsx       # Cài đặt thông tin ngân hàng & QR nạp tiền
                 ├── 📄 KycApproval.jsx         # Duyệt hồ sơ KYC người bán
                 ├── 📄 DisputeManagement.jsx   # Quản lý & phân xử tranh chấp
                 └── 📄 AdminAuditLogs.jsx      # Nhật ký hoạt động hệ thống
@@ -292,8 +295,8 @@ Mỗi controller chịu trách nhiệm **xử lý logic nghiệp vụ** cho mộ
 
 | File | Nhóm chức năng | Mô tả chi tiết |
 |---|---|---|
-| `authController.js` | Xác thực | Đăng ký (hash mật khẩu), đăng nhập (kiểm tra mật khẩu, tạo session cookie), đăng xuất (xoá session). |
-| `userController.js` | Người dùng & KYC | Quản lý hồ sơ cá nhân, **quy trình KYC** (nộp CCCD, ảnh, địa chỉ cửa hàng → Admin duyệt → trở thành Người bán), quản lý ví tiền (nạp/rút/xem số dư). |
+| `authController.js` | Xác thực | **Đăng ký**: băm mật khẩu bằng `bcrypt` (cost factor 12) trước khi lưu vào DB. **Đăng nhập**: xác thực mật khẩu bằng `bcrypt.compare()`, tạo session cookie. **Đăng xuất**: xoá session. |
+| `userController.js` | Người dùng & KYC | Quản lý hồ sơ cá nhân, **quy trình KYC** (nộp CCCD, ảnh, địa chỉ cửa hàng → Admin duyệt → trở thành Người bán), quản lý ví tiền (nạp/rút/xem số dư). Tích hợp thông tin ngân hàng động từ `SystemSetting`. |
 | `productController.js` | Sản phẩm | Tạo, sửa, xoá, tìm kiếm sản phẩm đấu giá. Hỗ trợ lọc theo danh mục, giá, trạng thái. Upload hình ảnh. |
 | `bidController.js` | Đấu giá | **Cốt lõi hệ thống.** Xử lý đặt thầu với cơ chế: bước giá biến thiên, khoá dòng database (`FOR UPDATE`), đấu giá tự động (Proxy Bidding), bảo vệ thầu phút chót (Sniping Protection). |
 | `orderController.js` | Đơn hàng | Tạo đơn hàng sau khi đấu giá kết thúc, cập nhật trạng thái vận chuyển, xác nhận nhận hàng. |
@@ -304,6 +307,7 @@ Mỗi controller chịu trách nhiệm **xử lý logic nghiệp vụ** cho mộ
 | `watchlistController.js` | Theo dõi | Thêm/xoá sản phẩm vào danh sách yêu thích để theo dõi giá. |
 | `shippingController.js` | Vận chuyển | API endpoint tính phí vận chuyển (uỷ quyền cho `shippingService`). |
 | `orderMessageController.js` | Nhắn tin đơn hàng | Cho phép người mua và người bán trao đổi tin nhắn trong đơn hàng. |
+| `settingController.js` | Cài đặt hệ thống | **Mới.** Đọc/ghi cài đặt toàn cục (bảng `system_settings`): tên ngân hàng, số tài khoản, tên chủ tài khoản, URL ảnh QR, nội dung hướng dẫn nạp tiền tùy chỉnh. Fallback sang biến `.env` nếu chưa cấu hình. |
 | `adminController.js` | Quản trị | Dashboard admin, quản lý người dùng (ban/unban), duyệt sản phẩm, xử lý yêu cầu nạp/rút tiền, nhật ký kiểm toán (Audit Log). |
 
 #### 📁 `backend/src/routes/` — Định Tuyến (Routing Layer)
@@ -377,15 +381,18 @@ Mỗi file `.jsx` tương ứng với **một trang** (route) trong ứng dụng
 
 | Thư mục / File | Trang | Mô tả |
 |---|---|---|
-| `AuthPage.jsx` | `/auth` | Đăng nhập / Đăng ký tài khoản |
+| `AuthPage.jsx` | `/auth` | Đăng nhập / Đăng ký tài khoản (gửi email + mật khẩu, xác thực bcrypt phía backend) |
 | `HomePage.jsx` | `/` | Trang chủ (banner, sản phẩm nổi bật, danh mục) |
 | `ProductDetail.jsx` | `/product/:id` | Chi tiết sản phẩm + khu vực đặt thầu realtime |
 | `catalog/CatalogPage.jsx` | `/catalog` | Duyệt & tìm kiếm toàn bộ sản phẩm |
-| `dashboard/WalletDashboard.jsx` | `/dashboard/wallet` | Quản lý ví tiền (nạp/rút/lịch sử giao dịch) |
+| `dashboard/WalletDashboard.jsx` | `/dashboard/wallet` | Quản lý ví tiền — hiển thị QR nạp tiền tùy chỉnh (hoặc VietQR mặc định) & hướng dẫn chuyển khoản từ cài đặt Admin |
 | `dashboard/BidHistory.jsx` | `/dashboard/bids` | Lịch sử tham gia đấu giá |
-| `dashboard/SellerListings.jsx` | `/dashboard/listings` | Quản lý sản phẩm đang bán (dành cho Seller) |
+| `dashboard/SellerListings.jsx` | `/profile/listings` | Quản lý sản phẩm đang bán (dành cho Seller) |
+| `dashboard/WonAuctions.jsx` | `/profile/won-auctions` | Danh sách phiên đấu giá đã thắng |
 | `dashboard/KycSubmission.jsx` | `/dashboard/kyc` | Gửi hồ sơ xác minh danh tính (KYC) |
+| `dashboard/Watchlist.jsx` | `/profile/watchlist` | Danh sách sản phẩm đang theo dõi |
 | `admin/AdminDashboard.jsx` | `/admin` | Tổng quan hệ thống (thống kê, biểu đồ) |
+| `admin/AdminSettings.jsx` | `/admin/settings` | **Mới.** Cài đặt thông tin ngân hàng & QR code cho trang nạp tiền của người dùng |
 | `admin/KycApproval.jsx` | `/admin/kyc` | Admin duyệt / từ chối hồ sơ KYC |
 | `admin/DisputeManagement.jsx` | `/admin/disputes` | Admin phân xử tranh chấp |
 
@@ -393,7 +400,7 @@ Mỗi file `.jsx` tương ứng với **một trang** (route) trong ứng dụng
 
 ## 🗄 Mô Hình Cơ Sở Dữ Liệu
 
-Hệ thống sử dụng **18 bảng dữ liệu** trong PostgreSQL, được quản lý bởi Prisma ORM:
+Hệ thống sử dụng **19 bảng dữ liệu** trong PostgreSQL, được quản lý bởi Prisma ORM:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -442,6 +449,7 @@ Hệ thống sử dụng **18 bảng dữ liệu** trong PostgreSQL, được qu
 | **Notification** | Thông báo hệ thống gửi tới người dùng |
 | **AuditLog** | Nhật ký kiểm toán ghi lại mọi hành động quan trọng của Admin |
 | **Watchlist** | Danh sách sản phẩm người dùng đang theo dõi |
+| **SystemSetting** | **Mới.** Bảng key-value lưu cài đặt toàn cục: thông tin ngân hàng, URL ảnh QR, hướng dẫn nạp tiền tùy chỉnh |
 
 ---
 
@@ -449,6 +457,7 @@ Hệ thống sử dụng **18 bảng dữ liệu** trong PostgreSQL, được qu
 
 ### 👤 Hệ thống Người dùng
 - Đăng ký / Đăng nhập / Đăng xuất (cookie-session)
+- **Mật khẩu băm bằng bcrypt** (cost factor 12) — mật khẩu không bao giờ lưu dạng plain-text
 - Quản lý hồ sơ cá nhân & avatar
 - Xác minh danh tính người bán (KYC) qua CCCD
 - Hệ thống ban/unban người dùng vi phạm
@@ -470,6 +479,7 @@ Hệ thống sử dụng **18 bảng dữ liệu** trong PostgreSQL, được qu
 - Ví nội bộ với nạp/rút/lịch sử giao dịch
 - **Cơ chế Escrow (Ký quỹ)**: đóng băng tiền khi đặt thầu, giải phóng khi giao dịch kết thúc
 - Admin duyệt yêu cầu nạp/rút tiền
+- **Admin cấu hình thông tin ngân hàng nạp tiền**: tên ngân hàng, số tài khoản, ảnh QR tùy chỉnh và hướng dẫn chuyển khoản (lưu trong bảng `system_settings`)
 
 ### ⚖️ Tranh chấp & Bảo vệ Giao dịch
 - Mở tranh chấp khi có vấn đề đơn hàng
@@ -477,6 +487,7 @@ Hệ thống sử dụng **18 bảng dữ liệu** trong PostgreSQL, được qu
 - Admin phân xử: hoàn tiền hoặc giải ngân
 
 ### 🛡️ Bảo mật
+- **bcrypt password hashing**: mật khẩu được băm với salt factor 12, không thể đảo ngược
 - **Helmet**: bảo vệ HTTP headers
 - **Rate Limiting**: giới hạn 100 req/15 phút/IP
 - **XSS Filter**: lọc mã độc đầu vào
@@ -616,6 +627,8 @@ CLIENT_URL="http://localhost:5173"
 | 🚚 Vận chuyển | `/api/shipping` | Tính phí vận chuyển |
 | 📂 Danh mục | `/api/categories` | Danh sách danh mục & thuộc tính |
 | 🛡️ Admin | `/api/admin` | Quản trị hệ thống (yêu cầu quyền Admin) |
+| ⚙️ Cài đặt ngân hàng | `GET /api/admin/bank-settings` | Lấy thông tin ngân hàng hiện tại (Admin) |
+| ⚙️ Cài đặt ngân hàng | `PUT /api/admin/bank-settings` | Cập nhật thông tin ngân hàng & QR nạp tiền (Admin) |
 
 ---
 
