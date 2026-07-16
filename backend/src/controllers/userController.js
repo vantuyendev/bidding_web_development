@@ -80,6 +80,13 @@ export const getUserProfile = async (req, res) => {
 
 // Automatically verify the seller profile (auto KYC for testing)
 export const verifySeller = async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      success: false,
+      error: 'Tính năng tự động xác thực người bán bị vô hiệu hóa ở môi trường Production. Vui lòng gửi hồ sơ KYC để Admin phê duyệt.'
+    });
+  }
+
   try {
     const userId = req.session.userId;
     const user = await prisma.user.update({
