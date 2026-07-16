@@ -405,6 +405,36 @@ export default function Navbar() {
             >
               + Post Auction
             </button>
+ 
+            {user && user.isAdmin && (
+              <Link
+                to="/admin"
+                id="navbar-admin-btn"
+                style={{
+                  background: 'hsl(38, 92%, 50%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 20,
+                  padding: '7px 16px',
+                  fontSize: 12,
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s, transform 0.1s',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'hsl(38, 92%, 40%)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'hsl(38, 92%, 50%)'; }}
+                onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { e.currentTarget.style.transform = ''; }}
+              >
+                ⚙️ Admin Portal
+              </Link>
+            )}
 
             {/* Theme Toggle */}
             <button
@@ -566,11 +596,12 @@ export default function Navbar() {
 
                     {/* Nav links */}
                     {[
+                      user.isAdmin && { label: '⚙️ Admin Dashboard', to: '/admin' },
                       { label: 'My Auctions', to: '/profile/listings' },
                       { label: 'Won Items', to: '/profile/won-auctions' },
                       { label: 'Watchlist', to: '/profile/watchlist' },
                       { label: 'Profile & Settings', to: '/profile' },
-                    ].map(({ label, to }) => (
+                    ].filter(Boolean).map(({ label, to }) => (
                       <Link
                         key={to}
                         to={to}
