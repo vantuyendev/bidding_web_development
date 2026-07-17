@@ -173,3 +173,333 @@ export function calculateShippingFee({ product, toProvinceId, toDistrictId }) {
 
   return new Prisma.Decimal(totalFee);
 }
+
+// ==========================================
+// TÍCH HỢP HÀNH CHÍNH & KHU VỰC ĐỘNG TỪ GHN API (SANDBOX)
+// ==========================================
+
+const cache = {
+  provinces: null,
+  districts: {}, // key: provinceId
+  wards: {} // key: districtId
+};
+
+// Fallback lists
+const FALLBACK_PROVINCES = [
+  { id: 201, name: 'Hà Nội' },
+  { id: 202, name: 'TP. Hồ Chí Minh' },
+  { id: 203, name: 'Đà Nẵng' },
+  { id: 204, name: 'Hải Phòng' },
+  { id: 205, name: 'Cần Thơ' },
+  { id: 206, name: 'Bình Dương' },
+  { id: 207, name: 'Đồng Nai' },
+  { id: 208, name: 'Khánh Hòa' },
+  { id: 209, name: 'Quảng Ninh' }
+];
+
+const FALLBACK_DISTRICTS = {
+  201: [
+    { id: 1454, name: 'Quận Cầu Giấy' },
+    { id: 1455, name: 'Quận Đống Đa' },
+    { id: 1456, name: 'Quận Ba Đình' },
+    { id: 1457, name: 'Quận Hoàn Kiếm' },
+    { id: 1458, name: 'Quận Hai Bà Trưng' }
+  ],
+  202: [
+    { id: 1460, name: 'Quận 1' },
+    { id: 1461, name: 'Quận 3' },
+    { id: 1462, name: 'Quận 7' },
+    { id: 1463, name: 'Quận Bình Thạnh' }
+  ],
+  203: [
+    { id: 1470, name: 'Quận Hải Châu' },
+    { id: 1471, name: 'Quận Thanh Khê' }
+  ]
+};
+
+const FALLBACK_WARDS = {
+  1454: [
+    { code: '21211', name: 'Phường Dịch Vọng Hậu' },
+    { code: '21212', name: 'Phường Quan Hoa' }
+  ],
+  1460: [
+    { code: '21301', name: 'Phường Bến Nghé' },
+    { code: '21302', name: 'Phường Bến Thành' }
+  ]
+};
+
+function getFallbackProvinces() {
+  return FALLBACK_PROVINCES;
+}
+
+function getFallbackDistricts(provinceId) {
+  return FALLBACK_DISTRICTS[provinceId] || [
+    { id: Number(provinceId) * 10 + 1, name: 'Quận Trung tâm' },
+    { id: Number(provinceId) * 10 + 2, name: 'Huyện Ngoại thành' }
+  ];
+}
+
+function getFallbackWards(districtId) {
+  return FALLBACK_WARDS[districtId] || [
+    { code: `${districtId}01`, name: 'Phường Trung tâm' },
+    { code: `${districtId}02`, name: 'Phường Ngoại ô' }
+  ];
+}
+
+// Fetch dynamic lists
+export async function getProvinces() {
+  if (cache.provinces) return cache.provinces;
+  const token = process.env.GHN_API_TOKEN;
+  if (!token || token === 'your_ghn_sandbox_token') {
+    return getFallbackProvinces();
+  }
+  try {
+    const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/province', {
+      headers: { 'Token': token }
+    });
+    const json = await res.json();
+    if (json.code === 200 && json.data) {
+      cache.provinces = json.data.map(p => ({
+        id: p.ProvinceID,
+        name: p.ProvinceName
+      })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+      return cache.provinces;
+    }
+  } catch (err) {
+    console.error('[GHN Provinces API Error]:', err.message);
+  }
+  return getFallbackProvinces();
+}
+
+export async function getDistricts(provinceId) {
+  if (cache.districts[provinceId]) return cache.districts[provinceId];
+  const token = process.env.GHN_API_TOKEN;
+  if (!token || token === 'your_ghn_sandbox_token') {
+    return getFallbackDistricts(provinceId);
+  }
+  try {
+    const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/district', {
+      method: 'POST',
+      headers: {
+        'Token': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ province_id: Number(provinceId) })
+    });
+    const json = await res.json();
+    if (json.code === 200 && json.data) {
+      cache.districts[provinceId] = json.data.map(d => ({
+        id: d.DistrictID,
+        name: d.DistrictName
+      })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+      return cache.districts[provinceId];
+    }
+  } catch (err) {
+    console.error(`[GHN Districts API Error] province ${provinceId}:`, err.message);
+  }
+  return getFallbackDistricts(provinceId);
+}
+
+export async function getWards(districtId) {
+  if (cache.wards[districtId]) return cache.wards[districtId];
+  const token = process.env.GHN_API_TOKEN;
+  if (!token || token === 'your_ghn_sandbox_token') {
+    return getFallbackWards(districtId);
+  }
+  try {
+    const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/ward', {
+      method: 'POST',
+      headers: {
+        'Token': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ district_id: Number(districtId) })
+    });
+    const json = await res.json();
+    if (json.code === 200 && json.data) {
+      cache.wards[districtId] = json.data.map(w => ({
+        code: w.WardCode,
+        name: w.WardName
+      })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+      return cache.wards[districtId];
+    }
+  } catch (err) {
+    console.error(`[GHN Wards API Error] district ${districtId}:`, err.message);
+  }
+  return getFallbackWards(districtId);
+}
+
+// Fuzzy matching to find IDs from DB strings
+export async function findProvinceIdByName(provinceName) {
+  if (!provinceName) return null;
+  const provinces = await getProvinces();
+  const normSearch = normalizeProvince(provinceName);
+  const found = provinces.find(p => normalizeProvince(p.name).includes(normSearch) || normSearch.includes(normalizeProvince(p.name)));
+  return found ? found.id : null;
+}
+
+export async function findDistrictIdByName(provinceId, districtName) {
+  if (!provinceId || !districtName) return null;
+  const districts = await getDistricts(provinceId);
+  const normSearch = normalizeProvince(districtName);
+  const found = districts.find(d => normalizeProvince(d.name).includes(normSearch) || normSearch.includes(normalizeProvince(d.name)));
+  return found ? found.id : null;
+}
+
+export async function findWardCodeByName(districtId, wardName) {
+  if (!districtId || !wardName) return null;
+  const wards = await getWards(districtId);
+  const normSearch = normalizeProvince(wardName);
+  const found = wards.find(w => normalizeProvince(w.name).includes(normSearch) || normSearch.includes(normalizeProvince(w.name)));
+  return found ? found.code : null;
+}
+
+// Call GHN Sandbox API to calculate fee
+export async function calculateGHNFee({ fromDistrictId, fromWardCode, toDistrictId, toWardCode, weight, length, width, height }) {
+  const token = process.env.GHN_API_TOKEN;
+  const shopId = process.env.GHN_SHOP_ID;
+
+  if (!token || token === 'your_ghn_sandbox_token') {
+    throw new Error("GHN_API_TOKEN chưa được thiết lập");
+  }
+
+  const weightGrams = Math.max(100, Math.round(weight * 1000));
+
+  const payload = {
+    from_district_id: Number(fromDistrictId),
+    to_district_id: Number(toDistrictId),
+    weight: weightGrams,
+    length: length || 10,
+    width: width || 10,
+    height: height || 10,
+    service_type_id: 2
+  };
+
+  if (fromWardCode) payload.from_ward_code = String(fromWardCode);
+  if (toWardCode) payload.to_ward_code = String(toWardCode);
+
+  const headers = {
+    'Token': token,
+    'Content-Type': 'application/json'
+  };
+  
+  if (shopId && shopId !== 'your_ghn_shop_id') {
+    headers['ShopId'] = String(shopId);
+  }
+
+  const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload)
+  });
+
+  const json = await res.json();
+  if (json.code === 200 && json.data) {
+    return Number(json.data.total);
+  } else {
+    throw new Error(json.message || "Lỗi gọi API tính phí GHN");
+  }
+}
+
+// Call GHTK Sandbox API to calculate fee
+export async function calculateGHTKFee({ fromProvince, fromDistrict, toProvince, toDistrict, toWard, weight }) {
+  const token = process.env.GHTK_API_TOKEN;
+
+  if (!token || token === 'your_ghtk_sandbox_token') {
+    throw new Error("GHTK_API_TOKEN chưa được thiết lập");
+  }
+
+  const weightGrams = Math.max(100, Math.round(weight * 1000));
+
+  const query = new URLSearchParams({
+    pick_province: fromProvince,
+    pick_district: fromDistrict,
+    province: toProvince,
+    district: toDistrict,
+    weight: String(weightGrams)
+  });
+
+  if (toWard) query.append('ward', toWard);
+
+  const headers = {
+    'Token': token
+  };
+
+  const partnerCode = process.env.GHTK_PARTNER_CODE;
+  if (partnerCode && partnerCode !== 'your_ghtk_partner_code') {
+    headers['X-Client-Source'] = partnerCode;
+  }
+
+  const res = await fetch(`https://services-staging.ghtklab.com/services/shipment/fee?${query.toString()}`, {
+    headers
+  });
+
+  const json = await res.json();
+  if (json.success && json.fee) {
+    return Number(json.fee.fee);
+  } else {
+    throw new Error(json.message || "Lỗi gọi API tính phí GHTK");
+  }
+}
+
+// Unified Async Shipping Fee Calculator with Fallback
+export async function calculateShippingFeeAsync({ product, toProvinceId, toDistrictId, toWardId, carrier }) {
+  if (!product) {
+    throw new Error("Product data is required for shipping calculation");
+  }
+
+  const weight = product.weight !== undefined && product.weight !== null ? Number(product.weight) : 0.5;
+  const length = product.length !== undefined && product.length !== null ? Number(product.length) : 10;
+  const width = product.width !== undefined && product.width !== null ? Number(product.width) : 10;
+  const height = product.height !== undefined && product.height !== null ? Number(product.height) : 10;
+
+  const fromProvince = product.provinceId || '';
+  const fromDistrict = product.districtId || '';
+
+  const chosenCarrier = String(carrier || 'GHN').toUpperCase();
+
+  try {
+    if (chosenCarrier === 'GHN') {
+      const fromProvId = await findProvinceIdByName(fromProvince);
+      const fromDistId = await findDistrictIdByName(fromProvId, fromDistrict);
+      const toProvId = await findProvinceIdByName(toProvinceId);
+      const toDistId = await findDistrictIdByName(toProvId, toDistrictId);
+      const toWardCode = toWardId ? await findWardCodeByName(toDistId, toWardId) : null;
+
+      if (fromDistId && toDistId) {
+        const fee = await calculateGHNFee({
+          fromDistrictId: fromDistId,
+          fromWardCode: null,
+          toDistrictId: toDistId,
+          toWardCode,
+          weight,
+          length,
+          width,
+          height
+        });
+        console.log(`[Shipping Service] GHN API calculated fee: ${fee} VNĐ`);
+        return new Prisma.Decimal(fee);
+      }
+    } else if (chosenCarrier === 'GHTK') {
+      const fee = await calculateGHTKFee({
+        fromProvince,
+        fromDistrict,
+        toProvince: toProvinceId,
+        toDistrict: toDistrictId,
+        toWard: toWardId,
+        weight
+      });
+      console.log(`[Shipping Service] GHTK API calculated fee: ${fee} VNĐ`);
+      return new Prisma.Decimal(fee);
+    }
+  } catch (err) {
+    console.warn(`[Shipping Service Warning] Không thể tính phí qua API ${chosenCarrier} (${err.message}). Đang sử dụng chế độ dự phòng...`);
+  }
+
+  // Fallback to static regional calculations
+  const offlineFee = calculateShippingFee({ product, toProvinceId, toDistrictId });
+  if (chosenCarrier === 'GHTK') {
+    return new Prisma.Decimal(Number(offlineFee) + 2000); // simulate GHTK being slightly different
+  }
+  return offlineFee;
+}

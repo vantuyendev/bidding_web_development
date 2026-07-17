@@ -1,5 +1,10 @@
 import express from 'express';
-import { getEstimateFee } from '../controllers/shippingController.js';
+import { 
+  getEstimateFee, 
+  getProvincesController, 
+  getDistrictsController, 
+  getWardsController 
+} from '../controllers/shippingController.js';
 
 const router = express.Router();
 
@@ -7,5 +12,10 @@ const router = express.Router();
 router.get('/', getEstimateFee);
 router.get('/estimate', getEstimateFee);
 router.post('/estimate', getEstimateFee);
+
+// Địa giới hành chính động cho Vietnam
+router.get('/provinces', getProvincesController);
+router.get('/districts', getDistrictsController);
+router.get('/wards', getWardsController);
 
 export default router;

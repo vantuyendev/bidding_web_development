@@ -72,10 +72,16 @@ export default function ProductDetail() {
 
   // Thanh toán
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
-  const [checkoutForm, setCheckoutForm]   = useState({ name: '', phone: '', address: '', province: 'Hà Nội', district: '' });
+  const [checkoutForm, setCheckoutForm]   = useState({ name: '', phone: '', address: '', province: '', district: '', ward: '', carrier: 'GHN' });
   const [estShipping, setEstShipping]     = useState(null);
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
+
+  // Danh sách địa giới hành chính động & báo giá vận chuyển
+  const [provincesList, setProvincesList] = useState([]);
+  const [districtsList, setDistrictsList] = useState([]);
+  const [wardsList, setWardsList] = useState([]);
+  const [shippingEstimates, setShippingEstimates] = useState([]);
 
   // Modal khiếu nại
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
@@ -117,15 +123,76 @@ export default function ProductDetail() {
   const bidPanelRef = useRef(null);
   const chatContainerRef = useRef(null);
 
-  const provinces = [
-    'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng',
-    'Cần Thơ', 'Bình Dương', 'Đồng Nai', 'Khánh Hòa', 'Quảng Ninh',
-  ];
-  const districtMap = {
-    'Hà Nội': ['Quận Ba Đình', 'Quận Hoàn Kiếm', 'Quận Cầu Giấy', 'Quận Đống Đa', 'Quận Hai Bà Trưng', 'Quận Hoàng Mai', 'Quận Thanh Xuân', 'Quận Long Biên', 'Quận Hà Đông'],
-    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 3', 'Quận 7', 'Quận Bình Thạnh', 'Quận Gò Vấp', 'Quận Phú Nhuận', 'Quận Tân Bình', 'Thành phố Thủ Đức'],
-    'Đà Nẵng': ['Quận Hải Châu', 'Quận Thanh Khê', 'Quận Sơn Trà', 'Quận Ngũ Hành Sơn'],
+  // Các hàm tiện ích hỗ trợ thay đổi địa giới hành chính động
+  const handleProvinceChange = async (provName) => {
+    setCheckoutForm(prev => ({ ...prev, province: provName, district: '', ward: '' }));
+    setDistrictsList([]);
+    setWardsList([]);
+    setShippingEstimates([]);
+    setEstShipping(null);
+    if (!provName) return;
+
+    const provObj = provincesList.find(p => p.name === provName);
+    if (provObj) {
+      try {
+        const res = await fetch(getApiUrl(`/api/shipping/districts?provinceId=${provObj.id}`));
+        const data = await res.json();
+        if (data.success && data.data) {
+          setDistrictsList(data.data);
+        }
+      } catch (err) {
+        console.error('Lỗi khi tải quận huyện:', err);
+      }
+    }
   };
+
+  const handleDistrictChange = async (distName) => {
+    setCheckoutForm(prev => ({ ...prev, district: distName, ward: '' }));
+    setWardsList([]);
+    setShippingEstimates([]);
+    setEstShipping(null);
+    if (!distName) return;
+
+    const provObj = provincesList.find(p => p.name === checkoutForm.province);
+    if (provObj) {
+      const districts = districtsList.length > 0 ? districtsList : await (async () => {
+        const res = await fetch(getApiUrl(`/api/shipping/districts?provinceId=${provObj.id}`));
+        const data = await res.json();
+        return data.success ? data.data : [];
+      })();
+      
+      const distObj = districts.find(d => d.name === distName);
+      if (distObj) {
+        try {
+          const res = await fetch(getApiUrl(`/api/shipping/wards?districtId=${distObj.id}`));
+          const data = await res.json();
+          if (data.success && data.data) {
+            setWardsList(data.data);
+          }
+        } catch (err) {
+          console.error('Lỗi khi tải phường xã:', err);
+        }
+      }
+    }
+  };
+
+  // Nạp danh sách tỉnh thành khi mở checkout
+  useEffect(() => {
+    if (checkoutModalOpen) {
+      const fetchProvinces = async () => {
+        try {
+          const res = await fetch(getApiUrl('/api/shipping/provinces'));
+          const data = await res.json();
+          if (data.success && data.data) {
+            setProvincesList(data.data);
+          }
+        } catch (err) {
+          console.error('Lỗi khi tải tỉnh thành:', err);
+        }
+      };
+      fetchProvinces();
+    }
+  }, [checkoutModalOpen]);
 
   /* ── Fetch product + bids ── */
   useEffect(() => {
@@ -294,11 +361,24 @@ export default function ProductDetail() {
   /* ── Checkout shipping estimate ── */
   useEffect(() => {
     if (!checkoutModalOpen || !checkoutForm.province || !checkoutForm.district) return;
-    fetch(getApiUrl(`/api/shipping/estimate?productId=${id}&toProvinceId=${checkoutForm.province}&toDistrictId=${checkoutForm.district}`), { credentials: 'include' })
+    const wardParam = checkoutForm.ward ? `&toWardId=${checkoutForm.ward}` : '';
+    const carrierParam = checkoutForm.carrier ? `&carrier=${checkoutForm.carrier}` : '';
+    fetch(getApiUrl(`/api/shipping/estimate?productId=${id}&toProvinceId=${checkoutForm.province}&toDistrictId=${checkoutForm.district}${wardParam}${carrierParam}`), { credentials: 'include' })
       .then(r => r.json())
-      .then(d => { if (d.success) setEstShipping(d.shippingFee); })
+      .then(d => {
+        if (d.success && d.estimates) {
+          setShippingEstimates(d.estimates);
+          const match = d.estimates.find(e => e.carrier === checkoutForm.carrier);
+          if (match) {
+            setEstShipping(match.fee);
+          } else if (d.estimates.length > 0) {
+            setCheckoutForm(prev => ({ ...prev, carrier: d.estimates[0].carrier }));
+            setEstShipping(d.estimates[0].fee);
+          }
+        }
+      })
       .catch(() => {});
-  }, [checkoutForm.province, checkoutForm.district, checkoutModalOpen, id]);
+  }, [checkoutForm.province, checkoutForm.district, checkoutForm.ward, checkoutForm.carrier, checkoutModalOpen, id]);
 
   /* ── Handlers ── */
   const openSellerProfile = async () => {
@@ -437,8 +517,8 @@ export default function ProductDetail() {
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
     setCheckoutError('');
-    if (!checkoutForm.name || !checkoutForm.phone || !checkoutForm.address || !checkoutForm.province || !checkoutForm.district) {
-      setCheckoutError('Please fill in all shipping fields.');
+    if (!checkoutForm.name || !checkoutForm.phone || !checkoutForm.address || !checkoutForm.province || !checkoutForm.district || !checkoutForm.ward) {
+      setCheckoutError('Vui lòng điền đầy đủ thông tin giao hàng bao gồm cả Phường/Xã.');
       return;
     }
     setCheckoutSubmitting(true);
@@ -449,6 +529,7 @@ export default function ProductDetail() {
         body: JSON.stringify({
           winnerName: checkoutForm.name, winnerPhone: checkoutForm.phone,
           winnerAddress: checkoutForm.address, toProvinceId: checkoutForm.province, toDistrictId: checkoutForm.district,
+          toWardId: checkoutForm.ward, shippingCarrier: checkoutForm.carrier
         }),
         credentials: 'include',
       });
@@ -1567,29 +1648,85 @@ export default function ProductDetail() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Province</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Tỉnh / Thành phố</label>
                   <select
                     id="checkout-province"
                     value={checkoutForm.province}
-                    onChange={e => setCheckoutForm(prev => ({ ...prev, province: e.target.value, district: '' }))}
+                    onChange={e => handleProvinceChange(e.target.value)}
                     style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)' }}
+                    required
                   >
-                    {provinces.map(p => <option key={p}>{p}</option>)}
+                    <option value="">Chọn Tỉnh / Thành</option>
+                    {provincesList.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>District</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Quận / Huyện</label>
                   <select
                     id="checkout-district"
                     value={checkoutForm.district}
-                    onChange={e => setCheckoutForm(prev => ({ ...prev, district: e.target.value }))}
+                    onChange={e => handleDistrictChange(e.target.value)}
                     style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)' }}
+                    required
+                    disabled={!checkoutForm.province}
                   >
-                    <option value="">Select district</option>
-                    {(districtMap[checkoutForm.province] || []).map(d => <option key={d}>{d}</option>)}
+                    <option value="">Chọn Quận / Huyện</option>
+                    {districtsList.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
                   </select>
                 </div>
               </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Phường / Xã</label>
+                <select
+                  id="checkout-ward"
+                  value={checkoutForm.ward}
+                  onChange={e => setCheckoutForm(prev => ({ ...prev, ward: e.target.value }))}
+                  style={{ width: '100%', border: '2px solid var(--page-border)', borderRadius: 4, padding: '9px 10px', fontSize: 12, outline: 'none', background: 'var(--page-card-bg)', color: 'var(--page-text)' }}
+                  required
+                  disabled={!checkoutForm.district}
+                >
+                  <option value="">Chọn Phường / Xã</option>
+                  {wardsList.map(w => <option key={w.code} value={w.name}>{w.name}</option>)}
+                </select>
+              </div>
+
+              {/* Carrier Selection */}
+              {shippingEstimates.length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--page-text-muted)', marginBottom: 6 }}>Đơn vị vận chuyển</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {shippingEstimates.map(est => (
+                      <label 
+                        key={est.carrier} 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '10px 14px', 
+                          border: checkoutForm.carrier === est.carrier ? '2px solid hsl(196,100%,36%)' : '1px solid var(--page-border)', 
+                          borderRadius: 6, 
+                          background: checkoutForm.carrier === est.carrier ? (theme === 'dark' ? 'rgba(0,151,186,0.1)' : 'hsl(196,100%,97%)') : 'var(--page-card-bg)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <input 
+                            type="radio" 
+                            name="shipping-carrier" 
+                            checked={checkoutForm.carrier === est.carrier}
+                            onChange={() => setCheckoutForm(prev => ({ ...prev, carrier: est.carrier }))}
+                            style={{ accentColor: 'hsl(196,100%,36%)' }}
+                          />
+                          <span style={{ fontSize: 12.5, fontWeight: 650, color: 'var(--page-text)' }}>{est.name}</span>
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'hsl(196,100%,36%)' }}>{fmtVND(est.fee)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {estShipping != null && (
                 <div style={{ fontSize: 12, color: 'var(--page-text-muted)', marginBottom: 14, padding: '8px 12px', background: theme === 'dark' ? 'rgba(0,151,186,0.1)' : 'hsl(196,100%,97%)', borderRadius: 4, border: '1px solid var(--page-border)' }}>

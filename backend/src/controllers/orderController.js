@@ -1,6 +1,6 @@
 import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
-import { calculateShippingFee } from '../services/shippingService.js';
+import { calculateShippingFeeAsync } from '../services/shippingService.js';
 import { triggerProductUpdate } from './streamController.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -8,7 +8,7 @@ import ApiError from '../utils/ApiError.js';
 export const checkoutProduct = async (req, res, next) => {
   const userId = req.session?.userId;
   const { id: productId } = req.params;
-  const { winnerName, winnerPhone, winnerAddress, toProvinceId, toDistrictId } = req.body;
+  const { winnerName, winnerPhone, winnerAddress, toProvinceId, toDistrictId, toWardId, shippingCarrier } = req.body;
 
   if (!userId) {
     return next(new ApiError(401, 'Bạn cần đăng nhập để thanh toán.'));
@@ -22,7 +22,7 @@ export const checkoutProduct = async (req, res, next) => {
     const result = await prisma.$transaction(async (tx) => {
       // Row-lock product - Tối ưu hóa selective SELECT thay vì SELECT *
       const products = await tx.$queryRaw`
-        SELECT id, status, winner_id, weight, length, width, height, province_id, current_price, seller_id, title FROM "products" WHERE id = ${productId} FOR UPDATE
+        SELECT id, status, winner_id, weight, length, width, height, province_id, district_id, current_price, seller_id, title FROM "products" WHERE id = ${productId} FOR UPDATE
       `;
       if (!products || products.length === 0) {
         throw new ApiError(404, 'Sản phẩm không tồn tại.');
@@ -43,13 +43,16 @@ export const checkoutProduct = async (req, res, next) => {
         length: product.length,
         width: product.width,
         height: product.height,
-        provinceId: product.province_id
+        provinceId: product.province_id,
+        districtId: product.district_id
       };
 
-      const shippingFee = calculateShippingFee({
+      const shippingFee = await calculateShippingFeeAsync({
         product: productForFee,
         toProvinceId,
-        toDistrictId
+        toDistrictId,
+        toWardId,
+        carrier: shippingCarrier || 'GHN'
       });
 
       const remainingAmount = new Prisma.Decimal(product.current_price).mul(0.9);
@@ -90,13 +93,21 @@ export const checkoutProduct = async (req, res, next) => {
       });
 
       // Cập nhật trạng thái sản phẩm và thông tin địa chỉ
+      let finalAddress = winnerAddress;
+      if (toWardId) {
+        finalAddress = `${winnerAddress}, ${toWardId}`;
+      }
+      if (shippingCarrier) {
+        finalAddress = `${finalAddress} (Vận chuyển: ${shippingCarrier})`;
+      }
+
       const updatedProduct = await tx.product.update({
         where: { id: productId },
         data: {
           status: 'PAID',
           winnerName,
           winnerPhone,
-          winnerAddress,
+          winnerAddress: finalAddress,
           shippingFee: shippingFee,
           provinceId: toProvinceId, // lưu tỉnh/thành phố đích
           districtId: toDistrictId // lưu quận/huyện đích

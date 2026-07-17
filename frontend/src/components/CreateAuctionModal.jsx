@@ -61,26 +61,23 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Danh sách các tỉnh thành Việt Nam để tạo tính thực tế cho logistics C2C
-  const provinces = [
-    { id: 'HN', name: 'Hà Nội' },
-    { id: 'HCM', name: 'TP. Hồ Chí Minh' },
-    { id: 'DN', name: 'Đà Nẵng' },
-    { id: 'HP', name: 'Hải Phòng' },
-    { id: 'CT', name: 'Cần Thơ' },
-    { id: 'BD', name: 'Bình Dương' },
-    { id: 'DNai', name: 'Đồng Nai' },
-    { id: 'KH', name: 'Khánh Hòa' },
-    { id: 'QN', name: 'Quảng Ninh' },
-  ];
+  // Địa giới hành chính động cho Logistics C2C từ API Sandbox GHN
+  const [provincesList, setProvincesList] = useState([]);
+  const [districtsList, setDistrictsList] = useState([]);
 
-  const districtSuggestions = {
-    'Hà Nội': ['Quận Ba Đình', 'Quận Hoàn Kiếm', 'Quận Tây Hồ', 'Quận Cầu Giấy', 'Quận Đống Đa', 'Quận Hai Bà Trưng', 'Quận Hoàng Mai', 'Quận Thanh Xuân', 'Quận Long Biên', 'Quận Hà Đông', 'Quận Nam Từ Liêm', 'Quận Bắc Từ Liêm'],
-    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 3', 'Quận 4', 'Quận 5', 'Quận 6', 'Quận 7', 'Quận 8', 'Quận 10', 'Quận 11', 'Quận 12', 'Quận Bình Thạnh', 'Quận Gò Vấp', 'Quận Phú Nhuận', 'Quận Tân Bình', 'Quận Tân Phú', 'Thành phố Thủ Đức'],
-    'Đà Nẵng': ['Quận Hải Châu', 'Quận Thanh Khê', 'Quận Sơn Trà', 'Quận Ngũ Hành Sơn', 'Quận Liên Chiểu', 'Quận Cẩm Lệ']
+  const fetchDistrictsForProvince = async (provId) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/shipping/districts?provinceId=${provId}`));
+      const data = await res.json();
+      if (data.success && data.data) {
+        setDistrictsList(data.data);
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách Quận/Huyện:', err);
+    }
   };
 
-  // Tải các danh mục và thời gian mặc định
+  // Tải các danh mục, thời gian mặc định và danh sách tỉnh thành
   useEffect(() => {
     if (isOpen) {
       const fetchCategories = async () => {
@@ -97,7 +94,28 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
           console.error('Lỗi khi tải danh mục sản phẩm:', err);
         }
       };
+
+      const fetchProvinces = async () => {
+        try {
+          const res = await fetch(getApiUrl('/api/shipping/provinces'));
+          const data = await res.json();
+          if (data.success && data.data) {
+            setProvincesList(data.data);
+            
+            // Tìm và tự động chọn Hà Nội hoặc tỉnh đầu tiên làm mặc định
+            const defaultProv = data.data.find(p => p.name.includes('Hà Nội')) || data.data[0];
+            if (defaultProv) {
+              setProvinceId(defaultProv.name);
+              fetchDistrictsForProvince(defaultProv.id);
+            }
+          }
+        } catch (err) {
+          console.error('Lỗi khi tải danh sách Tỉnh/Thành:', err);
+        }
+      };
+
       fetchCategories();
+      fetchProvinces();
 
       // Thời gian bắt đầu mặc định: bây giờ
       const now = new Date();
@@ -447,14 +465,22 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                 id="province-select"
                 value={provinceId}
                 onChange={(e) => {
-                  setProvinceId(e.target.value);
+                  const provName = e.target.value;
+                  setProvinceId(provName);
                   setDistrictId(''); // Đặt lại quận/huyện
                   setIsCustomDistrict(false);
+                  
+                  const provObj = provincesList.find(p => p.name === provName);
+                  if (provObj) {
+                    fetchDistrictsForProvince(provObj.id);
+                  } else {
+                    setDistrictsList([]);
+                  }
                 }}
                 className="px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
                 required
               >
-                {provinces.map((p) => (
+                {provincesList.map((p) => (
                   <option key={p.id} value={p.name}>
                     {p.name}
                   </option>
@@ -466,7 +492,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
             <div className="flex flex-col gap-1.5 md:col-span-2">
               <label htmlFor="district-select" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Quận / Huyện</label>
               <div className="flex gap-2">
-                {!isCustomDistrict && districtSuggestions[provinceId] ? (
+                {!isCustomDistrict && districtsList.length > 0 ? (
                   <select
                     id="district-select"
                     value={districtId}
@@ -482,8 +508,8 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                     required
                   >
                     <option value="">-- Chọn Quận / Huyện --</option>
-                    {districtSuggestions[provinceId].map((dist) => (
-                      <option key={dist} value={dist}>{dist}</option>
+                    {districtsList.map((dist) => (
+                      <option key={dist.id} value={dist.name}>{dist.name}</option>
                     ))}
                     <option value="custom_input">Khác (Nhập thủ công)</option>
                   </select>
@@ -497,7 +523,7 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                       className="flex-grow px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
                       required
                     />
-                    {districtSuggestions[provinceId] && (
+                    {districtsList.length > 0 && (
                       <button
                         type="button"
                         onClick={() => { setIsCustomDistrict(false); setDistrictId(''); }}
