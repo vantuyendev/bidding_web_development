@@ -446,6 +446,13 @@ Mỗi file `.jsx` tương ứng với **một trang** (route) trong ứng dụng
 - Admin duyệt yêu cầu nạp/rút tiền
 - **Admin cấu hình thông tin ngân hàng nạp tiền**: tên ngân hàng, số tài khoản, ảnh QR tùy chỉnh và hướng dẫn chuyển khoản (lưu trong bảng `system_settings`)
 
+### 🚚 Giao Hàng & Theo Dõi Hành Trình (Mới)
+- **Tích hợp API bưu cục GHN & GHTK**: Tự động tính phí vận chuyển theo khoảng cách địa lý (Nội tỉnh / Nội miền / Liên miền) kết hợp khối lượng quy đổi `(D×R×C) / 5000` của sản phẩm.
+- **Đăng ký vận đơn tự động**: Khi người bán bấm gửi hàng, hệ thống tự động kết nối API đối tác logistics để tạo vận đơn và nhận mã tracking.
+- **In phiếu giao hàng chuyên nghiệp**: Người bán có thể in trực tiếp nhãn vận đơn từ trình duyệt với bố cục chuẩn hóa và mã vạch (barcode) dựng bằng CSS sắc nét.
+- **Webhook cập nhật hành trình tự động**: Nhận dữ liệu cập nhật trạng thái thời gian thực từ các bưu cục vận chuyển để cập nhật lộ trình thực tế cho người dùng theo dõi.
+- **Tác vụ đồng bộ nền (Sync Worker)**: Chạy định kỳ để tự động gọi API tra cứu trạng thái bưu kiện trực tiếp đề phòng sự cố gián đoạn Webhook hoặc lỗi chữ ký bảo mật.
+
 ### ⚖️ Tranh chấp & Bảo vệ Giao dịch
 - Mở tranh chấp khi có vấn đề đơn hàng
 - Gửi bằng chứng (hình ảnh, tin nhắn)
@@ -491,6 +498,15 @@ Client mở kết nối HTTP ─────────────────
          <── data: {"newBid": 500000, "user": "Tuyên"} ────── Server (khi có thầu mới)
          <── : heartbeat ──────────────────────────────────── Server (mỗi 30 giây)
          <── data: {"timeExtended": true} ─────────────────── Server (khi gia hạn)
+```
+
+### 4. Quy Trình Vận Chuyển và Đồng Bộ Lộ Trình
+```
+Người Bán bấm ship ──> API đối tác (GHN/GHTK) ──> Nhận Tracking Code ──> Cập nhật status 'SHIPPED'
+                             │
+                             ├── Webhook hoạt động ──> POST /api/shipping/webhook ──> Cập nhật log hành trình
+                             │
+                             └── Webhook bị lỗi ──> Sync Worker (2 phút/lần) ──> Tra cứu trực tiếp bưu cục ──┘
 ```
 
 ---
