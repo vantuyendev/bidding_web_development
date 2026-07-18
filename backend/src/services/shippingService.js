@@ -548,3 +548,178 @@ export async function calculateShippingFeeAsync({ product, toProvinceId, toDistr
   }
   return offlineFee;
 }
+
+/**
+ * Register a shipment order with a logistics partner (GHN or GHTK).
+ * Automatically falls back to an internal tracking code if the partner API fails or is unconfigured.
+ */
+export async function registerShipmentAsync({ product, seller }) {
+  const chosenCarrier = String(product.shippingCarrier || 'GHN').toUpperCase();
+  const weight = product.weight !== undefined && product.weight !== null ? Number(product.weight) : 0.5;
+  const length = product.length || 10;
+  const width = product.width || 10;
+  const height = product.height || 10;
+
+  const weightGrams = Math.max(100, Math.round(weight * 1000));
+  const fromProvince = product.provinceId || '';
+  const fromDistrict = product.districtId || '';
+
+  try {
+    if (chosenCarrier === 'GHN') {
+      const token = process.env.GHN_API_TOKEN;
+      const shopId = process.env.GHN_SHOP_ID;
+
+      if (!token || token === 'your_ghn_sandbox_token') {
+        throw new Error("GHN_API_TOKEN chưa được cấu hình. Chuyển sang vận chuyển nội bộ.");
+      }
+
+      // Resolve location IDs
+      const fromProvId = await findProvinceIdByName(fromProvince);
+      const fromDistId = await findDistrictIdByName(fromProvId, fromDistrict);
+      const toProvId = await findProvinceIdByName(product.toProvinceId);
+      const toDistId = await findDistrictIdByName(toProvId, product.toDistrictId);
+      const toWardCode = product.toWardId ? await findWardCodeByName(toDistId, product.toWardId) : null;
+
+      if (!toDistId) {
+        throw new Error("Không thể xác định mã Quận/Huyện của người nhận.");
+      }
+
+      const payload = {
+        payment_type_id: 1, // Người gửi (Seller) thanh toán phí vận chuyển (AuraBid thu tiền từ Escrow trả Seller)
+        note: `Đơn hàng AuraBid #${product.id.substring(0, 8)}`,
+        required_note: "KHONGCHOXEMHANG",
+        from_name: seller.name || "Người bán AuraBid",
+        from_phone: seller.phoneNumber || "0901234567",
+        from_address: seller.shopAddress || "Địa chỉ shop AuraBid",
+        from_district_name: fromDistrict || "Quận Cầu Giấy",
+        from_province_name: fromProvince || "Hà Nội",
+        to_name: product.winnerName || "Người mua AuraBid",
+        to_phone: product.winnerPhone || "0987654321",
+        to_address: product.winnerAddress || "Địa chỉ nhận AuraBid",
+        to_district_id: Number(toDistId),
+        weight: weightGrams,
+        length: length,
+        width: width,
+        height: height,
+        service_type_id: 2,
+        items: [
+          {
+            name: product.title.substring(0, 50),
+            code: product.id.substring(0, 10),
+            quantity: 1,
+            price: Number(product.currentPrice),
+            weight: weightGrams
+          }
+        ]
+      };
+
+      if (toWardCode) {
+        payload.to_ward_code = String(toWardCode);
+      }
+
+      const headers = {
+        'Token': token,
+        'Content-Type': 'application/json'
+      };
+
+      if (shopId && shopId !== 'your_ghn_shop_id') {
+        headers['ShopId'] = String(shopId);
+      }
+
+      const response = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/create', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      const resJson = await response.json();
+      if (resJson.code === 200 && resJson.data && resJson.data.order_code) {
+        console.log(`[Shipping Service] Đăng ký vận đơn GHN thành công: ${resJson.data.order_code}`);
+        return {
+          trackingCode: resJson.data.order_code,
+          carrier: 'GHN',
+          syncStatus: 'SYNCHRONIZED',
+          isFallback: false
+        };
+      } else {
+        throw new Error(resJson.message || "Lỗi phản hồi từ API GHN");
+      }
+    } else if (chosenCarrier === 'GHTK') {
+      const token = process.env.GHTK_API_TOKEN;
+
+      if (!token || token === 'your_ghtk_sandbox_token') {
+        throw new Error("GHTK_API_TOKEN chưa được cấu hình. Chuyển sang vận chuyển nội bộ.");
+      }
+
+      const payload = {
+        products: [
+          {
+            name: product.title.substring(0, 50),
+            weight: weight,
+            quantity: 1,
+            product_code: product.id.substring(0, 10)
+          }
+        ],
+        order: {
+          id: `AB-${product.id.substring(0, 8)}-${Date.now().toString().slice(-4)}`,
+          pick_name: seller.name || "Người bán AuraBid",
+          pick_money: 0,
+          pick_address: seller.shopAddress || "Địa chỉ shop AuraBid",
+          pick_province: fromProvince || "Hà Nội",
+          pick_district: fromDistrict || "Quận Cầu Giấy",
+          pick_tel: seller.phoneNumber || "0901234567",
+          tel: product.winnerPhone || "0987654321",
+          name: product.winnerName || "Người mua AuraBid",
+          address: product.winnerAddress || "Địa chỉ nhận AuraBid",
+          province: product.toProvinceId || "Hà Nội",
+          district: product.toDistrictId || "Quận Đống Đa",
+          ward: product.toWardId || "Phường Láng Hạ",
+          weight_option: "gram",
+          value: Number(product.currentPrice),
+          transport: "road"
+        }
+      };
+
+      const headers = {
+        'Token': token,
+        'Content-Type': 'application/json'
+      };
+
+      const partnerCode = process.env.GHTK_PARTNER_CODE;
+      if (partnerCode && partnerCode !== 'your_ghtk_partner_code') {
+        headers['X-Client-Source'] = partnerCode;
+      }
+
+      const response = await fetch('https://services-staging.ghtklab.com/services/shipment/order', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      const resJson = await response.json();
+      if (resJson.success && resJson.order && resJson.order.label) {
+        console.log(`[Shipping Service] Đăng ký vận đơn GHTK thành công: ${resJson.order.label}`);
+        return {
+          trackingCode: resJson.order.label,
+          carrier: 'GHTK',
+          syncStatus: 'SYNCHRONIZED',
+          isFallback: false
+        };
+      } else {
+        throw new Error(resJson.message || "Lỗi phản hồi từ API GHTK");
+      }
+    }
+  } catch (err) {
+    console.warn(`[Shipping Service Warning] Không thể kết nối đối tác bưu cục (${err.message}). Kích hoạt phương án dự phòng nội bộ...`);
+  }
+
+  // Fallback internal tracking code (Exception 1)
+  const internalCode = `AURABID-INT-${product.id.substring(0, 8).toUpperCase()}`;
+  return {
+    trackingCode: internalCode,
+    carrier: chosenCarrier,
+    syncStatus: 'PENDING',
+    isFallback: true
+  };
+}
+

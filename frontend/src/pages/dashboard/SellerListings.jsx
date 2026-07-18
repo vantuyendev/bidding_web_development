@@ -44,6 +44,26 @@ export default function SellerListings(props) {
   const [sellerProducts, setSellerProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('listings'); // 'listings' or 'sold'
+
+  const handleShip = async (productId) => {
+    if (!window.confirm('Xác nhận bạn đã bàn giao gói hàng cho bưu tá để gửi đi và tạo vận đơn?')) return;
+    try {
+      const res = await fetch(getApiUrl(`/api/orders/${productId}/ship`), {
+        method: 'POST',
+        credentials: 'include'
+      });
+      const d = await res.json();
+      if (d.success) {
+        alert(d.message || 'Xác nhận gửi hàng thành công.');
+        fetchSellerListings();
+      } else {
+        alert(d.error || 'Xác nhận gửi hàng thất bại.');
+      }
+    } catch (err) {
+      alert('Lỗi kết nối máy chủ.');
+    }
+  };
 
   // Trạng thái Modal chỉnh sửa
   const [editingProduct, setEditingProduct] = useState(null);
@@ -217,12 +237,21 @@ export default function SellerListings(props) {
     }
   };
 
+  const filteredProducts = sellerProducts.filter(prod => {
+    const isSoldItem = ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'DISPUTED', 'CANCELLED'].includes(prod.status) && prod.winnerId;
+    if (activeTab === 'sold') {
+      return isSoldItem;
+    } else {
+      return !isSoldItem;
+    }
+  });
+
   if (!profileData) return null;
 
   return (
     <div className="space-y-6 animate-fadeIn text-left text-xs">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">Sản phẩm đăng đấu giá</h3>
+        <h3 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">Quản lý bán hàng</h3>
         <Button
           onClick={() => window.dispatchEvent(new Event('open-post-modal'))}
           size="sm"
@@ -232,31 +261,201 @@ export default function SellerListings(props) {
         </Button>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex border-b border-neutral-200 dark:border-neutral-800 gap-6">
+        <button
+          onClick={() => setActiveTab('listings')}
+          className={`pb-3 font-bold text-xs tracking-wide transition-all border-b-2 cursor-pointer ${
+            activeTab === 'listings'
+              ? 'border-amber-500 text-amber-500 font-extrabold'
+              : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+          }`}
+        >
+          📦 Gian hàng đấu giá
+        </button>
+        <button
+          onClick={() => setActiveTab('sold')}
+          className={`pb-3 font-bold text-xs tracking-wide transition-all border-b-2 cursor-pointer ${
+            activeTab === 'sold'
+              ? 'border-amber-500 text-amber-500 font-extrabold'
+              : 'border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+          }`}
+        >
+          💰 Đơn hàng đã bán (Sold Items)
+        </button>
+      </div>
+
       {error && <div className="p-4 bg-rose-500/10 text-rose-500 rounded-xl font-bold">{error}</div>}
 
       {loading ? (
         <div className="text-center py-10 text-neutral-400">
-          Đang tải danh mục đăng bán...
+          Đang tải thông tin...
         </div>
-      ) : sellerProducts.length === 0 ? (
+      ) : filteredProducts.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl flex flex-col items-center justify-center gap-4">
           <div className="w-16 h-16 rounded-full bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center border border-neutral-200/50 dark:border-neutral-800 text-neutral-300 dark:text-neutral-700">
-            📦
+            {activeTab === 'sold' ? '💰' : '📦'}
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-bold text-neutral-900 dark:text-white">Bạn chưa đăng bán đấu giá sản phẩm nào</p>
-            <p className="text-[10px] text-neutral-400">Đăng bài đấu giá các mặt hàng của bạn ngay hôm nay để tăng thu nhập.</p>
+            <p className="text-xs font-bold text-neutral-900 dark:text-white">
+              {activeTab === 'sold' ? 'Bạn chưa có đơn hàng nào được bán' : 'Bạn chưa đăng bán đấu giá sản phẩm nào'}
+            </p>
+            <p className="text-[10px] text-neutral-400">
+              {activeTab === 'sold'
+                ? 'Các đơn hàng sau khi có người mua thắng đấu giá và thanh toán sẽ xuất hiện ở đây.'
+                : 'Đăng bài đấu giá các mặt hàng của bạn ngay hôm nay để tăng thu nhập.'}
+            </p>
           </div>
-          <Button
-            onClick={() => window.dispatchEvent(new Event('open-post-modal'))}
-            className="mt-2 rounded-full px-5 py-2.5 shadow-sm cursor-pointer"
-          >
-            + Tạo bài Đấu giá mới
-          </Button>
+          {activeTab !== 'sold' && (
+            <Button
+              onClick={() => window.dispatchEvent(new Event('open-post-modal'))}
+              className="mt-2 rounded-full px-5 py-2.5 shadow-sm cursor-pointer"
+            >
+              + Tạo bài Đấu giá mới
+            </Button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {sellerProducts.map((prod) => {
+          {filteredProducts.map((prod) => {
+            if (activeTab === 'sold') {
+              const statusColors = {
+                PENDING_PAYMENT: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25',
+                PAID: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25',
+                SHIPPED: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/25',
+                COMPLETED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25',
+                DISPUTED: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25',
+                CANCELLED: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/25'
+              };
+
+              const statusTexts = {
+                PENDING_PAYMENT: 'Chờ thanh toán',
+                PAID: 'Đã thanh toán (Chờ bưu cục)',
+                SHIPPED: 'Đang vận chuyển',
+                COMPLETED: 'Hoàn tất giao dịch',
+                DISPUTED: 'Đang khiếu nại/tranh chấp',
+                CANCELLED: 'Đã hủy'
+              };
+
+              return (
+                <div
+                  key={prod.id}
+                  className="p-5 border border-neutral-200/50 dark:border-neutral-800/80 hover:border-neutral-300 dark:hover:border-neutral-700 rounded-2xl transition-all bg-white dark:bg-neutral-900 space-y-4"
+                >
+                  <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-neutral-850 overflow-hidden flex items-center justify-center flex-shrink-0 border border-neutral-200/40 dark:border-neutral-700/30">
+                        {prod.imageUrl ? (
+                          <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-neutral-300 text-xs select-none">📦</span>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Link
+                          to={`/products/${prod.id}`}
+                          className="font-bold text-xs text-neutral-900 dark:text-white hover:text-amber-500 transition-colors line-clamp-1 no-underline"
+                        >
+                          {prod.title}
+                        </Link>
+                        <span className="block text-[9px] text-neutral-400">
+                          ID sản phẩm: #{prod.id.substring(0, 8)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-6">
+                      <div className="text-right flex flex-col items-end">
+                        <span className="text-[9px] text-neutral-400">Giá trị đấu giá</span>
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                          {formatMoney(prod.currentPrice)}
+                        </span>
+                      </div>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold ${statusColors[prod.status] || 'bg-neutral-100'}`}>
+                        {statusTexts[prod.status] || prod.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Buyer & Address details */}
+                  <div className="p-3 bg-neutral-50/50 dark:bg-neutral-950/30 rounded-xl space-y-1.5 text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-400">
+                    <div>👤 <strong>Người nhận (Buyer):</strong> {prod.winnerName || 'Chưa cập nhật'} • {prod.winnerPhone || ''}</div>
+                    <div>📍 <strong>Địa chỉ nhận hàng:</strong> {prod.winnerAddress || 'Chưa cập nhật'}</div>
+                    {prod.shippingFee && (
+                      <div>💰 <strong>Cước phí vận chuyển:</strong> {formatMoney(prod.shippingFee)}</div>
+                    )}
+                    {prod.trackingCode && (
+                      <div className="mt-2 pt-2 border-t border-neutral-150 dark:border-neutral-800/80">
+                        🚚 <strong>Đơn vị vận chuyển:</strong> {prod.shippingCarrier || 'GHN'} • Mã vận đơn: <strong className="text-amber-500 font-mono">{prod.trackingCode}</strong>
+                        {prod.syncStatus === 'PENDING' && (
+                          <span className="ml-2 text-rose-500 text-[10px] font-semibold bg-rose-500/10 px-1.5 py-0.5 rounded">
+                            ⚠️ Kết nối bưu cục lỗi, sử dụng mã dự phòng nội bộ
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Shipment actions */}
+                  <div className="flex justify-end gap-3 pt-1">
+                    {prod.status === 'PAID' && (
+                      <button
+                        onClick={() => handleShip(prod.id)}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-all cursor-pointer text-xs"
+                      >
+                        🚚 Xác nhận gửi hàng và Tạo vận đơn
+                      </button>
+                    )}
+                    {prod.status === 'SHIPPED' && prod.trackingCode && (
+                      <button
+                        onClick={() => {
+                          const printWindow = window.open('', '_blank');
+                          printWindow.document.write(`
+                            <html>
+                              <head>
+                                <title>In phiếu giao hàng AuraBid</title>
+                                <style>
+                                  body { font-family: sans-serif; padding: 20px; text-align: center; }
+                                  .label-box { border: 3px double #000; padding: 20px; width: 400px; margin: 0 auto; text-align: left; }
+                                  .header { text-align: center; font-weight: bold; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                                  .section { margin-bottom: 10px; }
+                                  .label { font-weight: bold; }
+                                  .barcode { font-family: monospace; font-size: 24px; letter-spacing: 5px; text-align: center; margin: 20px 0; background: #eee; padding: 10px; }
+                                </style>
+                              </head>
+                              <body>
+                                <div class="label-box">
+                                  <div class="header">AuraBid Delivery Voucher</div>
+                                  <div class="section"><span class="label">Mã vận đơn:</span> ${prod.trackingCode}</div>
+                                  <div class="section"><span class="label">Đơn vị VC:</span> ${prod.shippingCarrier || 'GHN'}</div>
+                                  <div class="barcode">${prod.trackingCode}</div>
+                                  <hr/>
+                                  <div class="section"><span class="label">Người gửi (Seller):</span> ${profileData.name || 'Người bán AuraBid'}</div>
+                                  <div class="section"><span class="label">Địa chỉ gửi:</span> ${profileData.shopAddress || 'Kho hàng AuraBid'}</div>
+                                  <hr/>
+                                  <div class="section"><span class="label">Người nhận (Buyer):</span> ${prod.winnerName || 'Người mua AuraBid'}</div>
+                                  <div class="section"><span class="label">Địa chỉ nhận:</span> ${prod.winnerAddress || 'Địa chỉ người nhận'}</div>
+                                  <div class="section"><span class="label">Số điện thoại:</span> ${prod.winnerPhone || ''}</div>
+                                  <div class="section" style="text-align: center; margin-top: 15px; font-size: 10px; color: #666;">Cảm ơn bạn đã giao dịch qua AuraBid!</div>
+                                </div>
+                                <script>
+                                  window.onload = function() { window.print(); }
+                                </script>
+                              </body>
+                            </html>
+                          `);
+                          printWindow.document.close();
+                        }}
+                        className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-bold rounded-xl transition-all cursor-pointer text-xs"
+                      >
+                        🖨️ In phiếu giao hàng
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
             const isEnded = prod.status === 'ENDED' || prod.status === 'PENDING_PAYMENT' || prod.status === 'PAID' || prod.status === 'SHIPPED' || prod.status === 'COMPLETED' || new Date(prod.endTime).getTime() <= Date.now();
             const canEdit = ['PENDING_REVIEW', 'REJECTED'].includes(prod.approvalStatus) && prod.editCount < 2;
 

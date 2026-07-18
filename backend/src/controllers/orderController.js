@@ -1,6 +1,6 @@
 import prisma from '../models/db.js';
 import { Prisma } from '@prisma/client';
-import { calculateShippingFeeAsync } from '../services/shippingService.js';
+import { calculateShippingFeeAsync, registerShipmentAsync } from '../services/shippingService.js';
 import { triggerProductUpdate } from './streamController.js';
 import ApiError from '../utils/ApiError.js';
 
@@ -109,8 +109,10 @@ export const checkoutProduct = async (req, res, next) => {
           winnerPhone,
           winnerAddress: finalAddress,
           shippingFee: shippingFee,
-          provinceId: toProvinceId, // lưu tỉnh/thành phố đích
-          districtId: toDistrictId // lưu quận/huyện đích
+          toProvinceId: toProvinceId,
+          toDistrictId: toDistrictId,
+          toWardId: toWardId,
+          shippingCarrier: shippingCarrier || 'GHN'
         }
       });
 
@@ -169,9 +171,26 @@ export const shipProduct = async (req, res, next) => {
       throw new ApiError(400, 'Đơn hàng chưa được thanh toán hoặc đã giao.');
     }
 
+    // Lấy thông tin người bán
+    const seller = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!seller) {
+      throw new ApiError(404, 'Không tìm thấy thông tin người bán.');
+    }
+
+    // Đăng ký vận đơn bưu cục
+    const shipment = await registerShipmentAsync({ product, seller });
+
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
-      data: { status: 'SHIPPED' }
+      data: {
+        status: 'SHIPPED',
+        trackingCode: shipment.trackingCode,
+        shippingCarrier: shipment.carrier,
+        syncStatus: shipment.syncStatus
+      }
     });
 
     // Tạo thông báo cho người thắng cuộc
@@ -179,16 +198,20 @@ export const shipProduct = async (req, res, next) => {
       data: {
         userId: product.winnerId,
         title: 'Đơn hàng đang được giao',
-        message: `Sản phẩm "${product.title}" đã được người bán gửi đi.`,
+        message: `Sản phẩm "${product.title}" đã được gửi đi. Đơn vị vận chuyển: ${shipment.carrier}. Mã vận đơn: ${shipment.trackingCode}.`,
         type: 'SYSTEM'
       }
     });
 
     triggerProductUpdate(productId, Number(updatedProduct.currentPrice), updatedProduct.endTime.toISOString(), updatedProduct.status);
 
+    const message = shipment.isFallback
+      ? 'Hệ thống kết nối bưu cục gián đoạn, đang chuyển sang vận chuyển nội bộ dự phòng.'
+      : 'Xác nhận gửi hàng và tạo vận đơn thành công.';
+
     return res.status(200).json({
       success: true,
-      message: 'Xác nhận gửi hàng thành công.',
+      message,
       data: updatedProduct
     });
   } catch (error) {

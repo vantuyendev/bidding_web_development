@@ -92,6 +92,12 @@ model Product {
   winnerPhone   String?            @map("winner_phone")
   winnerAddress String?            @map("winner_address")
   shippingFee   Decimal?           @map("shipping_fee") @db.Decimal(12, 2)
+  toProvinceId  String?            @map("to_province_id")
+  toDistrictId  String?            @map("to_district_id")
+  toWardId      String?            @map("to_ward_id")
+  trackingCode  String?            @map("tracking_code")
+  shippingCarrier String?          @map("shipping_carrier")
+  syncStatus    String?            @map("sync_status")
   category      Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   bids          Bid[]
   attributes    ProductAttribute[]
