@@ -19,6 +19,8 @@ export default function DisputeDetail() {
   const [isEditingVideo, setIsEditingVideo] = useState(false);
 
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const prevMessagesLengthRef = useRef(0);
 
 
 
@@ -82,10 +84,26 @@ export default function DisputeDetail() {
     return () => clearInterval(timer);
   }, [ticketId, ticketStatus, hasTicket, fetchChatHistory, fetchTicketDetails]);
 
-  // Cuộn xuống dưới cùng của cuộc trò chuyện
+  // Cuộn cục bộ trong khung chat xuống dưới cùng khi có tin nhắn mới
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (!chatContainerRef.current || messages.length === 0) return;
+
+    const container = chatContainerRef.current;
+    const hasNewMessages = messages.length > prevMessagesLengthRef.current;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+    const prevLength = prevMessagesLengthRef.current;
+
+    // Cập nhật ref lưu số lượng tin nhắn trước đó
+    prevMessagesLengthRef.current = messages.length;
+
+    // Chỉ tự động cuộn nếu:
+    // - Lần đầu tiên load dữ liệu (prevLength === 0)
+    // - Hoặc có tin nhắn mới và người dùng đang cuộn ở sát đáy (cách đáy < 150px)
+    if (prevLength === 0 || (hasNewMessages && isNearBottom)) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: prevLength === 0 ? 'auto' : 'smooth'
+      });
     }
   }, [messages]);
 
@@ -111,6 +129,16 @@ export default function DisputeDetail() {
         setNewMessage('');
         // Thêm tin nhắn mới vào danh sách
         setMessages((prev) => [...prev, data.data]);
+        
+        // Chủ động cuộn mượt mà xuống dưới cùng của khung chat khi gửi tin nhắn thành công
+        setTimeout(() => {
+          if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+              top: chatContainerRef.current.scrollHeight,
+              behavior: 'smooth'
+            });
+          }
+        }, 50);
       } else {
         setActionMessage({ type: 'error', text: data.error || 'Không thể gửi tin nhắn.' });
       }
@@ -396,7 +424,7 @@ export default function DisputeDetail() {
           </div>
 
           {/* Message List Area */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 flex flex-col min-h-[300px] lg:min-h-[450px]">
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-5 space-y-4 flex flex-col min-h-[300px] lg:min-h-[450px]">
             
             {/* System Info Banner */}
             <div className="text-center p-3 rounded-2xl bg-neutral-50 dark:bg-zinc-950/40 border border-neutral-200 dark:border-zinc-800/50 text-[11px] text-neutral-500 space-y-1">
