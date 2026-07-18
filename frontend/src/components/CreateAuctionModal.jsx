@@ -24,7 +24,6 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
   const [height, setHeight] = useState('10');
   const [provinceId, setProvinceId] = useState('Hà Nội');
   const [districtId, setDistrictId] = useState('');
-  const [isCustomDistrict, setIsCustomDistrict] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -468,7 +467,6 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
                   const provName = e.target.value;
                   setProvinceId(provName);
                   setDistrictId(''); // Đặt lại quận/huyện
-                  setIsCustomDistrict(false);
                   
                   const provObj = provincesList.find(p => p.name === provName);
                   if (provObj) {
@@ -492,48 +490,18 @@ export default function CreateAuctionModal({ isOpen, onClose }) {
             <div className="flex flex-col gap-1.5 md:col-span-2">
               <label htmlFor="district-select" className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Quận / Huyện</label>
               <div className="flex gap-2">
-                {!isCustomDistrict && districtsList.length > 0 ? (
-                  <select
-                    id="district-select"
-                    value={districtId}
-                    onChange={(e) => {
-                      if (e.target.value === 'custom_input') {
-                        setIsCustomDistrict(true);
-                        setDistrictId('');
-                      } else {
-                        setDistrictId(e.target.value);
-                      }
-                    }}
-                    className="flex-grow px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
-                    required
-                  >
-                    <option value="">-- Chọn Quận / Huyện --</option>
-                    {districtsList.map((dist) => (
-                      <option key={dist.id} value={dist.name}>{dist.name}</option>
-                    ))}
-                    <option value="custom_input">Khác (Nhập thủ công)</option>
-                  </select>
-                ) : (
-                  <div className="flex-1 flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="Nhập Quận / Huyện của bạn"
-                      value={districtId}
-                      onChange={(e) => setDistrictId(e.target.value)}
-                      className="flex-grow px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
-                      required
-                    />
-                    {districtsList.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => { setIsCustomDistrict(false); setDistrictId(''); }}
-                        className="px-3 py-2 border border-neutral-200 dark:border-neutral-800 rounded-xl text-[10px] hover:bg-neutral-50 font-bold transition-all text-neutral-500 cursor-pointer"
-                      >
-                        Quay lại
-                      </button>
-                    )}
-                  </div>
-                )}
+                <select
+                  id="district-select"
+                  value={districtId}
+                  onChange={(e) => setDistrictId(e.target.value)}
+                  className="flex-grow px-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs focus:border-neutral-900 dark:focus:border-white focus:outline-none transition-all text-neutral-900 dark:text-white"
+                  required
+                >
+                  <option value="">-- Chọn Quận / Huyện --</option>
+                  {districtsList.map((dist) => (
+                    <option key={dist.id} value={dist.name}>{dist.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

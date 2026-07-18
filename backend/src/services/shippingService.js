@@ -1,4 +1,20 @@
 import { Prisma } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let staticAddressData = [];
+try {
+  const filePath = path.join(__dirname, '../data/vietnam_address_data.json');
+  if (fs.existsSync(filePath)) {
+    staticAddressData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  }
+} catch (err) {
+  console.error('[Shipping Service] Lỗi đọc file vietnam_address_data.json:', err.message);
+}
 
 const REGIONS = {
   NORTH: 'North',
@@ -250,81 +266,110 @@ function getFallbackWards(districtId) {
 export async function getProvinces() {
   if (cache.provinces) return cache.provinces;
   const token = process.env.GHN_API_TOKEN;
-  if (!token || token === 'your_ghn_sandbox_token') {
-    return getFallbackProvinces();
-  }
-  try {
-    const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/province', {
-      headers: { 'Token': token }
-    });
-    const json = await res.json();
-    if (json.code === 200 && json.data) {
-      cache.provinces = json.data.map(p => ({
-        id: p.ProvinceID,
-        name: p.ProvinceName
-      })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
-      return cache.provinces;
+  if (token && token !== 'your_ghn_sandbox_token') {
+    try {
+      const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/province', {
+        headers: { 'Token': token }
+      });
+      const json = await res.json();
+      if (json.code === 200 && json.data) {
+        cache.provinces = json.data.map(p => ({
+          id: p.ProvinceID,
+          name: p.ProvinceName
+        })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+        return cache.provinces;
+      }
+    } catch (err) {
+      console.error('[GHN Provinces API Error]:', err.message);
     }
-  } catch (err) {
-    console.error('[GHN Provinces API Error]:', err.message);
   }
+
+  // Fallback to static fully nationwide provinces
+  if (staticAddressData && staticAddressData.length > 0) {
+    cache.provinces = staticAddressData.map(p => ({
+      id: p.id,
+      name: p.name
+    })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+    return cache.provinces;
+  }
+
   return getFallbackProvinces();
 }
 
 export async function getDistricts(provinceId) {
   if (cache.districts[provinceId]) return cache.districts[provinceId];
   const token = process.env.GHN_API_TOKEN;
-  if (!token || token === 'your_ghn_sandbox_token') {
-    return getFallbackDistricts(provinceId);
-  }
-  try {
-    const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/district', {
-      method: 'POST',
-      headers: {
-        'Token': token,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ province_id: Number(provinceId) })
-    });
-    const json = await res.json();
-    if (json.code === 200 && json.data) {
-      cache.districts[provinceId] = json.data.map(d => ({
-        id: d.DistrictID,
-        name: d.DistrictName
-      })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
-      return cache.districts[provinceId];
+  // If it looks like a GHN Province ID (numeric string and generally greater than 100)
+  if (token && token !== 'your_ghn_sandbox_token' && Number(provinceId) > 100) {
+    try {
+      const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/district', {
+        method: 'POST',
+        headers: {
+          'Token': token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ province_id: Number(provinceId) })
+      });
+      const json = await res.json();
+      if (json.code === 200 && json.data) {
+        cache.districts[provinceId] = json.data.map(d => ({
+          id: d.DistrictID,
+          name: d.DistrictName
+        })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+        return cache.districts[provinceId];
+      }
+    } catch (err) {
+      console.error(`[GHN Districts API Error] province ${provinceId}:`, err.message);
     }
-  } catch (err) {
-    console.error(`[GHN Districts API Error] province ${provinceId}:`, err.message);
   }
+
+  // Fallback to static districts in selected province
+  let foundProvince = staticAddressData.find(p => String(p.id) === String(provinceId));
+  if (!foundProvince) {
+    // If provinceId is from GHN (e.g. 201) but we are in fallback mode (e.g. token expired), map via province name
+    const provinces = await getProvinces();
+    const provObj = provinces.find(p => String(p.id) === String(provinceId));
+    if (provObj) {
+      const normName = normalizeProvince(provObj.name);
+      foundProvince = staticAddressData.find(p => normalizeProvince(p.name) === normName);
+    }
+  }
+
+  if (foundProvince && foundProvince.districts) {
+    cache.districts[provinceId] = foundProvince.districts.map(d => ({
+      id: d.id,
+      name: d.name
+    })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+    return cache.districts[provinceId];
+  }
+
   return getFallbackDistricts(provinceId);
 }
 
 export async function getWards(districtId) {
   if (cache.wards[districtId]) return cache.wards[districtId];
   const token = process.env.GHN_API_TOKEN;
-  if (!token || token === 'your_ghn_sandbox_token') {
-    return getFallbackWards(districtId);
-  }
-  try {
-    const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/ward', {
-      method: 'POST',
-      headers: {
-        'Token': token,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ district_id: Number(districtId) })
-    });
-    const json = await res.json();
-    if (json.code === 200 && json.data) {
-      cache.wards[districtId] = json.data.map(w => ({
-        code: w.WardCode,
-        name: w.WardName
-      })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
-      return cache.wards[districtId];
+  if (token && token !== 'your_ghn_sandbox_token' && Number(districtId) > 1000) {
+    try {
+      const res = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/ward', {
+        method: 'POST',
+        headers: {
+          'Token': token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ district_id: Number(districtId) })
+      });
+      const json = await res.json();
+      if (json.code === 200 && json.data) {
+        cache.wards[districtId] = json.data.map(w => ({
+          code: w.WardCode,
+          name: w.WardName
+        })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+        return cache.wards[districtId];
+      }
+    } catch (err) {
+      console.error(`[GHN Wards API Error] district ${districtId}:`, err.message);
     }
-  } catch (err) {
-    console.error(`[GHN Wards API Error] district ${districtId}:`, err.message);
   }
   return getFallbackWards(districtId);
 }

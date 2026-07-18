@@ -33,3 +33,7 @@ frontend_backup/
 .agents/
 skills-lock.json
 .mcp.json
+
+# Local documentation & activity logs
+docs/
+
