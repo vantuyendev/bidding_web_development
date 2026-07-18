@@ -23,6 +23,7 @@ import { requireAuth } from './middlewares/authMiddleware.js';
 import { errorHandler } from './middlewares/errorMiddleware.js';
 import { logger } from './utils/logger.js';
 import './workers/auctionWorker.js';
+import './workers/shippingWorker.js';
 
 // Tải các biến môi trường
 dotenv.config();

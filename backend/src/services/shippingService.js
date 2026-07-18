@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import prisma from '../models/db.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -720,6 +721,176 @@ export async function registerShipmentAsync({ product, seller }) {
     carrier: chosenCarrier,
     syncStatus: 'PENDING',
     isFallback: true
+  };
+}
+
+/**
+ * Thêm hoặc cập nhật lộ trình vận chuyển vào trường shippingLogs của Product.
+ */
+export async function updateProductShippingLog(productId, status, description, customTime = null) {
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { shippingLogs: true }
+  });
+
+  if (!product) return null;
+
+  let logs = [];
+  if (product.shippingLogs) {
+    try {
+      logs = JSON.parse(product.shippingLogs);
+    } catch (e) {
+      logs = [];
+    }
+  }
+
+  const logTime = customTime ? new Date(customTime) : new Date();
+
+  // Kiểm tra trùng lặp
+  const isDuplicate = logs.some(l => l.description === description && Math.abs(new Date(l.time) - logTime) < 5000);
+  if (!isDuplicate) {
+    logs.push({
+      time: logTime.toISOString(),
+      status,
+      description
+    });
+    // Sắp xếp theo thời gian tăng dần
+    logs.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+    return await prisma.product.update({
+      where: { id: productId },
+      data: {
+        shippingLogs: JSON.stringify(logs)
+      }
+    });
+  }
+  return product;
+}
+
+/**
+ * Tra cứu lộ trình từ đối tác GHN/GHTK, hoặc giả lập lộ trình nếu là Sandbox/Internal Code.
+ */
+export async function getShipmentStatusAsync(trackingCode, carrier, productCreatedAt = new Date()) {
+  const chosenCarrier = String(carrier || 'GHN').toUpperCase();
+  const isInternal = String(trackingCode).startsWith('AURABID-INT-');
+  const token = chosenCarrier === 'GHN' ? process.env.GHN_API_TOKEN : process.env.GHTK_API_TOKEN;
+  const isDefaultToken = !token || token.includes('your_');
+
+  // Nếu là internal hoặc token default (Sandbox), thực hiện giả lập lộ trình theo thời gian trôi qua
+  if (isInternal || isDefaultToken) {
+    const elapsedMs = Date.now() - new Date(productCreatedAt).getTime();
+    const elapsedMins = elapsedMs / (60 * 1000);
+
+    const simulatedLogs = [];
+    // Bước 1: Luôn có khi tạo đơn
+    simulatedLogs.push({
+      time: new Date(productCreatedAt).toISOString(),
+      status: 'READY_TO_PICK',
+      description: 'Bưu cục đã tiếp nhận thông tin vận đơn và chuẩn bị lấy hàng.'
+    });
+
+    // Bước 2: Sau 1 phút
+    if (elapsedMins >= 1) {
+      simulatedLogs.push({
+        time: new Date(new Date(productCreatedAt).getTime() + 60 * 1000).toISOString(),
+        status: 'PICKED',
+        description: 'Nhân viên giao nhận đã thu gom bưu kiện thành công.'
+      });
+    }
+    // Bước 3: Sau 3 phút
+    if (elapsedMins >= 3) {
+      simulatedLogs.push({
+        time: new Date(new Date(productCreatedAt).getTime() + 180 * 1000).toISOString(),
+        status: 'DELIVERING',
+        description: 'Bưu kiện đang trung chuyển qua kho phân loại Hà Nội SOC.'
+      });
+    }
+    // Bước 4: Sau 5 phút
+    if (elapsedMins >= 5) {
+      simulatedLogs.push({
+        time: new Date(new Date(productCreatedAt).getTime() + 300 * 1000).toISOString(),
+        status: 'DELIVERING',
+        description: 'Bưu kiện đang được nhân viên giao hàng vận chuyển đến người nhận.'
+      });
+    }
+    // Bước 5: Sau 7 phút
+    if (elapsedMins >= 7) {
+      simulatedLogs.push({
+        time: new Date(new Date(productCreatedAt).getTime() + 420 * 1000).toISOString(),
+        status: 'DELIVERED',
+        description: 'Giao bưu kiện thành công. Người nhận đã ký xác nhận.'
+      });
+    }
+
+    return {
+      success: true,
+      trackingCode,
+      carrier: chosenCarrier,
+      logs: simulatedLogs,
+      currentStatus: simulatedLogs[simulatedLogs.length - 1].status
+    };
+  }
+
+  // Nếu có Token thực tế, gọi API thật của GHN/GHTK
+  try {
+    if (chosenCarrier === 'GHN') {
+      const response = await fetch('https://dev-online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/detail', {
+        method: 'POST',
+        headers: {
+          'Token': token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ order_code: trackingCode })
+      });
+      const resJson = await response.json();
+      if (resJson.code === 200 && resJson.data) {
+        // Map trạng thái GHN sang trạng thái chuẩn của chúng ta
+        const ghnStatus = resJson.data.status;
+        const logDescription = resJson.data.leadtime || `Cập nhật trạng thái GHN: ${ghnStatus}`;
+        return {
+          success: true,
+          trackingCode,
+          carrier: 'GHN',
+          logs: [
+            {
+              time: new Date(resJson.data.updated_at || Date.now()).toISOString(),
+              status: ghnStatus.toUpperCase(),
+              description: logDescription
+            }
+          ],
+          currentStatus: ghnStatus.toUpperCase()
+        };
+      }
+    } else if (chosenCarrier === 'GHTK') {
+      const response = await fetch(`https://services-staging.ghtklab.com/services/shipment/v2/status/${trackingCode}`, {
+        headers: { 'Token': token }
+      });
+      const resJson = await response.json();
+      if (resJson.success && resJson.order) {
+        const ghtkStatus = String(resJson.order.status);
+        const logDescription = resJson.order.status_text || `Cập nhật trạng thái GHTK: ${ghtkStatus}`;
+        return {
+          success: true,
+          trackingCode,
+          carrier: 'GHTK',
+          logs: [
+            {
+              time: new Date().toISOString(),
+              status: ghtkStatus,
+              description: logDescription
+            }
+          ],
+          currentStatus: ghtkStatus
+        };
+      }
+    }
+  } catch (err) {
+    console.error(`[Shipping Service Sync Error] Lỗi gọi API tra cứu ${chosenCarrier}:`, err.message);
+  }
+
+  return {
+    success: false,
+    message: `Không thể kết nối bưu cục ${chosenCarrier} để tra cứu trực tiếp.`
   };
 }
 

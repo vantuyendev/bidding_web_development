@@ -603,6 +603,82 @@ export default function ProductDetail() {
     else alert(d.error || 'Failed to confirm receipt.');
   };
 
+  const handleSimulateUpdate = async () => {
+    let shippingLogsList = [];
+    if (product.shippingLogs) {
+      try {
+        shippingLogsList = JSON.parse(product.shippingLogs);
+      } catch (e) {}
+    }
+    
+    const count = shippingLogsList.length;
+    let nextStatus = '';
+    let nextDesc = '';
+
+    if (count === 0 || count === 1) {
+      nextStatus = 'PICKED';
+      nextDesc = 'Nhân viên giao nhận đã thu gom bưu kiện thành công.';
+    } else if (count === 2) {
+      nextStatus = 'DELIVERING';
+      nextDesc = 'Bưu kiện đang trung chuyển qua kho phân loại Hà Nội SOC.';
+    } else if (count === 3) {
+      nextStatus = 'DELIVERING';
+      nextDesc = 'Bưu kiện đang được nhân viên giao hàng vận chuyển đến người nhận.';
+    } else if (count === 4) {
+      nextStatus = 'DELIVERED';
+      nextDesc = 'Giao bưu kiện thành công. Người nhận đã ký xác nhận.';
+    } else {
+      alert('Bưu kiện đã ở trạng thái giao hàng thành công hoàn tất!');
+      return;
+    }
+
+    try {
+      const res = await fetch(getApiUrl('/api/shipping/simulate-update'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: product.id,
+          status: nextStatus,
+          description: nextDesc
+        }),
+        credentials: 'include'
+      });
+
+      const resJson = await res.json();
+      if (resJson.success) {
+        const prodRes = await fetch(getApiUrl(`/api/products/${id}`), { credentials: 'include' });
+        const prodData = await prodRes.json();
+        if (prodData.success) {
+          setProduct(prodData.data);
+        }
+      } else {
+        alert(resJson.message || 'Mô phỏng thất bại.');
+      }
+    } catch (err) {
+      console.error('Lỗi mô phỏng cập nhật lộ trình:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!id || !product || product.status !== 'SHIPPED') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(getApiUrl(`/api/products/${id}`), { credentials: 'include' });
+        const resJson = await res.json();
+        if (resJson.success) {
+          setProduct(resJson.data);
+        }
+      } catch (e) {
+        console.warn('Lỗi tự động cập nhật lộ trình bưu cục:', e);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [id, product?.status]);
+
   const handleSendChatMessage = async (e) => {
     e.preventDefault();
     if (!chatInput.trim() || chatSubmitting) return;
@@ -1591,64 +1667,193 @@ export default function ProductDetail() {
                         </div>
                       )}
                       
-                      {/* In phiếu giao hàng for Seller */}
-                      {isSeller && product.status === 'SHIPPED' && (
-                        <button 
-                          onClick={() => {
-                            const printWindow = window.open('', '_blank');
-                            printWindow.document.write(`
-                              <html>
-                                <head>
-                                  <title>In phiếu giao hàng AuraBid</title>
-                                  <style>
-                                    body { font-family: sans-serif; padding: 20px; text-align: center; }
-                                    .label-box { border: 3px double #000; padding: 20px; width: 400px; margin: 0 auto; text-align: left; }
-                                    .header { text-align: center; font-weight: bold; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-                                    .section { margin-bottom: 10px; }
-                                    .label { font-weight: bold; }
-                                    .barcode { font-family: monospace; font-size: 24px; letter-spacing: 5px; text-align: center; margin: 20px 0; background: #eee; padding: 10px; }
-                                  </style>
-                                </head>
-                                <body>
-                                  <div class="label-box">
-                                    <div class="header">AuraBid Delivery Voucher</div>
-                                    <div class="section"><span class="label">Mã vận đơn:</span> ${product.trackingCode}</div>
-                                    <div class="section"><span class="label">Đơn vị VC:</span> ${product.shippingCarrier || 'GHN'}</div>
-                                    <div class="barcode">${product.trackingCode}</div>
-                                    <hr/>
-                                    <div class="section"><span class="label">Người gửi (Seller):</span> ${product.seller?.name || 'Người bán AuraBid'}</div>
-                                    <div class="section"><span class="label">Địa chỉ gửi:</span> ${product.seller?.shopAddress || 'Kho hàng AuraBid'}</div>
-                                    <hr/>
-                                    <div class="section"><span class="label">Người nhận (Buyer):</span> ${product.winnerName || 'Người mua AuraBid'}</div>
-                                    <div class="section"><span class="label">Địa chỉ nhận:</span> ${product.winnerAddress || 'Địa chỉ người nhận'}</div>
-                                    <div class="section"><span class="label">Số điện thoại:</span> ${product.winnerPhone || ''}</div>
-                                    <div class="section" style="text-align: center; margin-top: 15px; font-size: 10px; color: #666;">Cảm ơn bạn đã giao dịch qua AuraBid!</div>
+                      {/* Lộ trình giao hàng thực tế */}
+                      {(() => {
+                        let shippingLogsList = [];
+                        if (product.shippingLogs) {
+                          try {
+                            shippingLogsList = JSON.parse(product.shippingLogs);
+                          } catch (e) {}
+                        }
+                        
+                        if (shippingLogsList.length === 0) {
+                          shippingLogsList = [
+                            {
+                              time: product.updatedAt || new Date().toISOString(),
+                              status: 'READY_TO_PICK',
+                              description: 'Bưu cục đã tiếp nhận thông tin vận đơn và chuẩn bị lấy hàng.'
+                            }
+                          ];
+                        }
+
+                        return (
+                          <div style={{ marginTop: 15, padding: '10px 0', borderTop: '1px dashed var(--border-color, hsl(0,0%,85%))' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: 11, marginBottom: 8, color: 'var(--page-text)' }}>
+                              📍 Lộ trình giao hàng thực tế:
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingLeft: 8, position: 'relative' }}>
+                              {/* Dòng kẻ dọc mờ */}
+                              <div style={{
+                                position: 'absolute',
+                                left: 12,
+                                top: 5,
+                                bottom: 5,
+                                width: 1.5,
+                                borderLeft: '1px dashed hsl(35, 95%, 45%)',
+                                opacity: 0.5
+                              }} />
+                              
+                              {shippingLogsList.map((log, index) => {
+                                const isLast = index === shippingLogsList.length - 1;
+                                return (
+                                  <div key={index} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+                                    {/* Nút tròn biểu thị mốc */}
+                                    <div style={{
+                                      width: 10,
+                                      height: 10,
+                                      borderRadius: '50%',
+                                      background: isLast ? 'hsl(35, 95%, 45%)' : '#888',
+                                      marginTop: 4,
+                                      boxShadow: isLast ? '0 0 8px hsl(35, 95%, 45%)' : 'none',
+                                      transform: isLast ? 'scale(1.2)' : 'none',
+                                      transition: 'all 0.3s ease',
+                                      border: '2px solid var(--page-card-bg, #fff)'
+                                    }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                      <div style={{ fontSize: 11, fontWeight: isLast ? 'bold' : 'normal', color: isLast ? 'var(--page-text)' : 'var(--page-text-muted)' }}>
+                                        {log.description}
+                                      </div>
+                                      <div style={{ fontSize: 9, color: 'var(--page-text-muted)', marginTop: 2 }}>
+                                        {new Date(log.time).toLocaleString('vi-VN')}
+                                      </div>
+                                    </div>
                                   </div>
-                                  <script>
-                                    window.onload = function() { window.print(); }
-                                  </script>
-                                </body>
-                              </html>
-                            `);
-                            printWindow.document.close();
-                          }}
-                          style={{
-                            marginTop: 10,
-                            width: '100%',
-                            padding: '8px 12px',
-                            background: 'hsl(35, 95%, 45%)',
-                            borderColor: 'hsl(35, 95%, 45%)',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            borderRadius: 4,
-                            cursor: 'pointer',
-                            border: '1px solid transparent',
-                            fontSize: 11
-                          }}
-                        >
-                          🖨️ In phiếu giao hàng trực quan
-                        </button>
-                      )}
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Nút điều khiển */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
+                        {/* In phiếu giao hàng for Seller */}
+                        {isSeller && product.status === 'SHIPPED' && (
+                          <button 
+                            onClick={() => {
+                              const printWindow = window.open('', '_blank');
+                              printWindow.document.write(`
+                                <html>
+                                  <head>
+                                    <title>In phiếu giao hàng AuraBid</title>
+                                    <style>
+                                      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #fff; color: #000; }
+                                      .label-card { border: 2px solid #000; width: 430px; margin: 0 auto; padding: 15px; box-sizing: border-box; }
+                                      .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+                                      .carrier-logo { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+                                      .carrier-tag { background: #000; color: #fff; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px; }
+                                      .barcode-box { text-align: center; padding: 15px 0; border-bottom: 1px dashed #000; }
+                                      .barcode-visual { display: inline-flex; height: 50px; align-items: stretch; margin-bottom: 5px; }
+                                      .barcode-visual div { background: #000; margin-right: 1.5px; }
+                                      .tracking-text { font-family: monospace; font-size: 18px; font-weight: bold; letter-spacing: 2px; }
+                                      .address-section { font-size: 12px; line-height: 1.4; border-bottom: 1px dashed #000; padding: 10px 0; }
+                                      .address-title { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #555; margin-bottom: 3px; }
+                                      .info-grid { display: flex; justify-content: space-between; font-size: 11px; padding: 10px 0; }
+                                      .footer-note { text-align: center; font-size: 9px; color: #666; margin-top: 10px; border-top: 1.5px solid #000; padding-top: 8px; }
+                                    </style>
+                                  </head>
+                                  <body>
+                                    <div class="label-card">
+                                      <div class="header-row">
+                                        <div class="carrier-logo">AuraBid <span style="font-size:12px; font-weight:normal;">Express</span></div>
+                                        <div class="carrier-tag">${product.shippingCarrier || 'GHN'} STANDARD</div>
+                                      </div>
+                                      <div class="barcode-box">
+                                        <div class="barcode-visual">
+                                          ${Array.from({ length: 40 }).map((_, i) => {
+                                            const width = (i % 3 === 0) ? 3 : (i % 2 === 0) ? 1.5 : 0.8;
+                                            return `<div style="width: ${width}px; background: #000; margin-right: 1.5px;"></div>`;
+                                          }).join('')}
+                                        </div>
+                                        <div class="tracking-text">${product.trackingCode}</div>
+                                      </div>
+                                      <div class="address-section">
+                                        <div class="address-title">Từ (Sender)</div>
+                                        <strong>${product.seller?.name || 'Người bán AuraBid'}</strong><br/>
+                                        SĐT: ${product.seller?.phoneNumber || '0901234567'}<br/>
+                                        Địa chỉ: ${product.seller?.shopAddress || 'Kho hàng AuraBid'}
+                                      </div>
+                                      <div class="address-section">
+                                        <div class="address-title">Đến (Recipient)</div>
+                                        <strong>${product.winnerName || 'Người mua AuraBid'}</strong><br/>
+                                        SĐT: ${product.winnerPhone || ''}<br/>
+                                        Địa chỉ: ${product.winnerAddress || 'Địa chỉ nhận'}
+                                      </div>
+                                      <div class="info-grid">
+                                        <div><strong>Tên bưu kiện:</strong> ${product.title.substring(0, 30)}...</div>
+                                        <div><strong>Khối lượng:</strong> ${product.weight || 0.5} kg</div>
+                                      </div>
+                                      <div class="info-grid" style="border-top: 1px dotted #ccc; padding-top: 5px;">
+                                        <div><strong>Phí thu hộ (COD):</strong> 0 đ</div>
+                                        <div><strong>Hình thức:</strong> AuraBid Escrow (Đã đóng băng)</div>
+                                      </div>
+                                      <div class="footer-note">
+                                        Voucher được tạo tự động bởi AuraBid. Đối tác vận chuyển: ${product.shippingCarrier || 'GHN'}.
+                                      </div>
+                                    </div>
+                                    <script>
+                                      window.onload = function() { window.print(); }
+                                    </script>
+                                  </body>
+                                </html>
+                              `);
+                              printWindow.document.close();
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              background: 'hsl(35, 95%, 45%)',
+                              borderColor: 'hsl(35, 95%, 45%)',
+                              color: 'white',
+                              fontWeight: 'bold',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              border: '1px solid transparent',
+                              fontSize: 11,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}
+                          >
+                            🖨️ In phiếu giao hàng
+                          </button>
+                        )}
+
+                        {/* Mô phỏng hành trình (Seller hoặc Admin, chỉ chạy ở môi trường development hoặc cho testing) */}
+                        {(isSeller || (user && user.isAdmin)) && product.status === 'SHIPPED' && (
+                          <button
+                            onClick={handleSimulateUpdate}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px dashed hsl(35, 95%, 45%)',
+                              color: 'hsl(35, 95%, 45%)',
+                              fontWeight: 'bold',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              fontSize: 11,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}
+                          >
+                            🛠️ Mô phỏng cập nhật lộ trình (Dev)
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

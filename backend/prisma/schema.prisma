@@ -98,6 +98,7 @@ model Product {
   trackingCode  String?            @map("tracking_code")
   shippingCarrier String?          @map("shipping_carrier")
   syncStatus    String?            @map("sync_status")
+  shippingLogs  String?            @map("shipping_logs")
   category      Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   bids          Bid[]
   attributes    ProductAttribute[]

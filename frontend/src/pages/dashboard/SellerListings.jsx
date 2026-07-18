@@ -415,28 +415,59 @@ export default function SellerListings(props) {
                               <head>
                                 <title>In phiếu giao hàng AuraBid</title>
                                 <style>
-                                  body { font-family: sans-serif; padding: 20px; text-align: center; }
-                                  .label-box { border: 3px double #000; padding: 20px; width: 400px; margin: 0 auto; text-align: left; }
-                                  .header { text-align: center; font-weight: bold; font-size: 20px; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-                                  .section { margin-bottom: 10px; }
-                                  .label { font-weight: bold; }
-                                  .barcode { font-family: monospace; font-size: 24px; letter-spacing: 5px; text-align: center; margin: 20px 0; background: #eee; padding: 10px; }
+                                  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #fff; color: #000; }
+                                  .label-card { border: 2px solid #000; width: 430px; margin: 0 auto; padding: 15px; box-sizing: border-box; }
+                                  .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; }
+                                  .carrier-logo { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+                                  .carrier-tag { background: #000; color: #fff; padding: 2px 6px; font-size: 11px; font-weight: bold; border-radius: 3px; }
+                                  .barcode-box { text-align: center; padding: 15px 0; border-bottom: 1px dashed #000; }
+                                  .barcode-visual { display: inline-flex; height: 50px; align-items: stretch; margin-bottom: 5px; }
+                                  .barcode-visual div { background: #000; margin-right: 1.5px; }
+                                  .tracking-text { font-family: monospace; font-size: 18px; font-weight: bold; letter-spacing: 2px; }
+                                  .address-section { font-size: 12px; line-height: 1.4; border-bottom: 1px dashed #000; padding: 10px 0; }
+                                  .address-title { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #555; margin-bottom: 3px; }
+                                  .info-grid { display: flex; justify-content: space-between; font-size: 11px; padding: 10px 0; }
+                                  .footer-note { text-align: center; font-size: 9px; color: #666; margin-top: 10px; border-top: 1.5px solid #000; padding-top: 8px; }
                                 </style>
                               </head>
                               <body>
-                                <div class="label-box">
-                                  <div class="header">AuraBid Delivery Voucher</div>
-                                  <div class="section"><span class="label">Mã vận đơn:</span> ${prod.trackingCode}</div>
-                                  <div class="section"><span class="label">Đơn vị VC:</span> ${prod.shippingCarrier || 'GHN'}</div>
-                                  <div class="barcode">${prod.trackingCode}</div>
-                                  <hr/>
-                                  <div class="section"><span class="label">Người gửi (Seller):</span> ${profileData.name || 'Người bán AuraBid'}</div>
-                                  <div class="section"><span class="label">Địa chỉ gửi:</span> ${profileData.shopAddress || 'Kho hàng AuraBid'}</div>
-                                  <hr/>
-                                  <div class="section"><span class="label">Người nhận (Buyer):</span> ${prod.winnerName || 'Người mua AuraBid'}</div>
-                                  <div class="section"><span class="label">Địa chỉ nhận:</span> ${prod.winnerAddress || 'Địa chỉ người nhận'}</div>
-                                  <div class="section"><span class="label">Số điện thoại:</span> ${prod.winnerPhone || ''}</div>
-                                  <div class="section" style="text-align: center; margin-top: 15px; font-size: 10px; color: #666;">Cảm ơn bạn đã giao dịch qua AuraBid!</div>
+                                <div class="label-card">
+                                  <div class="header-row">
+                                    <div class="carrier-logo">AuraBid <span style="font-size:12px; font-weight:normal;">Express</span></div>
+                                    <div class="carrier-tag">${prod.shippingCarrier || 'GHN'} STANDARD</div>
+                                  </div>
+                                  <div class="barcode-box">
+                                    <div class="barcode-visual">
+                                      ${Array.from({ length: 40 }).map((_, i) => {
+                                        const width = (i % 3 === 0) ? 3 : (i % 2 === 0) ? 1.5 : 0.8;
+                                        return `<div style="width: ${width}px; background: #000; margin-right: 1.5px;"></div>`;
+                                      }).join('')}
+                                    </div>
+                                    <div class="tracking-text">${prod.trackingCode}</div>
+                                  </div>
+                                  <div class="address-section">
+                                    <div class="address-title">Từ (Sender)</div>
+                                    <strong>${profileData.name || 'Người bán AuraBid'}</strong><br/>
+                                    SĐT: ${profileData.phoneNumber || '0901234567'}<br/>
+                                    Địa chỉ: ${profileData.shopAddress || 'Kho hàng AuraBid'}
+                                  </div>
+                                  <div class="address-section">
+                                    <div class="address-title">Đến (Recipient)</div>
+                                    <strong>${prod.winnerName || 'Người mua AuraBid'}</strong><br/>
+                                    SĐT: ${prod.winnerPhone || ''}<br/>
+                                    Địa chỉ: ${prod.winnerAddress || 'Địa chỉ nhận'}
+                                  </div>
+                                  <div class="info-grid">
+                                    <div><strong>Tên bưu kiện:</strong> ${prod.title.substring(0, 30)}...</div>
+                                    <div><strong>Khối lượng:</strong> ${prod.weight || 0.5} kg</div>
+                                  </div>
+                                  <div class="info-grid" style="border-top: 1px dotted #ccc; padding-top: 5px;">
+                                    <div><strong>Phí thu hộ (COD):</strong> 0 đ</div>
+                                    <div><strong>Hình thức:</strong> AuraBid Escrow (Đã đóng băng)</div>
+                                  </div>
+                                  <div class="footer-note">
+                                    Voucher được tạo tự động bởi AuraBid. Đối tác vận chuyển: ${prod.shippingCarrier || 'GHN'}.
+                                  </div>
                                 </div>
                                 <script>
                                   window.onload = function() { window.print(); }
