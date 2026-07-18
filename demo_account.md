@@ -1,10 +1,4 @@
-﻿# 🎯 AuraBid — Tài Khoản Demo
-
-Các tài khoản dưới đây đã được tạo sẵn trong hệ thống với ví **10.000.000 VNĐ** để phục vụ mục đích demo và kiểm thử.
-
----
-
-## 👑 Tài khoản Admin
+﻿## 👑 Tài khoản Admin
 
 | Thông tin    | Giá trị                     |
 |--------------|-----------------------------|
