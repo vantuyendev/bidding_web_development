@@ -446,7 +446,7 @@ Mỗi file `.jsx` tương ứng với **một trang** (route) trong ứng dụng
 - Admin duyệt yêu cầu nạp/rút tiền
 - **Admin cấu hình thông tin ngân hàng nạp tiền**: tên ngân hàng, số tài khoản, ảnh QR tùy chỉnh và hướng dẫn chuyển khoản (lưu trong bảng `system_settings`)
 
-### 🚚 Giao Hàng & Theo Dõi Hành Trình (Mới)
+### 🚚 Giao Hàng & Theo Dõi Hành Trình (Test Sandbox)
 - **Tích hợp API bưu cục GHN & GHTK**: Tự động tính phí vận chuyển theo khoảng cách địa lý (Nội tỉnh / Nội miền / Liên miền) kết hợp khối lượng quy đổi `(D×R×C) / 5000` của sản phẩm.
 - **Đăng ký vận đơn tự động**: Khi người bán bấm gửi hàng, hệ thống tự động kết nối API đối tác logistics để tạo vận đơn và nhận mã tracking.
 - **In phiếu giao hàng chuyên nghiệp**: Người bán có thể in trực tiếp nhãn vận đơn từ trình duyệt với bố cục chuẩn hóa và mã vạch (barcode) dựng bằng CSS sắc nét.
